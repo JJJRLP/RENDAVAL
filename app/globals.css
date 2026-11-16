@@ -1,0 +1,530 @@
+@import "tailwindcss";
+
+/*
+ * Palette. Ink and warm paper carry the page; marble comes from the statues.
+ * Teal: primary button, key numbers, links. Purple: "Trustless Work" tag only.
+ */
+:root {
+  --white: #ffffff;
+  --offwhite: #f4f2ed;
+  --ink: #0b0d12;
+  --deep: #073937;
+  --teal: #0a7a76;
+  --teal-hover: #086562;
+  --teal-bright: #5fcfc8;
+  --purple: #5b3fd6;
+  --line: #dcd9d1;
+
+  /* One easing curve for every entrance and state change: fast start, soft landing. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  /* Drop the default Tailwind palette so only the brand tokens exist. */
+  --color-*: initial;
+  --color-white: var(--white);
+  --color-offwhite: var(--offwhite);
+  --color-ink: var(--ink);
+  --color-deep: var(--deep);
+  --color-teal: var(--teal);
+  --color-teal-hover: var(--teal-hover);
+  --color-teal-bright: var(--teal-bright);
+  --color-purple: var(--purple);
+  --color-line: var(--line);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+
+  --container-content: 1200px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus on every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.on-dark :focus-visible {
+  outline-color: var(--white);
+}
+
+@layer components {
+  /* Fluid display sizes: one scale from phone to desktop, no breakpoint jumps. */
+  .display-1 {
+    font-family: var(--font-serif);
+    font-size: clamp(2.25rem, 1rem + 4.6vw, 4.5rem);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+  }
+
+  .display-2 {
+    font-family: var(--font-serif);
+    font-size: clamp(1.875rem, 0.75rem + 3.6vw, 3.75rem);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.875rem, 1.1rem + 2.4vw, 3.125rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+  }
+
+  /* Section marker: number, short rule, label. */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgb(11 13 18 / 0.7);
+  }
+
+  .eyebrow-index {
+    color: var(--teal);
+  }
+
+  .eyebrow-rule {
+    width: 2rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+
+  .eyebrow-dark {
+    color: rgb(255 255 255 / 0.75);
+  }
+
+  .eyebrow-dark .eyebrow-index {
+    color: var(--teal-bright);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 12px 24px;
+    border-radius: 2px;
+    background: var(--teal);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.5;
+    cursor: pointer;
+    transition:
+      background-color 200ms var(--ease-out),
+      transform 200ms var(--ease-out),
+      box-shadow 200ms var(--ease-out);
+  }
+
+  .btn-primary:hover {
+    background: var(--teal-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -6px rgb(10 122 118 / 0.6);
+  }
+
+  .btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: none;
+  }
+
+  .btn-arrow {
+    transition: transform 200ms var(--ease-out);
+  }
+
+  .btn-primary:hover .btn-arrow {
+    transform: translateX(4px);
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    transition:
+      transform 300ms var(--ease-out),
+      box-shadow 300ms var(--ease-out);
+  }
+
+  .card:hover,
+  .card:focus-within {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px -20px rgb(11 13 18 / 0.45);
+  }
+}
+
+/* Faint column guides behind the hero, like the ruling of a ledger. */
+.guides {
+  background-image: linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 25% 100%;
+}
+
+/*
+ * Split stage: colour block + statue + a title that changes colour where it
+ * crosses the block.
+ *
+ * Phones: the copy sits above the art. The block is inset to the right and
+ * the statue stands on its base, breaking out of the top.
+ * From 48rem up: the art overlaps the copy on the right.
+ */
+.split-stage {
+  position: relative;
+}
+
+.split-dark {
+  --stage-fg: var(--white);
+  --stage-fg-on-block: var(--ink);
+  --stage-block: var(--teal);
+}
+
+.split-light {
+  --stage-fg: var(--ink);
+  --stage-fg-on-block: var(--white);
+  --stage-block: var(--ink);
+}
+
+.split-deep {
+  --stage-fg: var(--white);
+  --stage-fg-on-block: var(--white);
+  --stage-block: var(--ink);
+}
+
+.split-art {
+  position: relative;
+  height: clamp(17rem, 78vw, 24rem);
+  margin-top: 4.5rem;
+  container-type: size;
+}
+
+.split-block {
+  position: absolute;
+  inset: 0 0 0 20%;
+  background: var(--stage-block);
+}
+
+/* Never taller than the block allows, never wider than the screen. */
+.split-statue {
+  position: absolute;
+  bottom: 0;
+  left: 60%;
+  height: min(114cqh, calc(76cqw / var(--ar)));
+  aspect-ratio: var(--ar);
+  transform: translateX(-50%);
+}
+
+.statue-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Black bar: eyes at --t: 0, mouth at --t: 1. */
+.statue-bar {
+  position: absolute;
+  left: calc(var(--eyes-x) + (var(--mouth-x) - var(--eyes-x)) * var(--t));
+  top: calc(var(--eyes-y) + (var(--mouth-y) - var(--eyes-y)) * var(--t));
+  width: var(--bar-w);
+  height: var(--bar-h);
+  background: var(--ink);
+  outline: 1px solid rgb(255 255 255 / 0.25);
+  transition:
+    left 500ms var(--ease-out),
+    top 500ms var(--ease-out);
+}
+
+/* The card tucks under the art's bottom-left corner. */
+.split-caption {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 20rem);
+  margin-top: -3rem;
+}
+
+@media (min-width: 48rem) {
+  .split-stage {
+    min-height: clamp(26rem, 46vw, 34rem);
+    display: flex;
+    align-items: center;
+  }
+
+  .split-copy {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding-block: clamp(3rem, 6vw, 5rem);
+  }
+
+  .split-body {
+    max-width: calc(var(--split) - 6%);
+  }
+
+  .split-art {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--split);
+    width: 38%;
+    height: auto;
+    margin-top: 0;
+    z-index: 1;
+  }
+
+  .split-block {
+    inset: 0;
+  }
+
+  /* As tall as the block allows, but never wider than the page gutter. */
+  .split-statue {
+    left: 10%;
+    height: min(112cqh, calc(122cqw / var(--ar)));
+    transform: none;
+  }
+
+  /*
+   * The title box spans the whole stage, so a hard colour stop at --split
+   * lands exactly on the block's left edge. Padding keeps the text from
+   * running under the statue.
+   */
+  .split-title {
+    padding-right: calc(100% - var(--split) - 5%);
+    background-image: linear-gradient(
+      to right,
+      var(--stage-fg) var(--split),
+      var(--stage-fg-on-block) var(--split)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .split-caption {
+    position: absolute;
+    right: 0;
+    bottom: -2rem;
+    width: clamp(13rem, 26vw, 17rem);
+    margin-top: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .split-title {
+    background-image: none;
+    color: CanvasText;
+  }
+}
+
+/* Sticky header: slides in once the hero has scrolled away. */
+.site-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: rgb(255 255 255 / 0.9);
+  backdrop-filter: blur(10px);
+  transform: translateY(-100%);
+  visibility: hidden;
+  transition:
+    transform 400ms var(--ease-out),
+    visibility 0s 400ms;
+}
+
+.site-header.is-shown {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform 400ms var(--ease-out),
+    visibility 0s;
+}
+
+/*
+ * Flow stage: three parties side by side, and the assets that travel
+ * between them as the operation advances.
+ */
+.flow-track {
+  position: relative;
+  height: 13.5rem;
+}
+
+.flow-chip {
+  position: absolute;
+  width: 29%;
+  min-width: max-content;
+  padding: 0.5rem 0.625rem;
+  border-radius: 2px;
+  text-align: center;
+  transform: translateX(-50%);
+  transition:
+    left 900ms var(--ease-out),
+    opacity 400ms var(--ease-out);
+}
+
+@keyframes step-timer {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.step-timer {
+  transform-origin: left;
+  animation: step-timer 5s linear both;
+}
+
+/* FAQ: the panel grows and shrinks instead of popping. */
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 350ms var(--ease-out),
+    opacity 250ms var(--ease-out);
+}
+
+.faq-panel.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.faq-panel > div {
+  overflow: hidden;
+}
+
+/* Motion: only when the user has not asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .reveal,
+  .reveal-group .reveal-step {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 700ms var(--ease-out),
+      transform 700ms var(--ease-out);
+  }
+
+  .reveal-group .reveal-step {
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  .reveal.is-visible,
+  .reveal-group.is-visible .reveal-step {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Section stages: the colour block wipes up as the section is revealed. */
+  .reveal .split-block {
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 900ms var(--ease-out) 100ms;
+  }
+
+  .reveal.is-visible .split-block {
+    clip-path: inset(0);
+  }
+
+  /*
+   * Hero entrance, on page load. Keyframes only describe the starting state,
+   * so anything that never animates is simply visible.
+   */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 24px;
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes wipe-up {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+    to {
+      clip-path: inset(0);
+    }
+  }
+
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .hero-enter .hero-bar {
+    animation: fade 600ms var(--ease-out) both;
+  }
+
+  .hero-enter .split-block {
+    animation: wipe-up 900ms var(--ease-out) 100ms both;
+  }
+
+  .hero-enter .split-statue {
+    animation: rise 900ms var(--ease-out) 200ms both;
+  }
+
+  .hero-enter .split-title {
+    animation: rise 800ms var(--ease-out) 100ms both;
+  }
+
+  .hero-enter .split-body > * {
+    animation: rise 800ms var(--ease-out) 200ms both;
+  }
+
+  .hero-enter .split-body > :nth-child(2) {
+    animation-delay: 300ms;
+  }
+
+  .hero-enter .split-caption {
+    animation: rise 800ms var(--ease-out) 450ms both;
+  }
+
+  /* The bonds, safe and dollars diagram draws itself, left to right. */
+  .flow-draw :is(rect, path, circle) {
+    stroke-dasharray: 1;
+    animation: draw 800ms var(--ease-out) both;
+    animation-delay: calc(600ms + var(--d, 0) * 150ms);
+  }
+
+  .flow-draw text {
+    animation: fade 500ms var(--ease-out) 1300ms both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
