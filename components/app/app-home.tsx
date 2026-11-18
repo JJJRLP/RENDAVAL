@@ -3,12 +3,13 @@
 import { usePollar } from "@pollar/react";
 import { useState } from "react";
 import { Eyebrow } from "@/components/Eyebrow";
+import { VerificationPanel } from "./verification-panel";
 import { WalletPanel } from "./wallet-panel";
 
 /** The same stages the landing explains, so the company recognises where it is. */
 const STEPS = [
   { name: "Verificación", body: "Confirmamos la identidad legal de su empresa." },
-  { name: "Garantía", body: "Deposita sus bonos en un escrow. Siguen siendo suyos." },
+  { name: "Garantía", body: "Sus bonos respaldan el préstamo y siguen siendo suyos." },
   { name: "Desembolso", body: "Recibe dólares digitales (USDC) en su cuenta." },
   { name: "Reembolso", body: "Devuelve el préstamo y recupera sus bonos." },
 ];
@@ -97,46 +98,7 @@ export function AppHome() {
         </p>
       )}
 
-      {/* Phase 2 (Didit) enables this action; phase 3 adds the loan. */}
-      <section className="on-dark mt-10 bg-ink p-8 text-white md:p-10" aria-labelledby="next-step-title">
-        <p className="text-xs font-semibold uppercase tracking-widest text-teal-bright">Su próximo paso</p>
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-          <div className="max-w-xl">
-            <h2 id="next-step-title" className="font-serif text-3xl font-semibold">
-              Verifique su empresa
-            </h2>
-            <p className="mt-3 leading-7 text-white/75">
-              Antes de habilitar un préstamo confirmamos la identidad legal de su empresa. Toma unos minutos.
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled
-            className="min-h-12 cursor-not-allowed border border-white/40 px-6 py-3 font-semibold text-white/70"
-          >
-            Disponible muy pronto
-          </button>
-        </div>
-      </section>
-
-      <ol className="mt-6 grid border border-line bg-white sm:grid-cols-2 lg:grid-cols-4" aria-label="Etapas del préstamo">
-        {STEPS.map((step, index) => (
-          <li
-            key={step.name}
-            aria-current={index === 0 ? "step" : undefined}
-            className="border-t border-line p-6 first:border-t-0 sm:[&:nth-child(2)]:border-t-0 sm:even:border-l lg:border-l lg:border-t-0 lg:first:border-l-0"
-          >
-            <p className="flex items-center justify-between text-sm font-semibold">
-              <span className={index === 0 ? "text-teal" : "text-ink/50"}>0{index + 1}</span>
-              <span className={`text-xs uppercase tracking-widest ${index === 0 ? "text-teal" : "text-ink/50"}`}>
-                {index === 0 ? "Siguiente" : "Después"}
-              </span>
-            </p>
-            <h3 className={`mt-4 font-serif text-xl font-semibold ${index === 0 ? "" : "text-ink/60"}`}>{step.name}</h3>
-            <p className="mt-2 text-sm leading-6 text-ink/70">{step.body}</p>
-          </li>
-        ))}
-      </ol>
+      {verified && wallet?.address && <VerificationPanel key={wallet.address} address={wallet.address} />}
 
       {!verified ? (
         <div role="status" className="mt-6 border border-line bg-white p-8">
