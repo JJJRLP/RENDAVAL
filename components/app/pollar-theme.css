@@ -1,0 +1,31 @@
+/*
+ * Pollar's windows (login, signature prompts) in Vault's look: ink and warm paper,
+ * teal for the primary action, square corners, serif titles. Pollar reads these
+ * variables from its own root elements, so they are set there and not on :root.
+ */
+.pollar-modal-card,
+.pollar-wallet-wrapper,
+.pollar-wallet-login-btn {
+  --pollar-accent: var(--teal);
+  --pollar-btn-primary-fg: var(--white);
+  --pollar-bg: var(--white);
+  --pollar-text: var(--ink);
+  --pollar-border: var(--line);
+  --pollar-muted: rgb(11 13 18 / 0.65);
+  --pollar-input-bg: var(--offwhite);
+  --pollar-modal-border-radius: 2px;
+  --pollar-buttons-border-radius: 2px;
+  --pollar-card-border-radius: 2px;
+  --pollar-buttons-height: 48px;
+  --pollar-input-height: 48px;
+  --pollar-font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+.pollar-overlay {
+  --pollar-overlay-bg: rgb(11 13 18 / 0.6);
+}
+
+.pollar-modal-card h1,
+.pollar-modal-card h2 {
+  font-family: var(--font-source-serif), ui-serif, Georgia, serif;
+}

@@ -2,6 +2,7 @@
 
 import { PollarProvider } from "@pollar/react";
 import "@pollar/react/styles.css";
+import "./pollar-theme.css";
 import { useSyncExternalStore } from "react";
 
 const subscribe = () => () => {};

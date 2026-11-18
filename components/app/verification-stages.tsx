@@ -4,7 +4,7 @@ const STEPS = ['Verificación', 'Garantía', 'Desembolso', 'Reembolso'];
 
 /** Compact progress bar above the focal block: where the company is in the loan. */
 export function VerificationStages({ verified, pending, stage }: { verified: boolean; pending: boolean; stage?: Stage }) {
-  const completed = !verified ? 0 : stage === 'closed' ? 4 : stage === 'active' || stage === 'repaid_release_pending' ? 3 : stage === 'collateral_locked' ? 2 : 1;
+  const completed = !verified ? 0 : stage === 'closed' ? 4 : stage === 'active' || stage === 'repaid_release_pending' || stage === 'disputed' || stage === 'liquidated' ? 3 : stage === 'collateral_locked' ? 2 : 1;
   return (
     <ol className="mt-10 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4" aria-label="Etapas del préstamo">
       {STEPS.map((name, index) => {
