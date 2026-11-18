@@ -97,7 +97,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
         {offer && t && (
           <>
             <div className="mt-8 grid gap-8 lg:grid-cols-2">
-              <Hero label="Recibe hoy" value={formatNumber(t.loan, 2)} unit="USDC" note="Sus bonos quedan en garantía, siguen siendo suyos y conservan su cupón." />
+              <Hero label="Recibe hoy" value={formatNumber(t.loan, 2)} unit="USDC" note="Sus bonos quedan en garantía, siguen siendo suyos y conservan su cupón. Al devolver el préstamo los recupera, menos el costo de custodia." />
               <Facts
                 rows={[
                   ['Garantía', `Bs ${formatNumber(t.nominalBs, 2)} · USD ${formatNumber(t.collateral, 2)}`],
@@ -105,6 +105,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
                   ['Tasa anual', `${formatNumber(EXAMPLE_ANNUAL_RATE * 100)} % fija`],
                   ['Plazo', '30 días'],
                   ['Costo del préstamo', usdc(t.interest)],
+                  ['Costo de custodia', `USD ${formatNumber(t.custodyFee, 2)} en bonos (0,3 %)`],
                   ['Total a devolver', usdc(t.total)],
                 ]}
               />
@@ -172,16 +173,18 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
           {state.loans.map(item => {
             const id = item.escrow!.contractId, running = loan.operationId === id;
             const active = item.stage === 'active', closed = item.stage === 'closed';
+            const disputed = item.stage === 'disputed', liquidated = item.stage === 'liquidated', frozen = disputed || liquidated;
             const days = Math.ceil((Date.parse(item.terms.dueDate) - now) / 86400000);
             return <article key={id} className="min-w-0 p-6 md:p-8" aria-busy={running && loan.busy}>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_17rem] lg:items-center">
-                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-3 text-sm text-teal"><span aria-hidden="true">{closed ? '✓' : active ? '●' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : 'Pago recibido · bonos en devolución'}</p></div>
+                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-3 text-sm text-teal"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
                 <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
                 <div className="text-sm">
                   {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>
+                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Vault lo está revisando' : 'La garantía pasó al prestamista'}</p></>
                     : <><p className="text-ink/65">Devolvió {usdc(item.repayment?.amount ?? item.terms.total)}</p>{item.repayment && <p className="font-semibold">Pagado el {day(item.repayment.at)}</p>}</>}
                 </div>
-                <div>{!closed && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>
+                <div>{!closed && !frozen && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>
               </div>
               {active && <LoanHealth debt={item.terms.total} collateral={item.terms.collateral} />}
               {running && loan.repayStep >= 0 && <div className="on-dark mt-5 bg-ink p-4 text-white"><Checklist steps={REPAY_STEPS} current={loan.repayStep} done={closed} /></div>}

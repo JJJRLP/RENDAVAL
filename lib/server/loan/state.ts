@@ -24,7 +24,7 @@ export async function escrowsFor(wallet: string) {
   const owned = all.filter(e => (e.engagementId === `vault-loan-${wallet}` || e.engagementId?.startsWith(`vault-loan-${wallet}:`)) && e.roles?.platformAddress === vaultKey().publicKey());
   const vault = vaultKey().publicKey();
   for (const e of owned) {
-    if (e.signer !== vault || e.trustline?.address !== VBOND.issuer || e.trustline.symbol !== 'VBOND' || e.roles.approver !== lenderKey().publicKey() || e.roles.receiver !== wallet || ![vault, wallet].includes(e.roles.serviceProvider) || e.roles.releaseSigner !== vault || e.roles.disputeResolver !== vault || !Number.isFinite(e.balance) || !Number.isFinite(e.amount) || e.amount < 100 || e.amount > 1000 || e.flags?.disputed || e.flags?.resolved)
+    if (e.signer !== vault || e.trustline?.address !== VBOND.issuer || e.trustline.symbol !== 'VBOND' || e.roles.approver !== lenderKey().publicKey() || e.roles.receiver !== wallet || ![vault, wallet].includes(e.roles.serviceProvider) || e.roles.releaseSigner !== vault || e.roles.disputeResolver !== vault || !Number.isFinite(e.balance) || !Number.isFinite(e.amount) || e.amount < 100 || e.amount > 1000)
       throw new ApiError(409, 'Su garantía necesita revisión del equipo de Vault antes de continuar.');
   }
   return [...new Map(owned.map(e => [e.contractId, e])).values()].sort((a, b) => (b.createdAt?._seconds ?? Number(b.engagementId.split(':')[1]) ?? 0) - (a.createdAt?._seconds ?? Number(a.engagementId.split(':')[1]) ?? 0));
@@ -33,6 +33,8 @@ export async function escrowFor(wallet: string, contractId: string) {
   if (!/^C[A-Z2-7]{55}$/.test(contractId)) throw new ApiError(409, 'Seleccione el préstamo que desea continuar.');
   const escrow = (await escrowsFor(wallet)).find(e => e.contractId === contractId);
   if (!escrow) throw new ApiError(403, 'Este préstamo no corresponde a su empresa.');
+  // A disputed or resolved escrow is out of the ordinary flow; it must not block the company's other loans.
+  if (escrow.flags?.disputed || escrow.flags?.resolved) throw new ApiError(409, 'Este préstamo está en revisión del equipo de Vault y no admite operaciones.');
   return escrow;
 }
 export async function state(wallet: string): Promise<LoanState> {
@@ -46,9 +48,9 @@ export async function state(wallet: string): Promise<LoanState> {
     const repayment = history.repayments.get(escrow.contractId);
     let bond: Bond | null = null;
     try { const parsed = JSON.parse(escrow.description); if (typeof parsed.issuer === 'string' && typeof parsed.series === 'string') bond = parsed; } catch { /* Historical description is plain text. */ }
-    return { bond, locked: escrow.flags.released ? 0 : escrow.balance,
+    return { bond, locked: escrow.flags.released || escrow.flags.resolved ? 0 : escrow.balance,
       repayment: repayment ? { ...repayment, releaseStatus: escrow.flags.released ? 'released' : 'pending' } : null,
-      stage: escrow.flags.released ? 'closed' : repayment ? 'repaid_release_pending' : paid.has(escrow.contractId) ? 'active' : escrow.balance >= escrow.amount ? 'collateral_locked' : 'escrow_created',
+      stage: escrow.flags.released ? 'closed' : escrow.flags.resolved ? 'liquidated' : escrow.flags.disputed ? 'disputed' : repayment ? 'repaid_release_pending' : paid.has(escrow.contractId) ? 'active' : escrow.balance >= escrow.amount ? 'collateral_locked' : 'escrow_created',
       terms: terms(escrow.amount, payment ? Date.parse(payment.at) : Date.now()),
       escrow: { contractId: escrow.contractId, description: escrow.description, url: explorer('contract', escrow.contractId) }, transactions };
   });
@@ -57,7 +59,7 @@ export async function state(wallet: string): Promise<LoanState> {
   const loans = views.filter(v => !pending.includes(v));
   const empty: LoanView = { bond: null, stage: bonds > 0 ? 'bond_registered' : 'none', terms: terms(bonds), locked: 0, escrow: null, repayment: null, transactions: [] };
   const setup = pending[0] ?? (bonds > 0 ? empty : null);
-  const openLoans = loans.filter(v => v.stage !== 'closed').length;
+  const openLoans = loans.filter(v => v.stage !== 'closed' && v.stage !== 'liquidated').length;
   const limitReached = openLoans >= OPEN_LOAN_LIMIT;
   const focal = setup ?? loans[0] ?? empty;
   return { ...focal, wallet, verification, bonds, usdc, locked: views.reduce((sum, v) => sum + v.locked, 0), setup, loans, openLoans, limitReached, canRegister: !setup && !limitReached && bonds === 0 };
