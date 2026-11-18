@@ -12,10 +12,18 @@ export async function authenticate(request: Request): Promise<string> {
   const data = await response.json().catch(() => null);
   // Successful payload has not been observed with an automated login: fail closed.
   const wallet = data?.content?.wallet;
-  const address = typeof wallet === 'string' ? wallet : wallet?.address;
-  if (!response.ok || data?.code !== 'SERVER_TOKEN_VERIFIED' || data?.success === false ||
+  const address = typeof wallet === 'string' ? wallet : wallet?.address ?? wallet?.publicKey ?? wallet?.stellarAddress;
+  const lower = (value: unknown) => typeof value === 'string' ? value.toLowerCase() : undefined;
+  // Observed shape: content.network = 'testnet'; content.wallet = { type, address, network: 'STELLAR' } (wallet.network is the chain).
+  const network = lower(data?.content?.network);
+  const chain = lower(wallet?.chain) ?? lower(wallet?.network);
+  const failed = !response.ok || data?.code !== 'SERVER_TOKEN_VERIFIED' || data?.success === false ||
       typeof address !== 'string' || !StrKey.isValidEd25519PublicKey(address) ||
-      (wallet?.network && wallet.network !== 'testnet') || (wallet?.chain && wallet.chain !== 'STELLAR'))
+      network !== 'testnet' || (chain !== undefined && chain !== 'stellar');
+  if (failed) {
+    // Shape only (no token): needed to diagnose provider response changes.
+    console.error('[pollar verify]', response.status, JSON.stringify({ code: data?.code, success: data?.success, network: data?.content?.network, walletKeys: wallet && typeof wallet === 'object' ? Object.keys(wallet) : typeof wallet }));
     throw new ApiError(401, 'No pudimos validar su sesión. Cierre sesión e ingrese nuevamente.');
+  }
   return address;
 }
