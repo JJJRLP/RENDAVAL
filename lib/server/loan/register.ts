@@ -7,8 +7,8 @@ import { bondAsset, networkPassphrase, server } from './network';
 import { state } from './state';
 export function validateBond(input: unknown): Bond {
   const b = input as Partial<Bond> | null;
-  if (!b || typeof b.issuer !== 'string' || !b.issuer.trim() || b.issuer.length > 80 || typeof b.series !== 'string' || !b.series.trim() || b.series.length > 24 || typeof b.nominalBs !== 'number' || !Number.isFinite(b.nominalBs) || b.nominalBs < 696 || b.nominalBs > 6960 || typeof b.coupon !== 'number' || !Number.isFinite(b.coupon) || b.coupon < 0 || b.coupon > 30 || typeof b.maturity !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(b.maturity) || !(Date.parse(b.maturity) > Date.now() + 30 * 86400000) || new Date(b.maturity).toISOString().slice(0, 10) !== b.maturity)
-    throw new ApiError(400, 'Revise los datos: valor entre Bs 696 y Bs 6.960, cupón entre 0 y 30 % y vencimiento posterior al préstamo.');
+  if (!b || typeof b.issuer !== 'string' || !b.issuer.trim() || b.issuer.length > 80 || typeof b.series !== 'string' || !b.series.trim() || b.series.length > 24 || typeof b.nominalBs !== 'number' || !Number.isFinite(b.nominalBs) || b.nominalBs < 696 || b.nominalBs > 2784 || typeof b.coupon !== 'number' || !Number.isFinite(b.coupon) || b.coupon < 0 || b.coupon > 30 || typeof b.maturity !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(b.maturity) || !(Date.parse(b.maturity) > Date.now() + 30 * 86400000) || new Date(b.maturity).toISOString().slice(0, 10) !== b.maturity)
+    throw new ApiError(400, 'Revise los datos: valor entre Bs 696 y Bs 2.784, cupón entre 0 y 30 % y vencimiento posterior al préstamo.');
   return { issuer: b.issuer.trim(), series: b.series.trim(), nominalBs: b.nominalBs, coupon: b.coupon, maturity: b.maturity };
 }
 export async function register(wallet: string, input: unknown) {

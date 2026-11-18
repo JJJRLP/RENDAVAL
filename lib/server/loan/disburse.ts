@@ -1,14 +1,14 @@
 import 'server-only';
 import { Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 import { ApiError } from '../env';
-import { maxLoan } from '../../format';
+import { terms, usdcAmount } from '../../loan/model';
 import { badSequence, dollarAsset, lenderKey, networkPassphrase, server } from './network';
 import { escrowFor, verified } from './state';
 export async function disburse(wallet: string) {
   await verified(wallet);
   const escrow = await escrowFor(wallet);
   if (!escrow || escrow.balance < escrow.amount) throw new ApiError(409, 'Aún estamos confirmando el depósito completo de su garantía. Vuelva a comprobar en unos segundos.');
-  const signer = lenderKey(), amount = maxLoan(escrow.amount).toFixed(7);
+  const signer = lenderKey(), amount = usdcAmount(terms(escrow.amount).loan);
   for (let attempt = 0; attempt < 4; attempt++) {
     // Marker and sequence come from ONE account snapshot, preventing concurrent double payment.
     const account = await server.loadAccount(signer.publicKey());

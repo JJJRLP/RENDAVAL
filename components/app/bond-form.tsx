@@ -12,12 +12,12 @@ export function BondForm({ busy, register }: { busy: boolean; register: (bond: B
       <legend className="sr-only">Datos del bono</legend>
       <label className="text-sm sm:col-span-2">Empresa emisora<input required maxLength={80} className={input} value={bond.issuer} onChange={e => setBond({ ...bond, issuer: e.target.value })} /></label>
       <label className="text-sm">Serie<input required maxLength={24} className={input} value={bond.series} onChange={e => setBond({ ...bond, series: e.target.value })} /></label>
-      <label className="text-sm">Valor nominal (Bs)<input required type="number" min={696} max={6960} step="0.01" className={input} value={Number.isFinite(bond.nominalBs) ? bond.nominalBs : ''} onChange={e => setBond({ ...bond, nominalBs: e.target.valueAsNumber })} /></label>
+      <label className="text-sm">Valor nominal (Bs)<input required type="number" min={696} max={2784} step="0.01" className={input} value={Number.isFinite(bond.nominalBs) ? bond.nominalBs : ''} onChange={e => setBond({ ...bond, nominalBs: e.target.valueAsNumber })} /></label>
       <label className="text-sm">Cupón anual (%)<input required type="number" min={0} max={30} step="0.01" className={input} value={Number.isFinite(bond.coupon) ? bond.coupon : ''} onChange={e => setBond({ ...bond, coupon: e.target.valueAsNumber })} /></label>
       <label className="text-sm">Fecha de vencimiento<input required type="date" min={minDate} className={input} value={bond.maturity} onChange={e => setBond({ ...bond, maturity: e.target.value })} /></label>
     </fieldset>
     <p className="mt-6 font-serif text-2xl" aria-live="polite">Bs {formatNumber(Number.isFinite(bond.nominalBs) ? bond.nominalBs : 0, 2)} <span className="text-white/50">≈</span> USD {formatNumber(Number.isFinite(bond.nominalBs) ? bond.nominalBs / BS_PER_USD : 0, 2)}</p>
-    <p className="mt-2 text-xs leading-6 text-white/60">Tipo de cambio de referencia para esta prueba: Bs 6,96 por USD. Garantía entre USD 100 y USD 1.000; préstamo máximo de 500 USDC.</p>
+    <p className="mt-2 text-xs leading-6 text-white/60">Tipo de cambio de referencia para esta prueba: Bs 6,96 por USD. Garantía entre USD 100 y USD 400; préstamo máximo de 200 USDC.</p>
     <button className="btn-primary mt-6 w-full disabled:opacity-60 sm:w-auto" disabled={busy}>{busy ? 'Registrando su bono…' : 'Registrar bono'}</button>
     <p className="mt-4 text-xs leading-6 text-white/50">El registro digital es simulado, sin custodio real. Los bonos y dólares de esta prueba no tienen valor real.</p>
   </form>;

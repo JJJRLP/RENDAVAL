@@ -1,0 +1,249 @@
+spikeIgnored { stage: 'none', escrow: null }
+company GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L
+attestation {
+  sessionId: 'loan-test-a6d82871-8b8c-4ed7-9c14-72b299b3cc0e',
+  txHash: 'bcdd1f2658ec3faabf0a72b9721900dc765096e68943a19bbe0e42d1fbfb9e89',
+  receiptUrl: 'https://stellar.expert/explorer/testnet/tx/bcdd1f2658ec3faabf0a72b9721900dc765096e68943a19bbe0e42d1fbfb9e89',
+  dataKey: 'kyb:GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L'
+}
+treasuryBefore [
+  {
+    balance: '1000.0000000',
+    limit: '922337203685.4775807',
+    buying_liabilities: '0.0000000',
+    selling_liabilities: '0.0000000',
+    last_modified_ledger: 5795117,
+    is_authorized: true,
+    is_authorized_to_maintain_liabilities: true,
+    asset_type: 'credit_alphanum4',
+    asset_code: 'USDC',
+    asset_issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+  },
+  {
+    balance: '1.0000000',
+    limit: '922337203685.4775807',
+    buying_liabilities: '0.0000000',
+    selling_liabilities: '0.0000000',
+    last_modified_ledger: 5790210,
+    is_authorized: true,
+    is_authorized_to_maintain_liabilities: true,
+    asset_type: 'credit_alphanum12',
+    asset_code: 'VBOND',
+    asset_issuer: 'GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT'
+  },
+  {
+    balance: '6511.9714173',
+    buying_liabilities: '0.0000000',
+    selling_liabilities: '0.0000000',
+    asset_type: 'native'
+  }
+]
+register {
+  hash: 'fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+  bond: {
+    issuer: 'Industrias Andinas del Sur S.A.',
+    series: 'IAS-2026-A',
+    nominalBs: 2784,
+    coupon: 7.5,
+    maturity: '2028-11-18'
+  }
+}
+registered {
+  wallet: 'GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L',
+  verification: {
+    status: 'verified',
+    receiptUrl: 'https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5?filter=data'
+  },
+  bonds: 400,
+  usdc: 0,
+  locked: 0,
+  stage: 'bond_registered',
+  terms: {
+    collateral: 400,
+    nominalBs: 2784,
+    loan: 200,
+    interest: 1.3333333333333333,
+    total: 201.33333333333334,
+    dueDate: '2026-12-18T11:01:03.812Z'
+  },
+  escrow: null,
+  transactions: [
+    {
+      hash: 'fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+      url: 'https://stellar.expert/explorer/testnet/tx/fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+      at: '2026-11-18T11:01:01Z',
+      label: 'Registro del bono'
+    }
+  ]
+}
+parallelAccept [
+  {
+    rejected: true,
+    message: 'Estamos guardando su garantía. Vuelva a continuar en unos segundos.'
+  },
+  {
+    status: 'SUCCESS',
+    message: 'The transaction has been successfully sent to the Stellar network.',
+    contractId: 'CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M',
+    escrow: {
+      type: 'single-release',
+      amount: 400,
+      roles: [Object],
+      flags: [Object],
+      description: '{"issuer":"Industrias Andinas del Sur S.A.","series":"IAS-2026-A","nominalBs":2784,"coupon":7.5,"maturity":"2028-11-18"}',
+      engagementId: 'vault-loan-GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L',
+      milestones: [Array],
+      platformFee: 0,
+      title: 'Garantía de préstamo Vault',
+      trustline: [Object],
+      receiverMemo: 0
+    },
+    hash: 'e221e65b20822d2b03989c7cbe1bbe2532f560984156a3c324fd914fc9aff40a'
+  }
+]
+accept {
+  contractId: 'CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M',
+  reused: true
+}
+invalidDeposit 400 refused
+acceptRepeated {
+  contractId: 'CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M',
+  reused: true
+}
+deposit {
+  status: 'SUCCESS',
+  message: 'The transaction has been successfully sent to the Stellar network.',
+  hash: '69279733a9dcd515f1ac24129e160eea0452a9c14beedeeb76bf32991574f606'
+}
+locked {
+  wallet: 'GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L',
+  verification: {
+    status: 'verified',
+    receiptUrl: 'https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5?filter=data'
+  },
+  bonds: 0,
+  usdc: 0,
+  locked: 400,
+  stage: 'collateral_locked',
+  terms: {
+    collateral: 400,
+    nominalBs: 2784,
+    loan: 200,
+    interest: 1.3333333333333333,
+    total: 201.33333333333334,
+    dueDate: '2026-12-18T11:02:16.059Z'
+  },
+  escrow: {
+    contractId: 'CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M',
+    description: '{"issuer":"Industrias Andinas del Sur S.A.","series":"IAS-2026-A","nominalBs":2784,"coupon":7.5,"maturity":"2028-11-18"}',
+    url: 'https://stellar.expert/explorer/testnet/contract/CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M'
+  },
+  transactions: [
+    {
+      hash: '69279733a9dcd515f1ac24129e160eea0452a9c14beedeeb76bf32991574f606',
+      url: 'https://stellar.expert/explorer/testnet/tx/69279733a9dcd515f1ac24129e160eea0452a9c14beedeeb76bf32991574f606',
+      at: '2026-11-18T11:02:11Z',
+      label: 'Depósito de garantía'
+    },
+    {
+      hash: 'fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+      url: 'https://stellar.expert/explorer/testnet/tx/fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+      at: '2026-11-18T11:01:01Z',
+      label: 'Registro del bono'
+    }
+  ]
+}
+parallelDisburse [
+  {
+    hash: 'a3be5f1214882fb86758325ac47d4767ab22d370f064fa91407af3952005ceff',
+    amount: '200.0000000',
+    reused: false
+  },
+  {
+    hash: 'a3be5f1214882fb86758325ac47d4767ab22d370f064fa91407af3952005ceff',
+    amount: '200.0000000',
+    reused: false
+  }
+]
+active {
+  wallet: 'GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L',
+  verification: {
+    status: 'verified',
+    receiptUrl: 'https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5?filter=data'
+  },
+  bonds: 0,
+  usdc: 200,
+  locked: 400,
+  stage: 'active',
+  terms: {
+    collateral: 400,
+    nominalBs: 2784,
+    loan: 200,
+    interest: 1.3333333333333333,
+    total: 201.33333333333334,
+    dueDate: '2026-12-18T11:02:21.000Z'
+  },
+  escrow: {
+    contractId: 'CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M',
+    description: '{"issuer":"Industrias Andinas del Sur S.A.","series":"IAS-2026-A","nominalBs":2784,"coupon":7.5,"maturity":"2028-11-18"}',
+    url: 'https://stellar.expert/explorer/testnet/contract/CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M'
+  },
+  transactions: [
+    {
+      hash: '69279733a9dcd515f1ac24129e160eea0452a9c14beedeeb76bf32991574f606',
+      url: 'https://stellar.expert/explorer/testnet/tx/69279733a9dcd515f1ac24129e160eea0452a9c14beedeeb76bf32991574f606',
+      at: '2026-11-18T11:02:11Z',
+      label: 'Depósito de garantía'
+    },
+    {
+      hash: 'fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+      url: 'https://stellar.expert/explorer/testnet/tx/fd576c699bcb8338e8207df45708bf3ace926f355919187c9096c585f354740b',
+      at: '2026-11-18T11:01:01Z',
+      label: 'Registro del bono'
+    },
+    {
+      hash: 'a3be5f1214882fb86758325ac47d4767ab22d370f064fa91407af3952005ceff',
+      url: 'https://stellar.expert/explorer/testnet/tx/a3be5f1214882fb86758325ac47d4767ab22d370f064fa91407af3952005ceff',
+      at: '2026-11-18T11:02:21Z',
+      label: 'Desembolso'
+    }
+  ]
+}
+disburseRepeated { reused: true, amount: '200.0000000' }
+secondDeposit 409 refused
+noSecondPayment {
+  sequenceUnchanged: true,
+  companyUSDC: 200,
+  treasuryAfter: [
+    {
+      balance: '800.0000000',
+      limit: '922337203685.4775807',
+      buying_liabilities: '0.0000000',
+      selling_liabilities: '0.0000000',
+      last_modified_ledger: 5795219,
+      is_authorized: true,
+      is_authorized_to_maintain_liabilities: true,
+      asset_type: 'credit_alphanum4',
+      asset_code: 'USDC',
+      asset_issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+    },
+    {
+      balance: '1.0000000',
+      limit: '922337203685.4775807',
+      buying_liabilities: '0.0000000',
+      selling_liabilities: '0.0000000',
+      last_modified_ledger: 5790210,
+      is_authorized: true,
+      is_authorized_to_maintain_liabilities: true,
+      asset_type: 'credit_alphanum12',
+      asset_code: 'VBOND',
+      asset_issuer: 'GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT'
+    },
+    {
+      balance: '6511.9713973',
+      buying_liabilities: '0.0000000',
+      selling_liabilities: '0.0000000',
+      asset_type: 'native'
+    }
+  ]
+}

@@ -48,3 +48,20 @@ export async function deploymentHash(wallet: string) {
   const signed = Buffer.concat(Array.from({ length: count }, (_, i) => Buffer.from(account.data_attr[key + i], 'base64'))).toString();
   return Buffer.from(TransactionBuilder.fromXDR(signed, networkPassphrase).hash()).toString('hex');
 }
+
+// Delete only confirmed deployments during normal requests. Administrative cleanup
+// must run while deployments are idle; it removes abandoned historical journals.
+export async function cleanJournal(wallet?: string) {
+  const signer = Keypair.fromSecret(required('BOND_ISSUER_SECRET_KEY'));
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const account = await server.loadAccount(signer.publicKey());
+    const names = Object.keys(account.data_attr).filter(name => name.startsWith(wallet ? prefix(wallet) : 'deploy:')).slice(0, 100);
+    if (!names.length) return;
+    const builder = new TransactionBuilder(account, { fee: '10000', networkPassphrase });
+    for (const name of names) builder.addOperation(Operation.manageData({ name, value: null }));
+    const tx = builder.setTimeout(60).build(); tx.sign(signer);
+    try { await server.submitTransaction(tx); }
+    catch (error) { if (!badSequence(error)) throw new ApiError(502, 'Estamos confirmando su garantía. Vuelva a consultar.'); }
+  }
+  throw new ApiError(409, 'La limpieza sigue pendiente. Vuelva a intentar.');
+}

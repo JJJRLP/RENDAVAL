@@ -8,13 +8,13 @@ const steps = [
 export function VerificationStages({ verified, pending, stage }: { verified: boolean; pending: boolean; stage?: Stage }) {
   return <ol className="mt-6 grid border border-line bg-white sm:grid-cols-2 lg:grid-cols-4" aria-label="Etapas del préstamo">
     {steps.map(([name, body], index) => {
-      const completed = !verified ? 0 : stage === 'active' ? 3 : stage === 'collateral_locked' ? 2 : 1;
+      const completed = !verified ? 0 : stage === 'closed' ? 4 : (stage === 'active' || stage === 'repaid_release_pending') ? 3 : stage === 'collateral_locked' ? 2 : 1;
       const done = index < completed;
-      const next = index === completed && index < 3;
+      const next = index === completed && index < 4;
       return <li key={name} aria-current={next ? 'step' : undefined} className="border-t border-line p-6 first:border-t-0 sm:even:border-l lg:border-l lg:border-t-0 lg:first:border-l-0">
         <p className={`flex items-center justify-between gap-2 text-sm font-semibold ${next || done ? 'text-teal' : 'text-ink/50'}`}>
           <span>0{index + 1}{done ? ' ✓' : next ? ' →' : ''}</span>
-          <span className="text-xs uppercase tracking-widest">{done ? 'Completada' : next ? pending && !verified ? 'En curso' : 'Siguiente' : 'Después'}</span>
+          <span className="text-xs uppercase tracking-widest">{done ? 'Completada' : index === 3 && stage === 'repaid_release_pending' ? 'En proceso' : index === 3 && stage === 'active' ? 'En curso' : next ? pending && !verified ? 'En curso' : 'Siguiente' : 'Después'}</span>
         </p>
         <h3 className="mt-4 font-serif text-xl font-semibold">{name}</h3>
         <p className="mt-2 text-sm leading-6 text-ink/70">{body}</p>

@@ -1,0 +1,103 @@
+MVP phase 4 — Stellar testnet — 2026-11-18
+
+Result
+Full journey passed. Final state: repaid_release_pending. Milestone completed
+and approved on-chain; flags disputed=false, released=false; escrow balance 400.
+Trustless Work release-funds returned HTTP 400 “Escrow already in dispute”.
+settle returned the typed release_pending result, served as HTTP 200 by the route.
+No alternate fee address or direct contract release was used.
+Real release/closed remains blocked upstream. Closed/new-loan UI was exercised
+with mocked network/Pollar responses, not represented as a real release.
+
+Full run (phase4-testnet.txt)
+Company: GA5VBUEENY23UHM6UBDUPSI4AV4GTIVYITQ6JNTMCHAZXPEANULTG2BL
+Contract: CCP5NUAHCUNJXO56ALE4Q75ZKK355TLJRXVAPURW7VNIQUJHXVXX3YGM
+Engagement: vault-loan-GA5VBUEENY23UHM6UBDUPSI4AV4GTIVYITQ6JNTMCHAZXPEANULTG2BL:1794999957229
+Register: a02b264351d0011c41a40a1fe3a3c3301330ec4c083bfd87bd95aa9fc7c20db4
+Deploy: c62ccdc9bf6c6759ce3c1dbba6e0b581e4ebb54f0d762c5a6dace0114fa58460
+Deposit: 626b40f73d3b43fee456ee00a90acfc18ccd217d52e81dc944e9932ec2392a0e
+Disburse: 0984189a41a872cfdcdaf0b2222259110768d0ed02d163c8b554e2e2cef3f232
+Interest help: 027d1a169b721f23399b3147b2143a5a08a70a3a5167ff24355ffdb663d63dd8
+Repayment: 9bb17b416b58b1b3039b6d4d7900aa75c0afa3f09ac079062cbc9810a3f02339
+Paid at: 2026-11-18T11:08:01Z
+Principal 200.0000000 + interest 1.3333333 = 201.3333333 USDC.
+Company available bonds: 0 -> 400 -> 0; escrow: 0 -> 400 (still 400).
+Company USDC: 0 -> 200 -> 201.3333333 -> 0.
+Lender USDC: 800 -> 600 -> 598.6666667 -> 800.
+Net interest earned is zero because lender supplies the test interest helper.
+Parallel accepts: one contract. Parallel disburse/topup: one payment each.
+Repeated topup/build/submit/settle: no additional payment, lender sequence and
+balances unchanged. A third settle also left company, lender and Vault
+balances and sequences unchanged. Invalid repayment/deposit refused. Second deposit refused.
+Issuer subentries at start and end of full run: 0 -> 0.
+
+Part A proofs / differences from estimates
+- Historical spike wallet GA4J2HFY45VDAX6T7YFMOXRAWXVX5RCQFI3Y6W6BM3NFW4T5LJ4VNYF4:
+  escrow=null, loan inputs yield stage=none. Its spike escrow is excluded.
+  This wallet has no KYB attestation, so authenticated state would require KYB;
+  the script inspected public balances/escrows read-only without attesting it.
+- clean-journal.ts ran before deployments: issuer subentry_count 144 -> 0,
+  not the estimated 216. Normal confirmed deployments now clean themselves.
+  The durable full-XDR journal remains to preserve parallel acceptance safety.
+- Receiver-only funding worked twice. serviceProvider=Vault, receiver=company;
+  no company milestone signature was needed. Details: phase4-roles.txt and
+  phase4-testnet.txt.
+- Preliminary role-only run left an active 200 USDC loan on company
+  GCKRK572RJDVWCMTY3REE52U6TUA52V5K3XZRYFFUSZOZTOAQC6OTA6L,
+  contract CAG37IFH7CTPRS7QOZIQ6QLKAV4Z5YZHN5RD2M4WLYI2PAGPPJFBXP5M.
+  Its deposit hash: 69279733a9dcd515f1ac24129e160eea0452a9c14beedeeb76bf32991574f606.
+  That run reduced treasury from 1000 to 800 USDC before the full repayment run.
+  A subsequent run was stopped before loan deployment while fixing a SDK
+  signature accessor type error; it did not disburse funds.
+- Remaining treasury: 800 USDC. No purchase/refill was performed.
+- New collateral limits USD 100–400, max loan 200; example Bs 2.784.
+  Existing phase-3 loans up to USD 1000 remain readable with original roles.
+
+Implementation / files
+- lib/loan/model.ts: stages, repayment fields, one seven-decimal rounding policy.
+- lib/server/loan/state.ts, accept.ts, deployment-journal.ts: wallet-scoped app
+  engagement identifiers, receiver lookup, released history/new loans, cleanup.
+- lib/server/loan/register.ts, disburse.ts: limits and shared amount formatting.
+- lib/server/loan/network.ts: sanitized provider status/message for typed handling.
+- lib/server/loan/repayment.ts: atomic interest helper, exact classic payment,
+  network signature/shape validation, repayment discovery in Horizon history.
+- lib/server/loan/settle.ts: on-chain repayment gate, mark/approve/release steps.
+- lib/server/loan/route.ts and four new handlers:
+  app/api/loan/repay/{topup,build,submit}/route.ts, app/api/loan/settle/route.ts.
+- components/app/{bond-form,loan-panel,verification-stages}.tsx and use-loan.ts:
+  revised quote, progress, pending/closed states, automatic and manual retry.
+- scripts/clean-journal.ts, verify-loan.ts, verify-repayment-validation.ts;
+  scripts/evidence/phase4-{roles,testnet,report}.txt; README.md.
+- No new environment variables; .env.example already covers all required keys.
+
+Verification
+npm run lint and npm run build passed; git diff --check passed.
+All ten /api/loan routes returned 401 without a token on 127.0.0.1:3018.
+Static scan: 35 files; configured private environment names/values absent.
+Offline validation: accepts exact payment; rejects wrong source, destination,
+asset, amount, memo, extra operation and payment operation source.
+Browser harness uses real app components with mock Pollar/network responses:
+360/1280 px no horizontal overflow; keyboard repayment; calm pending state;
+manual retry; automatic retry on pending visit; successful release -> new quote
+-> new active loan. Actual Pollar login/signature remains a human test.
+No commits, pushes, branch changes, deployments or port 3000 use.
+
+Human click list (fresh company, origin allowed in Pollar)
+1. Open /app. Click Ingresar and finish email or Google login. Wait for Su cuenta.
+2. Click Usar aprobación de prueba; or Comenzar verificación, finish and return.
+3. Keep the fictional Bs 2.784 bond and click Registrar bono.
+4. Review Su oferta de financiamiento: 200 USDC, interest 1.3333333, total
+   201.3333333, 30 days. Click Aceptar y depositar garantía.
+5. Confirm the deposit in Pollar. Wait for Préstamo activo; available USDC 200,
+   bonds available 0, bonds in guarantee USD 400.
+6. Click Reembolsar 201,3333333 USDC. The helper adds the missing interest.
+   Confirm the single payment in Pollar. Watch Pago recibido.
+7. Expect Pago recibido, liberación pendiente, payment date, and protected bonds.
+   Open Ver detalle técnico for payment link and provider message.
+8. Click Volver a intentar: no second payment or extra interest transfer.
+   Reload: the received payment persists and release retries automatically.
+9. Once the provider fixes release, expect Préstamo cerrado and the actual
+   returned bond balance. Click Solicitar un nuevo préstamo to see a new quote;
+   accepting it creates a distinct escrow (no new bond registration needed).
+10. To test cancellation, cancel Pollar confirmation at step 5 or 6, then retry.
+    Reload after payment: it must resume release without asking for payment again.
