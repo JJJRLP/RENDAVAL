@@ -23,7 +23,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
     }
   }
   const tiles = [
-    { label: "Dólares disponibles", unit: "USDC", balance: balances ? assetBalance(balances, USDC) : undefined },
+    { label: "Dólares", unit: "USDC", balance: balances ? assetBalance(balances, USDC) : undefined },
     { label: "Bonos disponibles", unit: "USD", balance: balances ? assetBalance(balances, VBOND) : undefined },
   ];
   const native = balances?.find((item) => item.asset_type === "native");
@@ -44,7 +44,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
         </button>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2" aria-busy={busy}>
+      <div className={`mt-6 grid gap-4 ${loan?.escrow && loan.locked > 0 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`} aria-busy={busy}>
         {tiles.map((tile) => (
           <div key={tile.unit} className="min-w-0 border border-line bg-offwhite p-6">
             <p className="text-sm text-ink/70">{tile.label}</p>
@@ -53,9 +53,16 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
             </p>
           </div>
         ))}
+        {loan?.escrow && loan.locked > 0 && (
+          <div className="min-w-0 border border-line bg-offwhite p-6">
+            <p className="text-sm text-ink/70">Bonos en garantía</p>
+            <p className="mt-3 break-words font-serif text-4xl font-semibold">
+              {formatNumber(loan.locked, 2)} <span className="font-sans text-base font-semibold text-teal">USD</span>
+            </p>
+          </div>
+        )}
       </div>
 
-      {loan?.escrow && <p className="mt-5 font-serif text-2xl">En garantía: USD {formatNumber(loan.locked, 2)} <span className="font-sans text-sm text-ink/60">en bonos</span></p>}
 
       {progress && (
         <p role="status" className="mt-5 text-sm text-ink/70">

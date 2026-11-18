@@ -15,6 +15,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
       <main id="contenido" className="mx-auto max-w-content px-6 py-12 md:px-10 md:py-20">
         <VaultPollarProvider>{children}</VaultPollarProvider>
+        <p className="mt-12 border-t border-line pt-6 text-xs leading-6 text-ink/60">
+          Versión de prueba sobre la red de pruebas de Stellar. Los bonos y los dólares no tienen valor real, el registro del bono es
+          simulado (sin custodio) y el tipo de cambio de referencia es Bs 6,96 por USD.
+        </p>
       </main>
     </div>
   );

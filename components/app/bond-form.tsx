@@ -7,7 +7,7 @@ export function BondForm({ busy, register }: { busy: boolean; register: (bond: B
   const [bond, setBond] = useState(exampleBond);
   const input = 'mt-2 min-h-11 w-full border border-white/30 bg-white/10 px-3 py-2 text-white focus:outline-2 focus:outline-teal-bright';
   return <form className="mt-6" onSubmit={e => { e.preventDefault(); register(bond); }}>
-    <p className="max-w-xl leading-7 text-white/75">Comience con este ejemplo ficticio o declare los datos de su bono corporativo en bolivianos.</p>
+    <p className="max-w-xl leading-7 text-white/75">Declare el bono que su empresa quiere dejar en garantía. Puede usar este ejemplo para probar.</p>
     <fieldset disabled={busy} className="mt-6 grid gap-4 sm:grid-cols-2">
       <legend className="sr-only">Datos del bono</legend>
       <label className="text-sm sm:col-span-2">Empresa emisora<input required maxLength={80} className={input} value={bond.issuer} onChange={e => setBond({ ...bond, issuer: e.target.value })} /></label>
@@ -17,8 +17,7 @@ export function BondForm({ busy, register }: { busy: boolean; register: (bond: B
       <label className="text-sm">Fecha de vencimiento<input required type="date" min={minDate} className={input} value={bond.maturity} onChange={e => setBond({ ...bond, maturity: e.target.value })} /></label>
     </fieldset>
     <p className="mt-6 font-serif text-2xl" aria-live="polite">Bs {formatNumber(Number.isFinite(bond.nominalBs) ? bond.nominalBs : 0, 2)} <span className="text-white/50">≈</span> USD {formatNumber(Number.isFinite(bond.nominalBs) ? bond.nominalBs / BS_PER_USD : 0, 2)}</p>
-    <p className="mt-2 text-xs leading-6 text-white/60">Tipo de cambio de referencia para esta prueba: Bs 6,96 por USD. Garantía entre USD 100 y USD 400; préstamo máximo de 200 USDC.</p>
+    <p className="mt-2 text-xs leading-6 text-white/60">En esta versión de prueba la garantía va de USD 100 a USD 400.</p>
     <button className="btn-primary mt-6 w-full disabled:opacity-60 sm:w-auto" disabled={busy}>{busy ? 'Registrando su bono…' : 'Registrar bono'}</button>
-    <p className="mt-4 text-xs leading-6 text-white/50">El registro digital es simulado, sin custodio real. Los bonos y dólares de esta prueba no tienen valor real.</p>
   </form>;
 }

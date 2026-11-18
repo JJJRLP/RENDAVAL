@@ -13,7 +13,8 @@ export function VerificationPanel({ address, onLoanState }: { address: string; o
   const message = review ? 'Estamos revisando la información recibida. Vuelva a comprobar más tarde o inicie una nueva verificación si necesita corregir sus datos.' : rejected ? 'Revise los datos y documentos de su empresa e inicie una nueva verificación.' : pending ? 'Puede continuar donde quedó. Si ya terminó, vuelva a comprobar el resultado en unos momentos.' : 'Confirmaremos la identidad legal de su empresa. Completar los datos toma unos minutos; la revisión puede tardar más.';
   if (verified) return <LoanPanel address={address} onState={onLoanState} />;
   return <>
-    <section className="on-dark mt-10 bg-ink p-6 text-white md:p-10" aria-labelledby="next-step-title">
+    <VerificationStages verified={verified} pending={!!pending} />
+    <section className="on-dark mt-4 bg-ink p-6 text-white md:p-10" aria-labelledby="next-step-title">
       <p className="text-xs font-semibold uppercase tracking-widest text-teal-bright">Su próximo paso</p>
       <div aria-live="polite" aria-atomic="true">
         <h2 id="next-step-title" className="mt-4 font-serif text-3xl font-semibold">{title}</h2>
@@ -32,6 +33,5 @@ export function VerificationPanel({ address, onLoanState }: { address: string; o
         {storageWarning && <p role="alert" className="mt-2 text-sm">{storageWarning}</p>}
       </div>
     </section>
-    <VerificationStages verified={verified} pending={!!pending} />
   </>;
 }

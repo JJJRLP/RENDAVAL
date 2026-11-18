@@ -84,7 +84,7 @@ export function AppHome() {
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <Eyebrow index="01">Su empresa</Eyebrow>
-          <h1 className="section-title mt-6">Su financiamiento, paso a paso.</h1>
+          <h1 className="mt-4 font-serif text-3xl font-semibold tracking-tight md:text-4xl">Dólares para su empresa, con sus bonos.</h1>
         </div>
         <button
           type="button"

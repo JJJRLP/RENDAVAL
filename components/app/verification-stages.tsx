@@ -1,24 +1,33 @@
 import type { Stage } from '@/lib/loan/model';
-const steps = [
-  ['Verificación', 'Confirmamos la identidad legal de su empresa.'],
-  ['Garantía', 'Sus bonos respaldan el préstamo y siguen siendo suyos.'],
-  ['Desembolso', 'Recibe dólares digitales en su cuenta.'],
-  ['Reembolso', 'Devuelve el préstamo y recupera sus bonos.'],
-];
+
+const STEPS = ['Verificación', 'Garantía', 'Desembolso', 'Reembolso'];
+
+/** Compact progress bar above the focal block: where the company is in the loan. */
 export function VerificationStages({ verified, pending, stage }: { verified: boolean; pending: boolean; stage?: Stage }) {
-  return <ol className="mt-6 grid border border-line bg-white sm:grid-cols-2 lg:grid-cols-4" aria-label="Etapas del préstamo">
-    {steps.map(([name, body], index) => {
-      const completed = !verified ? 0 : stage === 'closed' ? 4 : (stage === 'active' || stage === 'repaid_release_pending') ? 3 : stage === 'collateral_locked' ? 2 : 1;
-      const done = index < completed;
-      const next = index === completed && index < 4;
-      return <li key={name} aria-current={next ? 'step' : undefined} className="border-t border-line p-6 first:border-t-0 sm:even:border-l lg:border-l lg:border-t-0 lg:first:border-l-0">
-        <p className={`flex items-center justify-between gap-2 text-sm font-semibold ${next || done ? 'text-teal' : 'text-ink/50'}`}>
-          <span>0{index + 1}{done ? ' ✓' : next ? ' →' : ''}</span>
-          <span className="text-xs uppercase tracking-widest">{done ? 'Completada' : index === 3 && stage === 'repaid_release_pending' ? 'En proceso' : index === 3 && stage === 'active' ? 'En curso' : next ? pending && !verified ? 'En curso' : 'Siguiente' : 'Después'}</span>
-        </p>
-        <h3 className="mt-4 font-serif text-xl font-semibold">{name}</h3>
-        <p className="mt-2 text-sm leading-6 text-ink/70">{body}</p>
-      </li>;
-    })}
-  </ol>;
+  const completed = !verified ? 0 : stage === 'closed' ? 4 : stage === 'active' || stage === 'repaid_release_pending' ? 3 : stage === 'collateral_locked' ? 2 : 1;
+  return (
+    <ol className="mt-10 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4" aria-label="Etapas del préstamo">
+      {STEPS.map((name, index) => {
+        const done = index < completed;
+        const current = index === completed;
+        const status = done
+          ? 'Completada'
+          : !current
+            ? 'Pendiente'
+            : index === 3 && stage === 'repaid_release_pending'
+              ? 'En proceso'
+              : (index === 0 && pending) || (index === 3 && stage === 'active')
+                ? 'En curso'
+                : 'Ahora';
+        return (
+          <li key={name} aria-current={current ? 'step' : undefined} className={`border-t-2 pt-3 ${done || current ? 'border-teal' : 'border-line'}`}>
+            <p className={`text-xs font-semibold uppercase tracking-widest ${done || current ? 'text-teal' : 'text-ink/50'}`}>
+              0{index + 1} <span aria-hidden="true">{done ? '✓' : ''}</span> {status}
+            </p>
+            <p className={`mt-1 font-serif text-lg font-semibold ${done || current ? '' : 'text-ink/50'}`}>{name}</p>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
