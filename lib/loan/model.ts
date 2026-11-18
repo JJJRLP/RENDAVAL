@@ -15,3 +15,11 @@ export const LIMIT_MESSAGE = 'Esta versión de prueba admite hasta 3 préstamos 
 export type LoanState = { setup: LoanView | null; loans: LoanView[]; canRegister: boolean; openLoans: number; limitReached: boolean; wallet: string; verification: { status: 'verified'; receiptUrl: string }; stage: Stage; bonds: number; usdc: number; locked: number; terms: ReturnType<typeof terms>; escrow: { contractId: string; description: string; url: string } | null; repayment: { amount: number; at: string; hash: string; url: string; releaseStatus: 'pending' | 'released' } | null; transactions: { hash: string; url: string; at: string; label: string }[] };
 
 export const exampleBonds: Bond[] = [exampleBond, { issuer: 'Manufacturas Luna de Sal S.A. (ficticia)', series: 'MLS-2026-B', nominalBs: 2088, coupon: 7, maturity: '2029-06-30' }, { issuer: 'Tejidos Nube del Valle S.A. (ficticia)', series: 'TNV-2026-C', nominalBs: 1392, coupon: 8, maturity: '2029-12-15' }];
+
+/** Example risk thresholds (debt as a share of collateral value). Not an offer. */
+export const HEALTH_WARNING = 0.7;
+export const HEALTH_LIMIT = 0.85;
+export function loanHealth(debt: number, collateral: number) {
+  const ratio = collateral > 0 ? debt / collateral : 1;
+  return { ratio, level: ratio < HEALTH_WARNING ? 'ok' as const : ratio < HEALTH_LIMIT ? 'warning' as const : 'risk' as const };
+}
