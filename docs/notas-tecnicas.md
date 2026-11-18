@@ -54,21 +54,18 @@ o `vault-loan-<wallet>:<timestamp>`, con los roles y el activo esperados.
 Los préstamos antiguos conservan sus condiciones y roles originales; el cambio
 de rol se aplica exclusivamente a nuevos contratos.
 
-`POST /api/loan/repay/topup` cubre una sola vez el faltante de interés de prueba
-(hasta interés + 0,01 USDC), mediante pago y marcador atómicos en el prestamista.
+`POST /api/loan/repay/topup` aporta una sola vez el interés de prueba por contrato
+(el interés propio de cada préstamo), mediante pago y marcador atómicos en el prestamista.
 `repay/build` prepara el pago exacto con memo hash por contrato; `repay/submit`
 valida la firma testnet y la operación. El estado reconoce el reembolso leyendo
 transacciones exitosas en Horizon. `settle` marca, aprueba y libera, omitiendo
 pasos ya confirmados en cadena. La respuesta conocida de Trustless Work
 “Escrow already in dispute” en `release-funds` se devuelve como HTTP 200,
 `release_pending`; se muestra solo en detalles técnicos. El pago queda recibido
-y los bonos protegidos, con reintento al entrar y botón “Volver a intentar”.
+y los bonos protegidos, con el botón “Comprobar devolución” de cada préstamo.
 No se invoca el contrato con otra dirección de comisiones.
 
-Al liberar se muestra el saldo efectivamente devuelto (el proveedor puede cobrar
-su comisión en bonos). “Solicitar un nuevo préstamo” abre una nueva oferta sobre
-ese saldo; al aceptarla se crea otro identificador. La pantalla de cierre persiste
-al recargar hasta que se solicite otro préstamo.
+Al liberar, el saldo efectivamente devuelto (menos la eventual comisión del proveedor) vuelve a ofrecerse como garantía. El préstamo cerrado permanece en «Sus préstamos».
 
 El diario de despliegue conserva el XDR firmado para serializar aceptaciones
 paralelas. Sus entradas se eliminan al observar el contrato activo en cadena;
@@ -79,8 +76,7 @@ históricas, sin despliegues en curso:
 node --env-file=.env.local --conditions=react-server --import tsx scripts/clean-journal.ts
 ```
 
-Prueba integral (crea una empresa fresca, deposita 400 bonos, recibe y devuelve
-200 USDC más el interés subvencionado; la tesorería termina con el mismo USDC):
+Prueba integral (crea una empresa fresca y tres préstamos de 200, 150 y 100 USDC; devuelve cada uno más el interés subvencionado; la tesorería termina con el mismo USDC):
 
 ```sh
 node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-loan.ts
@@ -92,3 +88,37 @@ recorre el historial de la empresa; para historiales grandes será necesario un
 indexador para mantener las consultas dentro del tiempo máximo de Vercel.
 La prueba automática omite solo el login interactivo; firma con una clave fresca
 en memoria. El recorrido real con Pollar requiere la comprobación humana.
+
+
+## Varios préstamos por empresa
+
+`GET /api/loan/state` devuelve `setup` (bono disponible o garantía aún no desembolsada),
+`loans` (préstamos desembolsados, más recientes primero), `canRegister`, `openLoans`
+y `limitReached`. Se permite registrar si el saldo disponible de VBOND es cero,
+no hay preparación pendiente y hay menos de tres préstamos abiertos. Activos y
+pagados con devolución pendiente cuentan para el límite; cerrados no cuentan.
+Los campos superiores de etapa y condiciones representan la preparación o el
+último préstamo; `locked` suma las garantías de todos los contratos sin liberar.
+
+Depósito, desembolso, ayuda de interés, reembolso y liquidación requieren
+`contractId` en el cuerpo JSON. El servidor vuelve a buscarlo entre los contratos
+propios de la empresa, comprobando engagement, roles y activo. Un contrato ajeno
+se rechaza con 403; una referencia ausente con 409. Los roles históricos de
+serviceProvider (empresa o Vault) se admiten sin modificar el contrato.
+
+El diario usa una generación por empresa (cantidad de contratos ya registrados),
+por lo que una aceptación posterior no reutiliza el XDR de una anterior. Los
+reintentos de la misma generación conservan el XDR firmado y limpian únicamente
+esa generación después de observar el contrato. Los marcadores de desembolso y
+ayuda siguen siendo atómicos y exclusivos por contrato. La ayuda aporta el interés
+propio una vez, sin confundir el capital de otros préstamos con interés disponible.
+
+El estado consulta saldos, roles y prestamista en paralelo, y escanea una sola vez
+el historial de la empresa y una sola vez el del prestamista para todos los contratos.
+Cada plazo empieza en la fecha de su propio desembolso y cada reembolso se reconoce
+por su memo hash y pago exacto. No hay caché de autoridad ni base de datos.
+
+La interfaz conserva el bloque de preparación y agrega «Sus préstamos» antes de
+«Su cuenta». Cada fila tiene su propia acción, progreso, error y enlaces. Un bloqueo
+compartido impide iniciar dos operaciones de préstamo a la vez; una recarga reconstruye
+el progreso desde la red. La devolución pendiente se comprueba con el botón de su fila.

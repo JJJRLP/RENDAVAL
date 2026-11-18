@@ -1,0 +1,5 @@
+{"ms":3119,"openLoans":3,"stages":["repaid_release_pending","repaid_release_pending","repaid_release_pending"],"locked":900}
+{"ms":2931,"openLoans":3,"stages":["repaid_release_pending","repaid_release_pending","repaid_release_pending"],"locked":900}
+{"ms":2970,"openLoans":3,"stages":["repaid_release_pending","repaid_release_pending","repaid_release_pending"],"locked":900}
+{"ms":2737,"openLoans":3,"stages":["repaid_release_pending","repaid_release_pending","repaid_release_pending"],"locked":900}
+{"ms":2679,"openLoans":3,"stages":["repaid_release_pending","repaid_release_pending","repaid_release_pending"],"locked":900}

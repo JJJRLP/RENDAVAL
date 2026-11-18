@@ -1,10 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { BS_PER_USD, exampleBond, type Bond } from '@/lib/loan/model';
+import { BS_PER_USD, exampleBonds, type Bond } from '@/lib/loan/model';
 import { formatNumber } from '@/lib/format';
-export function BondForm({ busy, register }: { busy: boolean; register: (bond: Bond) => void }) {
+export function BondForm({ busy, register, exampleIndex = 0 }: { exampleIndex?: number; busy: boolean; register: (bond: Bond) => void }) {
   const [minDate] = useState(() => new Date(Date.now() + 31 * 86400000).toISOString().slice(0, 10));
-  const [bond, setBond] = useState(exampleBond);
+  const [bond, setBond] = useState(exampleBonds[exampleIndex % exampleBonds.length]);
   const input = 'mt-2 min-h-11 w-full border border-white/30 bg-white/10 px-3 py-2 text-white focus:outline-2 focus:outline-teal-bright';
   return <form className="mt-6" onSubmit={e => { e.preventDefault(); register(bond); }}>
     <p className="max-w-xl leading-7 text-white/75">Declare el bono que su empresa quiere dejar en garantía. Puede usar este ejemplo para probar.</p>

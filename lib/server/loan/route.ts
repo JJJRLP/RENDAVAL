@@ -13,11 +13,12 @@ export async function handle(request: Request, action: 'state' | 'register' | 'a
     const wallet = await authenticate(request);
     await verified(wallet);
     let input: Record<string, unknown> = {};
-    if (['register', 'accept', 'deposit/submit', 'repay/submit'].includes(action)) {
+    if (action !== 'state') {
       try { input = await request.json(); if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(); }
       catch { throw new ApiError(400, 'La solicitud no es válida. Reintente.'); }
     }
-    const result = action === 'state' ? await state(wallet) : action === 'register' ? await register(wallet, input) : action === 'accept' ? await accept(wallet, input.bond) : action === 'deposit/build' ? await buildDeposit(wallet) : action === 'deposit/submit' ? await submitDeposit(wallet, input.signedXdr) : action === 'repay/topup' ? await topup(wallet) : action === 'repay/build' ? await buildRepayment(wallet) : action === 'repay/submit' ? await submitRepayment(wallet, input.signedXdr) : action === 'settle' ? await settle(wallet) : await disburse(wallet);
+    const contractId = typeof input.contractId === 'string' ? input.contractId : '';
+    const result = action === 'state' ? await state(wallet) : action === 'register' ? await register(wallet, input) : action === 'accept' ? await accept(wallet, input.bond) : action === 'deposit/build' ? await buildDeposit(wallet, contractId) : action === 'deposit/submit' ? await submitDeposit(wallet, input.signedXdr, contractId) : action === 'repay/topup' ? await topup(wallet, contractId) : action === 'repay/build' ? await buildRepayment(wallet, contractId) : action === 'repay/submit' ? await submitRepayment(wallet, input.signedXdr, contractId) : action === 'settle' ? await settle(wallet, contractId) : await disburse(wallet, contractId);
     return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return Response.json({ error: error instanceof ApiError ? error.message : 'No pudimos conectar con el servicio. Su progreso está guardado; intente nuevamente.' }, { status: error instanceof ApiError ? error.status : 502, headers: { 'Cache-Control': 'no-store' } });

@@ -1,0 +1,180 @@
+historicalReadOnly [
+  {
+    contractId: 'CD65BAVWLBY65W374UDEYD7NEZDQKYJA2GDTO6GIZUJYW56L6TU3VGYD',
+    roles: {
+      serviceProvider: 'GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5',
+      receiver: 'GA4J2HFY45VDAX6T7YFMOXRAWXVX5RCQFI3Y6W6BM3NFW4T5LJ4VNYF4',
+      approver: 'GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7',
+      platformAddress: 'GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5',
+      releaseSigner: 'GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5',
+      disputeResolver: 'GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5'
+    },
+    amount: 400
+  }
+]
+company GAPUFWCFTYQIHZPMV4MCZ54PNQRJRJLMQ2XQZRP4PTLOFIRHTEDMTMLL
+treasuryBefore 3100
+register 0 {
+  hash: '06d4267bf2d77e708f10b49b373bcdbe370f5b0a87f69a29d77a221d0e600705',
+  bond: {
+    issuer: 'Industrias Bruma del Altiplano S.A. (ficticia)',
+    series: 'IAS-2026-A',
+    nominalBs: 2784,
+    coupon: 7.5,
+    maturity: '2028-11-18'
+  }
+}
+disburse 0 {
+  hash: '799126de0733f03d2722ff2c0445a09be14ba2fee347b91668fbd52292c20c12',
+  amount: '200.0000000',
+  reused: false
+}
+register 1 {
+  hash: '74de082e371a0bd06dc86dec27923de966ae8acc8a8a8e17c779cc91d8042e64',
+  bond: {
+    issuer: 'Manufacturas Luna de Sal S.A. (ficticia)',
+    series: 'MLS-2026-B',
+    nominalBs: 2088,
+    coupon: 7,
+    maturity: '2029-06-30'
+  }
+}
+disburse 1 {
+  hash: '3a9f2dbd5ac855cca7eaab8a85c5666ad8a02898299f9fa991d9a58d4a3223b6',
+  amount: '150.0000000',
+  reused: false
+}
+twoIndependent [
+  {
+    id: 'CD2TF3LRNCNTFPXUMUJXWH5AASWPDYICF4H5EE77UCVCQFAD5JGWSUG3',
+    stage: 'active',
+    terms: {
+      collateral: 300,
+      nominalBs: 2088,
+      loan: 150,
+      interest: 1,
+      total: 151,
+      dueDate: '2026-12-18T12:10:59.000Z'
+    },
+    bond: {
+      issuer: 'Manufacturas Luna de Sal S.A. (ficticia)',
+      series: 'MLS-2026-B',
+      nominalBs: 2088,
+      coupon: 7,
+      maturity: '2029-06-30'
+    }
+  },
+  {
+    id: 'CA6MVJDYA7OLIWOMD3RGM3DFZ3GGINHCDBRIXEZBF2MV5UHOTYQVMGFN',
+    stage: 'active',
+    terms: {
+      collateral: 400,
+      nominalBs: 2784,
+      loan: 200,
+      interest: 1.3333333,
+      total: 201.3333333,
+      dueDate: '2026-12-18T12:09:44.000Z'
+    },
+    bond: {
+      issuer: 'Industrias Bruma del Altiplano S.A. (ficticia)',
+      series: 'IAS-2026-A',
+      nominalBs: 2784,
+      coupon: 7.5,
+      maturity: '2028-11-18'
+    }
+  }
+]
+foreignContract 403 refused by shared ownership validator
+topup CA6MVJDYA7OLIWOMD3RGM3DFZ3GGINHCDBRIXEZBF2MV5UHOTYQVMGFN {
+  hash: '31c3f44d0bcee73490e94e0183b0ad24c5b34a0d8cb430f2946f6eda3d2e307f',
+  amount: '1.3333333',
+  reused: false
+}
+repay CA6MVJDYA7OLIWOMD3RGM3DFZ3GGINHCDBRIXEZBF2MV5UHOTYQVMGFN {
+  hash: 'b929c353358fcd0d27c37e61deeeb5601a38ebc3fec37f7bf8434b50d1e138cf',
+  reused: false
+}
+settle CA6MVJDYA7OLIWOMD3RGM3DFZ3GGINHCDBRIXEZBF2MV5UHOTYQVMGFN {
+  status: 'release_pending',
+  repayment: {
+    amount: 201.3333333,
+    at: '2026-11-18T12:11:24Z',
+    hash: 'b929c353358fcd0d27c37e61deeeb5601a38ebc3fec37f7bf8434b50d1e138cf',
+    url: 'https://stellar.expert/explorer/testnet/tx/b929c353358fcd0d27c37e61deeeb5601a38ebc3fec37f7bf8434b50d1e138cf'
+  },
+  providerMessage: 'Escrow already in dispute'
+}
+register 2 {
+  hash: '48db72731705857ae6a893fedd6177ec19f3ecde4073d894acbf46bd45080e8a',
+  bond: {
+    issuer: 'Tejidos Nube del Valle S.A. (ficticia)',
+    series: 'TNV-2026-C',
+    nominalBs: 1392,
+    coupon: 8,
+    maturity: '2029-12-15'
+  }
+}
+disburse 2 {
+  hash: 'bd85ffaeab1018b97569ef8cef2e1fa8905f07131d97bea959237b382408ec91',
+  amount: '100.0000000',
+  reused: false
+}
+stateThree {
+  ms: 3580,
+  stages: [ 'active', 'active', 'repaid_release_pending' ],
+  openLoans: 3,
+  locked: 900
+}
+stateThree {
+  ms: 3027,
+  stages: [ 'active', 'active', 'repaid_release_pending' ],
+  openLoans: 3,
+  locked: 900
+}
+stateThree {
+  ms: 3236,
+  stages: [ 'active', 'active', 'repaid_release_pending' ],
+  openLoans: 3,
+  locked: 900
+}
+fourthRefused Esta versión de prueba admite hasta 3 préstamos abiertos por empresa. Consulte sus préstamos abajo; los bonos pendientes de devolución también cuentan.
+topup CD2TF3LRNCNTFPXUMUJXWH5AASWPDYICF4H5EE77UCVCQFAD5JGWSUG3 {
+  hash: '450ad37fb6283d0018ec698688ee540f3c1a9e25b33923abcc8a36591fe2d126',
+  amount: '1.0000000',
+  reused: false
+}
+repay CD2TF3LRNCNTFPXUMUJXWH5AASWPDYICF4H5EE77UCVCQFAD5JGWSUG3 {
+  hash: '2dd6219787b65f0ca9aa336a0057971c1f7376d243db9b17fa2d40eb12d87a39',
+  reused: false
+}
+settle CD2TF3LRNCNTFPXUMUJXWH5AASWPDYICF4H5EE77UCVCQFAD5JGWSUG3 {
+  status: 'release_pending',
+  repayment: {
+    amount: 151,
+    at: '2026-11-18T12:14:09Z',
+    hash: '2dd6219787b65f0ca9aa336a0057971c1f7376d243db9b17fa2d40eb12d87a39',
+    url: 'https://stellar.expert/explorer/testnet/tx/2dd6219787b65f0ca9aa336a0057971c1f7376d243db9b17fa2d40eb12d87a39'
+  },
+  providerMessage: 'Escrow already in dispute'
+}
+topup CAIZXBP4BIMGIYU76SWSAFHYQLCWF35XX7P3W47AVF2HJ7SHTNQM6UIU {
+  hash: '34767001f2836a88826dcee7458b754bbe050be80ca41f30d4a0c15ba6bdf99d',
+  amount: '0.6666667',
+  reused: false
+}
+repay CAIZXBP4BIMGIYU76SWSAFHYQLCWF35XX7P3W47AVF2HJ7SHTNQM6UIU {
+  hash: '652b6fed67f62205e4806c17fd52742ff14804b6cae89c38a2ace4402927a05f',
+  reused: false
+}
+settle CAIZXBP4BIMGIYU76SWSAFHYQLCWF35XX7P3W47AVF2HJ7SHTNQM6UIU {
+  status: 'release_pending',
+  repayment: {
+    amount: 100.6666667,
+    at: '2026-11-18T12:15:14Z',
+    hash: '652b6fed67f62205e4806c17fd52742ff14804b6cae89c38a2ace4402927a05f',
+    url: 'https://stellar.expert/explorer/testnet/tx/652b6fed67f62205e4806c17fd52742ff14804b6cae89c38a2ace4402927a05f'
+  },
+  providerMessage: 'Escrow already in dispute'
+}
+treasuryFinal { before: 3100, after: 3100, difference: 0 }
+PASS multi-loan testnet

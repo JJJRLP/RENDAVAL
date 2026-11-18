@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { Keypair, Memo, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 import { ApiError, required } from '../env';
-import { BS_PER_USD, type Bond } from '../../loan/model';
+import { BS_PER_USD, LIMIT_MESSAGE, type Bond } from '../../loan/model';
 import { bondAsset, networkPassphrase, server } from './network';
 import { state } from './state';
 export function validateBond(input: unknown): Bond {
@@ -17,7 +17,8 @@ export async function register(wallet: string, input: unknown) {
   // Load sequence BEFORE checking eligibility: concurrent registrations cannot both commit.
   const account = await server.loadAccount(signer.publicKey());
   const current = await state(wallet);
-  if (current.stage !== 'none') throw new ApiError(409, 'Su bono ya está registrado o tiene una garantía en curso. Continúe desde su próximo paso.');
+  if (current.limitReached) throw new ApiError(409, LIMIT_MESSAGE);
+  if (!current.canRegister) throw new ApiError(409, 'Su bono ya está registrado o tiene una garantía en curso. Continúe desde su próximo paso.');
   const tx = new TransactionBuilder(account, { fee: '10000', networkPassphrase })
     .addMemo(Memo.hash(createHash('sha256').update(JSON.stringify(bond)).digest()))
     .addOperation(Operation.payment({ destination: wallet, asset: bondAsset(), amount: (bond.nominalBs / BS_PER_USD).toFixed(7) })).setTimeout(60).build();
