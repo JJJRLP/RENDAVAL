@@ -186,9 +186,9 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
                 </div>
                 <div>{!closed && !frozen && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>
               </div>
-              {active && <LoanHealth debt={item.terms.total} collateral={item.terms.collateral} />}
-              {running && loan.repayStep >= 0 && <div className="on-dark mt-5 bg-ink p-4 text-white"><Checklist steps={REPAY_STEPS} current={loan.repayStep} done={closed} /></div>}
-              {running && loan.error && <p role="alert" className="mt-4 border-l-2 border-teal pl-4">{loan.error} Use el botón del préstamo para reintentar.</p>}
+              {active && !running && <LoanHealth debt={item.terms.total} collateral={item.terms.collateral} />}
+              {running && loan.repayStep >= 0 && (loan.busy || closed) && <div className="on-dark mt-5 bg-ink px-5 pb-5 text-white"><Checklist steps={REPAY_STEPS} current={loan.repayStep} done={closed} /></div>}
+              {running && loan.error && <p role="alert" className="mt-4 border-l-2 border-ink bg-offwhite p-4 text-sm leading-6">{loan.error}</p>}
               <details className="mt-4 border-t border-line pt-2 text-sm text-ink/65"><summary className="min-h-11 cursor-pointer py-3">Ver detalle técnico</summary><ul><li><a className="inline-block py-2 underline" href={item.escrow!.url} target="_blank" rel="noreferrer">Contrato de garantía ↗</a></li>{[...item.transactions, ...(item.repayment ? [{ ...item.repayment, label: 'Reembolso' }] : [])].map(tx => <li key={tx.hash}><a className="inline-block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">{tx.label} ↗</a></li>)}</ul>{running && loan.providerMessage && <p className="break-words">{loan.providerMessage}</p>}</details>
             </article>;
           })}

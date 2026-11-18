@@ -1,11 +1,13 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
-import { Keypair, Memo, Operation, Transaction, TransactionBuilder } from '@stellar/stellar-sdk';
+import { FeeBumpTransaction, Keypair, Memo, Operation, Transaction, TransactionBuilder } from '@stellar/stellar-sdk';
 import { ApiError } from '../env';
 import { terms, usdcAmount } from '../../loan/model';
 import { badSequence, dollarAsset, explorer, lenderKey, networkPassphrase, server } from './network';
 import { escrowFor, verified } from './state';
 export const repaymentMemo = (contractId: string) => createHash('sha256').update(`vault-repay:${contractId}`).digest();
+/** A wallet provider may wrap the payment in a fee bump to pay its fee; the payment itself is the inner transaction. */
+const payment = (tx: Transaction | FeeBumpTransaction) => tx instanceof FeeBumpTransaction ? tx.innerTransaction : tx;
 export function validRepayment(tx: Transaction, wallet: string, contractId: string, total: number) {
   const op = tx.operations[0];
   return tx.source === wallet && tx.operations.length === 1 && op.type === 'payment' && (!op.source || op.source === wallet) && op.destination === lenderKey().publicKey() && op.asset.equals(dollarAsset()) && op.amount === usdcAmount(total) && tx.memo.type === 'hash' && Buffer.from(tx.memo.value as Uint8Array).equals(repaymentMemo(contractId));
@@ -16,8 +18,8 @@ export async function repaymentFor(wallet: string, contractId: string, collatera
   while (page.records.length) {
     for (const row of page.records) {
       if (!row.successful) continue;
-      const tx = TransactionBuilder.fromXDR(row.envelope_xdr, networkPassphrase);
-      if (tx instanceof Transaction && validRepayment(tx, wallet, contractId, terms(collateral).total)) return { amount: terms(collateral).total, at: row.created_at, hash: row.hash, url: explorer('tx', row.hash) };
+      const tx = payment(TransactionBuilder.fromXDR(row.envelope_xdr, networkPassphrase));
+      if (validRepayment(tx, wallet, contractId, terms(collateral).total)) return { amount: terms(collateral).total, at: row.created_at, hash: row.hash, url: explorer('tx', row.hash) };
     }
     page = await page.next();
   }
@@ -64,17 +66,26 @@ export async function buildRepayment(wallet: string, contractId: string) {
 export async function submitRepayment(wallet: string, signedXdr: unknown, contractId: string) {
   const { escrow, paid, total } = await context(wallet, contractId);
   if (paid) return { reused: true, repayment: paid };
-  let tx: Transaction;
+  let envelope: Transaction | FeeBumpTransaction, tx: Transaction, reason = 'unreadable';
   try {
     if (typeof signedXdr !== 'string' || signedXdr.length > 20000) throw new Error();
-    const parsed = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
-    if (!(parsed instanceof Transaction) || !validRepayment(parsed, wallet, escrow.contractId, total) || !parsed.signatures.some(s => Keypair.fromPublicKey(wallet).verify(parsed.hash(), s.signature))) throw new Error();
-    if (Number(parsed.fee) > 10000 || !parsed.timeBounds || Number(parsed.timeBounds.maxTime) === 0) throw new Error();
-    tx = parsed;
-  } catch { throw new ApiError(400, 'La confirmación no corresponde al reembolso de su préstamo. Vuelva a confirmar el pago.'); }
+    envelope = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
+    tx = payment(envelope);
+    const op = tx.operations[0];
+    // Name the first mismatch (shape only, no secrets) so a provider-side change can be diagnosed from the logs.
+    reason = tx.source !== wallet ? 'source' : tx.operations.length !== 1 ? 'operation-count' : op.type !== 'payment' ? `operation-${op.type}`
+      : !validRepayment(tx, wallet, escrow.contractId, total) ? `payment-fields amount=${op.amount} memo=${tx.memo.type}`
+      : !tx.signatures.some(s => Keypair.fromPublicKey(wallet).verify(tx.hash(), s.signature)) ? `signature count=${tx.signatures.length}`
+      : !tx.timeBounds || Number(tx.timeBounds.maxTime) === 0 ? 'timebounds'
+      : Number(tx.fee) > 1000000 ? `fee=${tx.fee}` : '';
+    if (reason) throw new Error();
+  } catch {
+    console.error('[repay submit] rejected:', reason, 'feeBump:', typeof signedXdr === 'string' && signedXdr.length <= 20000 ? (() => { try { return TransactionBuilder.fromXDR(signedXdr, networkPassphrase) instanceof FeeBumpTransaction; } catch { return 'n/a'; } })() : 'n/a');
+    throw new ApiError(400, 'No pudimos validar la confirmación de su pago. Vuelva a intentarlo.');
+  }
   const account = await server.loadAccount(wallet);
   if (BigInt(tx.sequence) !== BigInt(account.sequenceNumber()) + BigInt(1)) throw new ApiError(409, 'Su cuenta cambió. Vuelva a confirmar el reembolso.');
-  try { const result = await server.submitTransaction(tx); return { hash: result.hash, reused: false }; }
+  try { const result = await server.submitTransaction(envelope); return { hash: result.hash, reused: false }; }
   catch {
     const found = await repaymentFor(wallet, escrow.contractId, escrow.amount);
     if (found) return { reused: true, repayment: found };

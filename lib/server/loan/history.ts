@@ -24,8 +24,9 @@ export async function loanHistory(wallet: string, escrows: Escrow[], paid: Set<s
       while (page.records.length) {
         for (const row of page.records) {
           if (!row.successful) continue;
-          const tx = TransactionBuilder.fromXDR(row.envelope_xdr, networkPassphrase);
-          if (!(tx instanceof Transaction)) continue;
+          const envelope = TransactionBuilder.fromXDR(row.envelope_xdr, networkPassphrase);
+          // A wallet provider may wrap the company's transaction in a fee bump.
+          const tx = envelope instanceof Transaction ? envelope : envelope.innerTransaction;
           for (const e of escrows) {
             if (paid.has(e.contractId) && !repayments.has(e.contractId) && validRepayment(tx, wallet, e.contractId, terms(e.amount).total)) repayments.set(e.contractId, { amount: terms(e.amount).total, at: row.created_at, hash: row.hash, url: explorer('tx', row.hash) });
             if (tx.operations.some(op => op.type === 'invokeHostFunction' && op.func.type === 'hostFunctionTypeInvokeContract' && Address.fromScAddress(op.func.invokeContract.contractAddress).toString() === e.contractId)) transactions.get(e.contractId)!.push({ hash: row.hash, at: row.created_at, url: explorer('tx', row.hash), label: 'Depósito de garantía' });
@@ -42,8 +43,9 @@ export async function loanHistory(wallet: string, escrows: Escrow[], paid: Set<s
       while (page.records.length && remaining.size) {
         for (const row of page.records) {
           if (!row.successful) continue;
-          const tx = TransactionBuilder.fromXDR(row.envelope_xdr, networkPassphrase);
-          if (!(tx instanceof Transaction)) continue;
+          const envelope = TransactionBuilder.fromXDR(row.envelope_xdr, networkPassphrase);
+          // A wallet provider may wrap the company's transaction in a fee bump.
+          const tx = envelope instanceof Transaction ? envelope : envelope.innerTransaction;
           for (const op of tx.operations) if (op.type === 'manageData' && remaining.delete(op.name)) transactions.get(op.name)!.push({ hash: row.hash, at: row.created_at, url: explorer('tx', row.hash), label: 'Desembolso' });
         }
         if (page.records.length < 200) break;
