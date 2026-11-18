@@ -23,14 +23,14 @@ export async function repaymentFor(wallet: string, contractId: string, collatera
   }
   return null;
 }
-async function context(wallet: string) {
+async function context(wallet: string, contractId: string) {
   await verified(wallet);
-  const escrow = await escrowFor(wallet, true);
+  const escrow = await escrowFor(wallet, contractId);
   if (!escrow || !(await server.loadAccount(lenderKey().publicKey())).data_attr[escrow.contractId]) throw new ApiError(409, 'Necesita un préstamo desembolsado para reembolsar.');
   return { escrow, paid: await repaymentFor(wallet, escrow.contractId, escrow.amount), total: terms(escrow.amount).total };
 }
-export async function topup(wallet: string) {
-  const { escrow, paid, total } = await context(wallet);
+export async function topup(wallet: string, contractId: string) {
+  const { escrow, paid } = await context(wallet, contractId);
   if (paid) return { reused: true, amount: '0.0000000' };
   const signer = lenderKey(), marker = `int:${createHash('sha256').update(escrow.contractId).digest('hex').slice(0, 56)}`;
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -38,11 +38,9 @@ export async function topup(wallet: string) {
     if (lender.data_attr[marker]) return { reused: true, amount: Buffer.from(lender.data_attr[marker], 'base64').toString() };
     // Snapshot lender sequence BEFORE reading company balance/repayment to serialize assistance.
     if (await repaymentFor(wallet, escrow.contractId, escrow.amount)) return { reused: true, amount: '0.0000000' };
-    const company = await server.loadAccount(wallet);
-    const balance = company.balances.find(b => 'asset_code' in b && b.asset_code === 'USDC' && b.asset_issuer === dollarAsset().getIssuer());
-    const missing = Number(usdcAmount(Math.max(0, total - Number(balance?.balance ?? 0))));
-    if (!missing) return { reused: true, amount: '0.0000000' };
-    if (missing > terms(escrow.amount).interest + 0.01) throw new ApiError(409, 'Añada los dólares del capital a su cuenta para completar el reembolso. En esta prueba solo cubrimos el interés.');
+    // Each loan receives its own test interest once. Other loans' principal is
+    // not spendable assistance for this loan, even when it shares the wallet.
+    const missing = terms(escrow.amount).interest;
     const tx = new TransactionBuilder(lender, { fee: '10000', networkPassphrase })
       .addOperation(Operation.payment({ destination: wallet, asset: dollarAsset(), amount: usdcAmount(missing) }))
       .addOperation(Operation.manageData({ name: marker, value: usdcAmount(missing) })).setTimeout(60).build();
@@ -55,16 +53,16 @@ export async function topup(wallet: string) {
   }
   throw new ApiError(409, 'Hay otra operación en curso. Vuelva a intentar.');
 }
-export async function buildRepayment(wallet: string) {
-  const { escrow, paid, total } = await context(wallet);
+export async function buildRepayment(wallet: string, contractId: string) {
+  const { escrow, paid, total } = await context(wallet, contractId);
   if (paid) return { repaid: true as const, repayment: paid };
   const tx = new TransactionBuilder(await server.loadAccount(wallet), { fee: '10000', networkPassphrase })
     .addMemo(Memo.hash(repaymentMemo(escrow.contractId)))
     .addOperation(Operation.payment({ destination: lenderKey().publicKey(), asset: dollarAsset(), amount: usdcAmount(total) })).setTimeout(300).build();
   return { repaid: false as const, unsignedTransaction: tx.toXDR() };
 }
-export async function submitRepayment(wallet: string, signedXdr: unknown) {
-  const { escrow, paid, total } = await context(wallet);
+export async function submitRepayment(wallet: string, signedXdr: unknown, contractId: string) {
+  const { escrow, paid, total } = await context(wallet, contractId);
   if (paid) return { reused: true, repayment: paid };
   let tx: Transaction;
   try {

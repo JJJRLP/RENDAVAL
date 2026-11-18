@@ -1,7 +1,7 @@
 'use client';
 import { useState, type ReactNode } from 'react';
 import { EXAMPLE_ANNUAL_RATE, formatNumber } from '@/lib/format';
-import { terms, type LoanState } from '@/lib/loan/model';
+import { LIMIT_MESSAGE, type LoanState } from '@/lib/loan/model';
 import { useLoan } from './use-loan';
 import { BondForm } from './bond-form';
 import { VerificationStages } from './verification-stages';
@@ -54,21 +54,18 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
   const [now] = useState(() => Date.now());
   const loan = useLoan(address, onState);
   const state = loan.state;
-  const stage = loan.newLoan && state ? 'bond_registered' : state?.stage;
-  const t = loan.newLoan && state ? terms(state.bonds) : state?.terms;
+  const [showForm, setShowForm] = useState(false);
+  const stage = state?.setup?.stage ?? 'none';
+  const t = state?.setup?.terms;
   const offer = stage === 'bond_registered' || stage === 'escrow_created' || stage === 'collateral_locked';
-  const active = stage === 'active';
-  const pendingRelease = stage === 'repaid_release_pending';
-  const closed = stage === 'closed';
   const depositStep = Math.max(loan.step, stage === 'collateral_locked' ? 2 : stage === 'escrow_created' ? 1 : -1);
-  const daysLeft = t ? Math.max(0, Math.ceil((Date.parse(t.dueDate) - now) / 86400000)) : 0;
-
-  const eyebrow = closed ? 'Préstamo completado' : pendingRelease ? 'Su reembolso' : active ? 'Su préstamo' : offer ? 'Su oferta' : 'Su próximo paso';
-  const title = !state ? 'Consultando su progreso…' : closed ? 'Préstamo cerrado' : pendingRelease ? 'Pago recibido' : active ? 'Préstamo activo' : offer ? 'Reciba dólares por sus bonos' : 'Registre su bono';
+  const eyebrow = offer ? 'Su oferta' : 'Su próximo paso';
+  const title = !state ? 'Consultando su progreso…' : offer ? 'Reciba dólares por sus bonos' : state.limitReached ? 'Sus préstamos en curso' : state.loans.length ? 'Registre otro bono' : 'Registre su bono';
+  const nearest = state?.loans.filter(l => l.stage === 'active').sort((a, b) => a.terms.dueDate.localeCompare(b.terms.dueDate))[0]?.escrow?.contractId;
 
   return (
     <>
-      <VerificationStages verified pending={false} stage={stage} />
+      <VerificationStages verified pending={false} stage={state?.setup?.stage ?? state?.loans[0]?.stage} />
       <section className="on-dark mt-4 bg-ink p-6 text-white md:p-10" aria-labelledby="next-step-title" aria-busy={loan.busy}>
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-bright">{eyebrow}</p>
         <h2 id="next-step-title" className="mt-4 font-serif text-3xl font-semibold">{title}</h2>
@@ -77,7 +74,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
             Bono de {loan.bond.issuer} · Serie {loan.bond.series}
           </p>
         )}
-        {loan.error && (
+        {loan.error && !loan.operationId && (
           <p role="alert" className="mt-5 border-l-2 border-teal-bright pl-4 leading-7">
             {loan.error}
           </p>
@@ -89,7 +86,10 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
           </button>
         )}
 
-        {stage === 'none' && <BondForm busy={loan.busy} register={loan.register} />}
+        {state && !state.setup && (state.limitReached ? <p className="mt-5 max-w-xl leading-7 text-white/75">{LIMIT_MESSAGE} <a className="underline" href="#loans-title">Ver sus préstamos</a></p> : state.loans.length && !showForm ? <>
+          <p className="mt-5 max-w-xl leading-7 text-white/75">Obtenga dólares con otro bono mientras sus préstamos siguen su curso.</p>
+          <button disabled={loan.busy} className="btn-primary mt-6 disabled:opacity-60" onClick={() => setShowForm(true)}>Registrar otro bono</button>
+        </> : <BondForm key={state.loans.length} exampleIndex={state.loans.length} busy={loan.busy} register={bond => { void loan.register(bond).then(success => { if (success) setShowForm(false); }); }} />)}
 
         {offer && t && (
           <>
@@ -124,56 +124,13 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
           </>
         )}
 
-        {active && t && (
-          <>
-            <div className="mt-8 grid gap-8 lg:grid-cols-2">
-              <Hero label="Recibió" value={formatNumber(t.loan, 2)} unit="USDC" note="Ya están en su cuenta. Al devolver el préstamo, sus bonos vuelven a usted." />
-              <Facts
-                rows={[
-                  ['Bonos en garantía', `USD ${formatNumber(t.collateral, 2)}`],
-                  ['Total a devolver', usdc(t.total)],
-                  ['Vence', `${day(t.dueDate)} · ${daysLeft} días`],
-                ]}
-              />
-            </div>
-            <button type="button" disabled={loan.busy} onClick={loan.repay} className="btn-primary mt-8 w-full disabled:opacity-60 sm:w-auto">
-              {loan.busy ? `${REPAY_STEPS[Math.max(0, loan.repayStep)]}…` : loan.error ? 'Reintentar el reembolso' : `Devolver ${usdc(t.total)}`}
-              <span aria-hidden="true" className="btn-arrow">
-                →
-              </span>
-            </button>
-            {loan.repayStep >= 0 && <Checklist steps={REPAY_STEPS} current={loan.repayStep} />}
-          </>
-        )}
-
-        {(pendingRelease || closed) && state?.repayment && (
-          <div role="status">
-            <p className="mt-5 max-w-2xl text-lg leading-8">
-              {closed
-                ? `Devolvió ${usdc(state.repayment.amount)} y sus bonos por USD ${formatNumber(state.bonds, 2)} ya están de vuelta en su cuenta.`
-                : `Recibimos su pago de ${usdc(state.repayment.amount)} el ${day(state.repayment.at)}. Estamos devolviendo sus bonos a su cuenta; mientras tanto siguen protegidos.`}
-            </p>
-            <Checklist steps={REPAY_STEPS} current={closed ? 3 : 3} done={closed} />
-            {closed ? (
-              <button type="button" onClick={loan.requestNew} disabled={loan.busy} className="btn-primary mt-8 w-full sm:w-auto">
-                Solicitar un nuevo préstamo
-              </button>
-            ) : (
-              <button type="button" onClick={loan.settle} disabled={loan.busy} className="mt-8 min-h-12 cursor-pointer border border-white/40 px-6 py-3 font-semibold disabled:cursor-wait disabled:opacity-60">
-                {loan.busy ? 'Comprobando…' : 'Comprobar de nuevo'}
-              </button>
-            )}
-          </div>
-        )}
-
-        {state && (
+        {state?.setup && (
           <details className="mt-8 border-t border-white/20 pt-3 text-sm text-white/65">
             <summary className="min-h-11 cursor-pointer py-3">Ver detalle técnico</summary>
             <p className="leading-6">
               Red de pruebas de Stellar. Cada bono digital (VBOND) representa USD 1 de garantía. La garantía se guarda en un contrato de
               escrow de Trustless Work.
             </p>
-            {active && <p className="mt-2 leading-6">En esta versión de prueba añadimos a su cuenta los dólares del interés para que pueda completar el reembolso.</p>}
             {loan.providerMessage && <p className="mt-2 break-words">Respuesta del proveedor de custodia: {loan.providerMessage}</p>}
             <ul className="mt-2">
               <li>
@@ -206,6 +163,30 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
           </details>
         )}
       </section>
+      {!!state?.loans.length && <section className="mt-8" aria-labelledby="loans-title">
+        <h2 id="loans-title" className="font-serif text-2xl font-semibold">Sus préstamos</h2>
+        <div className="mt-4 divide-y divide-line border border-line bg-white">
+          {state.loans.map(item => {
+            const id = item.escrow!.contractId, running = loan.operationId === id;
+            const active = item.stage === 'active', closed = item.stage === 'closed';
+            const days = Math.ceil((Date.parse(item.terms.dueDate) - now) / 86400000);
+            return <article key={id} className="min-w-0 p-6 md:p-8" aria-busy={running && loan.busy}>
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_17rem] lg:items-center">
+                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-3 text-sm text-teal"><span aria-hidden="true">{closed ? '✓' : active ? '●' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : 'Pago recibido · bonos en devolución'}</p></div>
+                <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
+                <div className="text-sm">
+                  {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>
+                    : <><p className="text-ink/65">Devolvió {usdc(item.repayment?.amount ?? item.terms.total)}</p>{item.repayment && <p className="font-semibold">Pagado el {day(item.repayment.at)}</p>}</>}
+                </div>
+                <div>{!closed && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>
+              </div>
+              {running && loan.repayStep >= 0 && <div className="on-dark mt-5 bg-ink p-4 text-white"><Checklist steps={REPAY_STEPS} current={loan.repayStep} done={closed} /></div>}
+              {running && loan.error && <p role="alert" className="mt-4 border-l-2 border-teal pl-4">{loan.error} Use el botón del préstamo para reintentar.</p>}
+              <details className="mt-4 border-t border-line pt-2 text-sm text-ink/65"><summary className="min-h-11 cursor-pointer py-3">Ver detalle técnico</summary><ul><li><a className="inline-block py-2 underline" href={item.escrow!.url} target="_blank" rel="noreferrer">Contrato de garantía ↗</a></li>{[...item.transactions, ...(item.repayment ? [{ ...item.repayment, label: 'Reembolso' }] : [])].map(tx => <li key={tx.hash}><a className="inline-block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">{tx.label} ↗</a></li>)}</ul>{running && loan.providerMessage && <p className="break-words">{loan.providerMessage}</p>}</details>
+            </article>;
+          })}
+        </div>
+      </section>}
     </>
   );
 }

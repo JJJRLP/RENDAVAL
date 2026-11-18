@@ -65,3 +65,15 @@ export async function cleanJournal(wallet?: string) {
   }
   throw new ApiError(409, 'La limpieza sigue pendiente. Vuelva a intentar.');
 }
+
+/** Recover cleanup after a lost deployment response, including on reload. Only
+ * generations with an indexed contract are eligible; the next outbox is untouched. */
+export const journalAccount = () => server.loadAccount(Keypair.fromSecret(required('BOND_ISSUER_SECRET_KEY')).publicKey());
+export async function cleanObservedJournals(wallet: string, contracts: number, snapshot?: Awaited<ReturnType<typeof journalAccount>>) {
+  if (!contracts) return;
+  const account = snapshot ?? await journalAccount();
+  for (let generation = 0; generation < contracts; generation++) {
+    const key = `${wallet}:${generation}`;
+    if (account.data_attr[prefix(key) + 'count']) await cleanJournal(key);
+  }
+}

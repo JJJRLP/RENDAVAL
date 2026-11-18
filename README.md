@@ -102,7 +102,7 @@ node --env-file=.env.local --conditions=react-server --import tsx scripts/fund-l
 | `npm run build` y `npm run start` | Compilación y servidor de producción. |
 | `npm run lint` | Análisis estático. |
 | `scripts/verify-kyb.ts` | Prueba real de la verificación contra Didit sandbox y testnet. |
-| `scripts/verify-loan.ts` | Prueba real del préstamo completo en testnet con una empresa nueva. |
+| `scripts/verify-loan.ts` | Prueba real de tres préstamos independientes en testnet con una empresa nueva. |
 | `scripts/clean-journal.ts` | Limpia entradas temporales de despliegue en la cuenta emisora. |
 
 Los scripts se ejecutan con `node --env-file=.env.local --conditions=react-server --import tsx <script>` y operan sobre la red de pruebas: crean cuentas y transacciones reales de testnet.
@@ -126,9 +126,9 @@ docs/                 Notas técnicas
 
 ## Limitaciones conocidas
 
-- **Devolución de la garantía.** La liberación del escrow por la API de Trustless Work falla hoy para activos que no son stablecoins, porque su cuenta de comisiones no tiene trustline del bono. La aplicación registra el pago, muestra la devolución «en proceso» y la reintenta sola; se completará sin cambios de código cuando el proveedor agregue la trustline.
+- **Devolución de la garantía.** La liberación del escrow por la API de Trustless Work falla hoy para activos que no son stablecoins, porque su cuenta de comisiones no tiene trustline del bono. La aplicación registra el pago, muestra la devolución «en proceso» y permite comprobarla desde cada préstamo; se completará sin cambios de código cuando el proveedor agregue la trustline.
 - **Montos de prueba.** La garantía admite entre USD 100 y USD 400 (préstamo de hasta 200 USDC), por el tamaño de la tesorería de demostración.
 - **Simulaciones.** La tokenización del bono, el tipo de cambio (Bs 6,96 por USD) y el prestamista único son de demostración. La verificación ofrece una aprobación de prueba además del flujo real.
-- **Un préstamo activo por empresa**, y un solo prestamista.
+- **Hasta 3 préstamos abiertos por empresa** (activos o pagados con bonos pendientes de devolución), y un solo prestamista. Puede registrar otro bono cuando no hay bonos disponibles ni un préstamo en preparación; cada préstamo se devuelve por separado.
 - **Comisiones de red.** Las firmas de la empresa sobre el escrow pagan su comisión en XLM desde su cuenta; no se patrocinan.
 - **No apto para producción.** No hay auditoría de contratos, gestión de llaves ni cumplimiento regulatorio.

@@ -1,0 +1,137 @@
+Vault — multi-loan verification, 2026-11-18
+
+Implemented
+- State exposes setup, loans, canRegister, openLoans and limitReached. Each
+  disbursed loan has its own bond, amount, due date, repayment and links.
+- All seven loan-specific operations require contractId and check ownership,
+  engagement prefix, expected roles and asset on the server. Both serviceProvider
+  layouts remain accepted. The open-loan limit includes pending releases.
+- Deployment outbox generations are separate per company/acceptance, with cleanup
+  on confirmation and reload. Disbursement and test-interest markers remain atomic
+  per contract. Signed deposit and repayment validation remains enforced.
+- Histories are fetched in parallel with provider/account reads and scanned once
+  per account, across all loans. Provider role results are paginated explicitly.
+- Existing dark setup block, compact stages, palette and typography retained.
+  Independent loan rows sit above account totals. One shared operation lock;
+  inline errors/progress and retry; rotating fictional bond examples.
+
+Files changed
+README.md
+components/app/bond-form.tsx
+components/app/loan-panel.tsx
+components/app/use-loan.ts
+components/app/wallet-panel.tsx
+docs/notas-tecnicas.md
+lib/loan/model.ts
+lib/server/loan/accept.ts
+lib/server/loan/deployment-journal.ts
+lib/server/loan/deposit.ts
+lib/server/loan/disburse.ts
+lib/server/loan/history.ts (new)
+lib/server/loan/register.ts
+lib/server/loan/repayment.ts
+lib/server/loan/route.ts
+lib/server/loan/settle.ts
+lib/server/loan/state.ts
+scripts/verify-loan.ts
+scripts/verify-loan-ownership.ts (new)
+scripts/evidence/multi-loan-testnet.txt (new)
+scripts/evidence/multi-loan-ownership.txt (new)
+scripts/evidence/multi-loan-timings.txt (new)
+scripts/evidence/multi-loan-report.txt (this report)
+
+Real testnet results
+Company: GAPUFWCFTYQIHZPMV4MCZ54PNQRJRJLMQ2XQZRP4PTLOFIRHTEDMTMLL
+A: CA6MVJDYA7OLIWOMD3RGM3DFZ3GGINHCDBRIXEZBF2MV5UHOTYQVMGFN
+   Principal 200; repayment 201.3333333 USDC.
+B: CD2TF3LRNCNTFPXUMUJXWH5AASWPDYICF4H5EE77UCVCQFAD5JGWSUG3
+   Principal 150; repayment 151.0000000 USDC.
+C: CAIZXBP4BIMGIYU76SWSAFHYQLCWF35XX7P3W47AVF2HJ7SHTNQM6UIU
+   Principal 100; repayment 100.6666667 USDC.
+
+PASS multi-loan testnet
+- B registered while A active. Two independent terms checked against the actual
+  disbursement receipts (due date = own receipt date + 30 days).
+- A repaid alone; A repaid_release_pending and B active asserted.
+- C registered and disbursed; three open loans, 900 USD collateral.
+- Fourth registration rejected with 409 and the exact three-loan limit message.
+- Repeated acceptance reused the setup contract; repeated disbursement, topup,
+  repayment build/submit and settlement left treasury sequence/balances unchanged.
+- Duplicate registration and second deposit refused; invalid signed deposit refused.
+- All three paid. Trustless Work release returns "Escrow already in dispute";
+  all remain repaid_release_pending. No direct-contract workaround used.
+- treasuryFinal { before: 3100, after: 3100, difference: 0 }
+- Final independent read: treasuryUSDC "3100.0000000"; deploymentJournalEntries 0.
+
+Authorization / compatibility
+All seven foreign-contract helper actions returned 403 using the new verified
+company against the historical company's real contract. See ownership log.
+All ten loan routes and all four KYB routes returned 401 without a token.
+Offline repayment validation passed: wrong source, destination, asset, amount,
+contract memo, extra operation and operation source rejected.
+Historical wallet was only read:
+GA4J2HFY45VDAX6T7YFMOXRAWXVX5RCQFI3Y6W6BM3NFW4T5LJ4VNYF4
+State: active, contract CD65BAVWLBY65W374UDEYD7NEZDQKYJA2GDTO6GIZUJYW56L6TU3VGYD,
+principal 200, total 201.3333333, due 2026-12-18T11:54:36.000Z.
+Contrary to the task's historical description, its currently returned contract
+has Vault as serviceProvider. The old company-as-serviceProvider layout was
+additionally verified with a provider-response fixture, without chain mutation.
+This does not claim a live old-layout settlement was exercised.
+
+State timings / limitation
+Mixed states with three loans during the full script: 3580, 3027, 3236 ms.
+Final code, three repaid-release-pending loans: 3119, 2931, 2970, 2737, 2679 ms.
+No authentication roundtrip is included: these measure the actual state helper.
+This is around three seconds, not comfortably below a few seconds. A diagnostic
+parallel read measured Trustless Work validated roles at 3291 ms, compared with
+Horizon/attestation reads at 450–557 ms. Alternative provider query patterns were
+benchmarked read-only and were not faster enough to justify changing the safety
+path. No stale cache or weakened on-chain validation was introduced.
+
+Browser verification
+Chromium, real AppHome/LoanPanel/BondForm/WalletPanel and hooks bundled from the
+repository, real compiled CSS/fonts, mocked Pollar/API/Horizon responses.
+All four scenarios at 360 and 1280 px rendered without page errors or horizontal
+overflow. Also checked another-bond prefill, global disabled buttons during repay,
+row-scoped repayment error and state reconstruction after reload.
+Screenshots under /tmp/vault-multi-ui/:
+no-loans-360.png
+no-loans-1280.png
+one-active-360.png
+one-active-1280.png
+mixed-360.png
+mixed-1280.png
+limit-360.png
+limit-1280.png
+repayment-error-360.png
+repayment-error-1280.png
+Harness and console results are in that same /tmp directory.
+Interactive Pollar login/signing remains a human check; testnet script uses an
+in-memory fresh signer and the same server helpers.
+
+Build / hygiene
+npm run lint: PASS
+npm run build: PASS (Next.js 16.4.6, all 18 pages generated)
+git diff --check: PASS
+Final .next/static scan: 0 secret-name or secret-value findings.
+Only intended files changed. No commits, pushes or branch creation.
+Ports used: 3018 (production verification), 3019 (mock browser harness).
+Both task servers stopped after verification; port 3000 left untouched.
+
+Human click list
+1. Sign in at /app, complete test verification and wait for account preparation.
+2. Register the first fictional bond; accept/deposit and confirm the signature.
+   Confirm the active loan appears in Sus préstamos and account totals update.
+3. Click Registrar otro bono. Confirm a different example is prefilled; register
+   and accept it. Confirm both loans and their individual dates/amounts.
+4. Use Devolver on A and sign. Confirm only A changes to Pago recibido · bonos
+   en devolución; B stays active. Reload and confirm the same states.
+5. Register/disburse C. Confirm the calm three-open-loan limit and no registration
+   button. Confirm the nearest-due active loan has the primary repayment action.
+6. Repay B and C individually. During each operation, other loan buttons and the
+   registration form must be disabled. Check any error stays in its own row.
+7. Use Comprobar devolución and Ver detalle técnico for an individual loan.
+   Pending release is expected with the current provider blocker.
+8. Repeat at 360 px, navigate with Tab/Enter, and inspect account collateral sum.
+   After an eventual successful release, verify the returned balance is offered
+   again as collateral and the prior loan stays visible as Cerrado.

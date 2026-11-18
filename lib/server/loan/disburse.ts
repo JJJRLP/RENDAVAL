@@ -4,9 +4,9 @@ import { ApiError } from '../env';
 import { terms, usdcAmount } from '../../loan/model';
 import { badSequence, dollarAsset, lenderKey, networkPassphrase, server } from './network';
 import { escrowFor, verified } from './state';
-export async function disburse(wallet: string) {
+export async function disburse(wallet: string, contractId: string) {
   await verified(wallet);
-  const escrow = await escrowFor(wallet);
+  const escrow = await escrowFor(wallet, contractId);
   if (!escrow || escrow.balance < escrow.amount) throw new ApiError(409, 'Aún estamos confirmando el depósito completo de su garantía. Vuelva a comprobar en unos segundos.');
   const signer = lenderKey(), amount = usdcAmount(terms(escrow.amount).loan);
   for (let attempt = 0; attempt < 4; attempt++) {
