@@ -1,94 +1,134 @@
 # Vault
 
-Liquidez en USDC sobre activos tokenizados en Stellar testnet.
+Préstamos en dólares digitales (USDC) para empresas bolivianas, respaldados por sus bonos tokenizados. La empresa deja sus bonos en garantía en un escrow sobre Stellar, recibe USDC y recupera los bonos al devolver el préstamo. Los bonos siguen siendo suyos durante todo el plazo.
 
-## Desarrollo local
+> **Estado:** MVP de hackathon sobre la **red de pruebas de Stellar**. Los bonos y los dólares no tienen valor real, la tokenización del bono es simulada (no hay custodio) y los servicios externos se usan en modo sandbox.
 
-Instale las dependencias con `npm install`. Copie `.env.example` a `.env.local` y complete:
+## Qué incluye
 
-- `NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY`: clave pública de testnet de Pollar. El acceso rechaza claves que no comiencen por `pub_testnet_`.
-- `NEXT_PUBLIC_VBOND_ISSUER`: dirección pública del emisor de VBOND en testnet.
-- `POLLAR_SECRET_KEY`: clave secreta `sec_testnet_` para validar el token de acceso en cada ruta del servidor. Nunca se expone al navegador.
-- `DIDIT_API_KEY`: clave sandbox `sk_test_` de Didit; las claves de producción se rechazan.
-- `DIDIT_KYB_WORKFLOW_ID`: identificador del workflow de verificación de empresas. Configure la cobertura de Bolivia en la consola; enviamos `expected_details.registry_country: "BO"`.
-- `VAULT_SECRET_KEY`: clave secreta Stellar de la cuenta de plataforma Vault, financiada en testnet para comisiones y reservas de entradas de datos.
+| Ruta | Contenido |
+| --- | --- |
+| `/` | Landing del producto, con simulador de préstamo. |
+| `/app` | Aplicación: acceso, verificación de empresa, registro del bono, oferta, garantía, desembolso y reembolso. |
 
-Los préstamos requieren `LENDER_SECRET_KEY`, `BOND_ISSUER_SECRET_KEY` y `TRUSTLESS_WORK_API_KEY` solo en el servidor. Configure las mismas variables en Vercel; no se usa base de datos ni almacenamiento en disco.
+## Recorrido de la empresa
 
-Ejecute `npm run dev -- --port 3017` y abra `http://localhost:3017/app`. El origen `http://localhost:3017` debe estar en los orígenes permitidos del dashboard de Pollar (y en las URI de redirección si se solicita). Si el puerto está ocupado, elija otro puerto libre y registre también ese origen.
+1. **Acceso.** Ingresa con correo o Google. Se crea su cuenta en Stellar sin instalar nada (Pollar).
+2. **Verificación.** Confirma la identidad legal de la empresa (Didit, flujo para Bolivia). La aprobación queda registrada en Stellar como constancia pública.
+3. **Registro del bono.** Declara su bono en bolivianos. Vault emite los bonos digitales equivalentes a su valor en dólares (paso simulado).
+4. **Oferta.** Vault fija las condiciones: 50 % del valor de la garantía, 8 % anual, 30 días. La empresa solo acepta.
+5. **Garantía y desembolso.** La empresa firma el depósito de los bonos en un escrow (Trustless Work) y el prestamista envía los USDC.
+6. **Reembolso.** La empresa devuelve capital más interés con una firma; el prestamista aprueba y Vault libera la garantía.
 
-En Pollar, habilite correo y Google, billeteras clásicas con creación inmediata, el patrocinio de trustlines y los activos USDC y VBOND. El panel consulta Horizon testnet y solicita solamente las autorizaciones faltantes. Las solicitudes pendientes se consultan de nuevo sin reenviarlas durante la sesión de la página.
+## Arquitectura
 
-La landing permanece en `/`. La ruta `/app` contiene el acceso, los saldos y la verificación de empresa. El flujo de préstamo incluye registro, garantía, desembolso, reembolso y devolución de bonos.
-
-El servidor verifica el token de Pollar y usa exclusivamente la dirección devuelta por ese servicio. Una sesión de Didit debe corresponder a esa dirección y al workflow configurado. Al aprobarse, Vault firma en Stellar testnet una entrada `manageData` con nombre `kyb:<dirección de empresa>` y valor igual al identificador de sesión. Las consultas posteriores leen esa constancia pública; no incluye documentos ni datos de la empresa. Cada nueva entrada requiere reserva de XLM. La constancia no almacena fecha.
-
-El navegador conserva únicamente el identificador y enlace de la sesión pendiente por cuenta. Al volver de la verificación, consulta automáticamente hasta cinco veces con esperas de 2, 4, 8 y 16 segundos. Después ofrece una comprobación manual. Si se borra el almacenamiento antes de aprobar, será necesario iniciar otra sesión. La aprobación de prueba solo funciona con configuración sandbox y requiere autenticación y pertenencia de la sesión.
-
-Prueba real (crea una sesión sandbox y una entrada permanente en testnet para una dirección aleatoria):
-
-```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-kyb.ts
+```
+Navegador (Next.js, /app)
+  │  Pollar SDK: sesión, cuenta Stellar y firma de transacciones
+  ▼
+Rutas del servidor (Next.js, /api/kyb/* y /api/loan/*)
+  ├─ Pollar Server API ── valida la sesión y obtiene la cuenta de la empresa
+  ├─ Didit ───────────── sesión de verificación de empresa y su resultado
+  ├─ Trustless Work ──── escrow de la garantía (contrato Soroban por préstamo)
+  └─ Stellar testnet ─── saldos, pagos y constancias (Horizon)
 ```
 
-El script importa los mismos helpers del servidor y solo omite el acceso interactivo de Pollar. No guarda claves ni estado en disco. Las pruebas de producción deben usar un puerto libre y detener el proceso al terminar.
+- **Sin base de datos.** Todo el estado se lee de la red y de los proveedores, así que el despliegue solo necesita variables de entorno:
+  - Empresa verificada: entrada de datos `kyb:<cuenta>` en la cuenta de Vault.
+  - Bono registrado: saldo del activo `VBOND` de la empresa (1 VBOND = 1 USD de garantía).
+  - Préstamo: escrow de Trustless Work asociado a la empresa.
+  - Desembolso: pago en USDC y marcador escritos en una misma transacción del prestamista, para que no pueda pagarse dos veces.
+  - Reembolso: pago de la empresa al prestamista, identificado por un memo propio del préstamo.
+- **Quién firma qué.** La empresa firma en el navegador el depósito de la garantía y el pago del reembolso. Vault, el prestamista de demostración y el emisor del bono firman en el servidor con cuentas de prueba.
+- **Autorización.** Cada ruta valida el token de Pollar y usa únicamente la cuenta que devuelve ese servicio, nunca una enviada por el navegador. Las rutas de préstamo exigen además una empresa verificada.
 
-Referencias de contrato: [crear sesión](https://docs.didit.me/sessions-api/create-session), [sandbox y simulate](https://docs.didit.me/integration/sandbox-testing). La creación no devuelve `session_kind`; se valida `business` al consultar la decisión. El escenario simulado no sustituye una prueba humana del flujo alojado ni confirma la cobertura efectiva de Bolivia del workflow.
+Más detalle en [`docs/notas-tecnicas.md`](docs/notas-tecnicas.md).
 
-Validación: `npm run lint` y `npm run build`. Para probar producción en otro puerto: `npm run start -- --port 3017`.
+## Tecnologías
 
+- [Next.js 16](https://nextjs.org) (App Router), React 19, Tailwind CSS 4, TypeScript.
+- [Stellar](https://stellar.org) testnet: activos clásicos, Horizon y Soroban.
+- [Pollar](https://docs.pollar.xyz): acceso, cuentas y firma.
+- [Didit](https://docs.didit.me): verificación de empresas (KYB).
+- [Trustless Work](https://docs.trustlesswork.com): escrow de la garantía.
 
-## Préstamos de prueba — fase 4
+## Puesta en marcha
 
-Garantía admitida: USD 100–400; préstamo: 50 %, hasta 200 USDC. El ejemplo
-es Bs 2.784 (USD 400). Capital, interés a 30 días y total se redondean a siete
-decimales con `usdcAmount`; el pago y la oferta usan los mismos importes.
-
-Cada ruta `/api/loan/*` autentica el token de Pollar y exige una empresa
-verificada. Se usan Horizon y Trustless Work de testnet, sin base de datos,
-disco persistente ni configuración adicional para Vercel. Vault es el
-`serviceProvider`; la empresa es `receiver` y firma el depósito y, más tarde,
-un solo pago de reembolso. El prestamista aprueba y Vault libera la garantía.
-La búsqueda acepta únicamente el identificador `vault-loan-<wallet>` histórico
-o `vault-loan-<wallet>:<timestamp>`, con los roles y el activo esperados.
-Los préstamos antiguos conservan sus condiciones y roles originales; el cambio
-de rol se aplica exclusivamente a nuevos contratos.
-
-`POST /api/loan/repay/topup` cubre una sola vez el faltante de interés de prueba
-(hasta interés + 0,01 USDC), mediante pago y marcador atómicos en el prestamista.
-`repay/build` prepara el pago exacto con memo hash por contrato; `repay/submit`
-valida la firma testnet y la operación. El estado reconoce el reembolso leyendo
-transacciones exitosas en Horizon. `settle` marca, aprueba y libera, omitiendo
-pasos ya confirmados en cadena. La respuesta conocida de Trustless Work
-“Escrow already in dispute” en `release-funds` se devuelve como HTTP 200,
-`release_pending`; se muestra solo en detalles técnicos. El pago queda recibido
-y los bonos protegidos, con reintento al entrar y botón “Volver a intentar”.
-No se invoca el contrato con otra dirección de comisiones.
-
-Al liberar se muestra el saldo efectivamente devuelto (el proveedor puede cobrar
-su comisión en bonos). “Solicitar un nuevo préstamo” abre una nueva oferta sobre
-ese saldo; al aceptarla se crea otro identificador. La pantalla de cierre persiste
-al recargar hasta que se solicite otro préstamo.
-
-El diario de despliegue conserva el XDR firmado para serializar aceptaciones
-paralelas. Sus entradas se eliminan al observar el contrato activo en cadena;
-la ausencia del diario no impide consultar el préstamo. Para limpiar entradas
-históricas, sin despliegues en curso:
+Requisitos: Node.js 20.9 o superior y cuentas de prueba en Pollar, Didit y Trustless Work.
 
 ```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/clean-journal.ts
+npm install
+cp .env.example .env.local   # complete los valores
+npm run dev
 ```
 
-Prueba integral (crea una empresa fresca, deposita 400 bonos, recibe y devuelve
-200 USDC más el interés subvencionado; la tesorería termina con el mismo USDC):
+Abra `http://localhost:3000/app`.
+
+### Variables de entorno
+
+| Variable | Dónde se usa | Descripción |
+| --- | --- | --- |
+| `NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY` | Navegador | Clave pública de Pollar (`pub_testnet_…`). |
+| `NEXT_PUBLIC_VBOND_ISSUER` | Navegador y servidor | Cuenta pública que emite los bonos digitales `VBOND`. |
+| `POLLAR_SECRET_KEY` | Servidor | Clave secreta de Pollar (`sec_testnet_…`) para validar sesiones. |
+| `DIDIT_API_KEY` | Servidor | Clave sandbox de Didit (`sk_test_…`). |
+| `DIDIT_KYB_WORKFLOW_ID` | Servidor | Flujo de verificación de empresas configurado en Didit. |
+| `TRUSTLESS_WORK_API_KEY` | Servidor | Clave de la API de Trustless Work (testnet). |
+| `VAULT_SECRET_KEY` | Servidor | Cuenta de Vault en testnet: crea los escrows, libera la garantía y registra las constancias. |
+| `LENDER_SECRET_KEY` | Servidor | Cuenta del prestamista de demostración, con USDC de prueba. |
+| `BOND_ISSUER_SECRET_KEY` | Servidor | Cuenta emisora de `VBOND`; debe corresponder a `NEXT_PUBLIC_VBOND_ISSUER`. |
+
+La aplicación rechaza claves que no sean de prueba. Ninguna clave secreta llega al navegador.
+
+### Configuración en los proveedores
+
+- **Pollar** (dashboard): agregue el origen de la aplicación (`http://localhost:3000` y el dominio de producción) en *Developers → Websites*; habilite acceso con correo y Google; active el patrocinio de trustlines; agregue los activos USDC y VBOND; defina un saldo inicial de XLM para las cuentas nuevas (2 XLM alcanza para las comisiones del recorrido).
+- **Didit** (consola): cree un flujo de verificación de empresas y copie su identificador.
+- **Stellar testnet:** las cuentas de Vault, prestamista y emisor deben existir y tener XLM. Vault y el prestamista necesitan trustlines de USDC y VBOND. El contrato del activo `VBOND` debe estar desplegado una vez.
+
+### Fondos de prueba del prestamista
+
+El prestamista paga los desembolsos con su saldo de USDC de testnet. Para recargarlo comprando USDC con XLM en el mercado de testnet (2.500 USDC por ejecución):
 
 ```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-loan.ts
+node --env-file=.env.local --conditions=react-server --import tsx scripts/fund-lender.ts
 ```
 
-Los marcadores de desembolso/ayuda y las constancias KYB permanecen como entradas
-por préstamo/empresa. El diario voluminoso ya no se acumula. La búsqueda del pago
-recorre el historial de la empresa; para historiales grandes será necesario un
-indexador para mantener las consultas dentro del tiempo máximo de Vercel.
-La prueba automática omite solo el login interactivo; firma con una clave fresca
-en memoria. El recorrido real con Pollar requiere la comprobación humana.
+## Comandos
+
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo. |
+| `npm run build` y `npm run start` | Compilación y servidor de producción. |
+| `npm run lint` | Análisis estático. |
+| `scripts/verify-kyb.ts` | Prueba real de la verificación contra Didit sandbox y testnet. |
+| `scripts/verify-loan.ts` | Prueba real del préstamo completo en testnet con una empresa nueva. |
+| `scripts/clean-journal.ts` | Limpia entradas temporales de despliegue en la cuenta emisora. |
+
+Los scripts se ejecutan con `node --env-file=.env.local --conditions=react-server --import tsx <script>` y operan sobre la red de pruebas: crean cuentas y transacciones reales de testnet.
+
+## Despliegue
+
+La aplicación se despliega en [Vercel](https://vercel.com) sin configuración adicional: defina las variables de entorno de la tabla en el proyecto y agregue el dominio resultante en el dashboard de Pollar.
+
+## Estructura
+
+```
+app/                  Landing (/), aplicación (/app) y rutas del servidor (/api)
+components/           Secciones de la landing
+components/app/       Pantallas de la aplicación
+lib/stellar/          Lectura de saldos y activos (navegador)
+lib/loan/             Condiciones del préstamo compartidas
+lib/server/           Integraciones del servidor: Pollar, Didit, Trustless Work, Stellar
+scripts/              Pruebas reales en testnet y utilidades; scripts/evidence guarda sus resultados
+docs/                 Notas técnicas
+```
+
+## Limitaciones conocidas
+
+- **Devolución de la garantía.** La liberación del escrow por la API de Trustless Work falla hoy para activos que no son stablecoins, porque su cuenta de comisiones no tiene trustline del bono. La aplicación registra el pago, muestra la devolución «en proceso» y la reintenta sola; se completará sin cambios de código cuando el proveedor agregue la trustline.
+- **Montos de prueba.** La garantía admite entre USD 100 y USD 400 (préstamo de hasta 200 USDC), por el tamaño de la tesorería de demostración.
+- **Simulaciones.** La tokenización del bono, el tipo de cambio (Bs 6,96 por USD) y el prestamista único son de demostración. La verificación ofrece una aprobación de prueba además del flujo real.
+- **Un préstamo activo por empresa**, y un solo prestamista.
+- **Comisiones de red.** Las firmas de la empresa sobre el escrow pagan su comisión en XLM desde su cuenta; no se patrocinan.
+- **No apto para producción.** No hay auditoría de contratos, gestión de llaves ni cumplimiento regulatorio.
