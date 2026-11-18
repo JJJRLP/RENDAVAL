@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { Eyebrow } from "./Eyebrow";
 import { Reveal } from "./Reveal";
@@ -19,6 +20,14 @@ function Icon({ children }: { children: ReactNode }) {
     </svg>
   );
 }
+
+/** Infrastructure behind each step. Logos belong to their owners. */
+const PARTNERS = [
+  { name: "Stellar", role: "Red de los bonos y los dólares", href: "https://stellar.org", logo: "/logos/stellar.svg", width: 24, height: 24, wordmark: "Stellar" },
+  { name: "Trustless Work", role: "Escrow de la garantía", href: "https://www.trustlesswork.com", logo: "/logos/trustless-work.png", width: 495, height: 434, wordmark: "Trustless Work" },
+  { name: "Pollar", role: "Acceso, cuenta y firma", href: "https://pollar.xyz", logo: "/logos/pollar.png", width: 1200, height: 245 },
+  { name: "Didit", role: "Verificación de empresas", href: "https://didit.me", logo: "/logos/didit.png", width: 400, height: 145 },
+];
 
 const points = [
   {
@@ -106,14 +115,18 @@ export function Trust() {
             ))}
           </ul>
 
-          <div className="mt-12 flex flex-wrap items-center gap-4">
-            <p className="text-sm font-semibold text-white/70">Infraestructura</p>
-            <ul className="flex flex-wrap gap-2 text-sm font-semibold">
-              <li className="rounded-sm border border-white/30 px-4 py-2">Stellar</li>
-              <li className="rounded-sm border border-purple bg-purple px-4 py-2">
-                Trustless Work
-              </li>
-              <li className="rounded-sm border border-white/30 px-4 py-2">Pollar</li>
+          <div className="mt-12 bg-white p-6 text-ink md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-ink/60">Construido sobre</p>
+            <ul className="mt-5 grid grid-cols-2 items-center gap-x-8 gap-y-6 md:grid-cols-4">
+              {PARTNERS.map((partner) => (
+                <li key={partner.name} className="min-w-0">
+                  <a href={partner.href} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-2" aria-label={`${partner.name}: ${partner.role} (abre una pestaña nueva)`}>
+                    <Image src={partner.logo} alt="" width={partner.width} height={partner.height} unoptimized className="h-6 w-auto shrink-0 sm:h-8" />
+                    {partner.wordmark && <span className="text-base leading-tight font-semibold tracking-tight sm:text-xl sm:whitespace-nowrap">{partner.wordmark}</span>}
+                  </a>
+                  <p className="mt-2 text-xs leading-5 text-ink/65">{partner.role}</p>
+                </li>
+              ))}
             </ul>
           </div>
         </Reveal>

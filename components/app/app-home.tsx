@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Eyebrow } from "@/components/Eyebrow";
 import { VerificationPanel } from "./verification-panel";
 import { WalletPanel } from "./wallet-panel";
-import { TechStrip } from "./tech-strip";
 
 /** The same stages the landing explains, so the company recognises where it is. */
 const STEPS = [
@@ -76,9 +75,6 @@ export function AppHome() {
             </li>
           ))}
         </ol>
-        <p className="border-t border-line p-6 text-xs leading-6 text-ink/60 md:col-span-5 md:px-12">
-          Acceso y firma con Pollar · Verificación con Didit · Garantía en escrow de Trustless Work · Sobre la red Stellar
-        </p>
       </section>
     );
   }
@@ -119,13 +115,6 @@ export function AppHome() {
             Cierre sesión e ingrese nuevamente. Si el problema continúa, escriba al equipo de Vault.
           </p>
         </div>
-      )}
-      {verified && wallet?.address && (
-        <TechStrip
-          account={wallet.address}
-          receiptUrl={loanState?.wallet === wallet.address ? loanState.verification.receiptUrl : undefined}
-          escrowUrl={loanState?.wallet === wallet.address ? (loanState.setup?.escrow?.url ?? loanState.loans[0]?.escrow?.url) : undefined}
-        />
       )}
     </>
   );
