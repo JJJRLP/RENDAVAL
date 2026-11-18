@@ -1,6 +1,7 @@
 "use client";
 
 import { usePollar } from "@pollar/react";
+import type { LoanState } from "@/lib/loan/model";
 import { useState } from "react";
 import { Eyebrow } from "@/components/Eyebrow";
 import { VerificationPanel } from "./verification-panel";
@@ -16,6 +17,7 @@ const STEPS = [
 
 export function AppHome() {
   const { isAuthenticated, verified, wallet, openLoginModal, logout, configStatus, retryConfig } = usePollar();
+  const [loanState, setLoanState] = useState<LoanState | null>(null);
   const [error, setError] = useState("");
   function action(callback: () => void) {
     setError("");
@@ -98,14 +100,14 @@ export function AppHome() {
         </p>
       )}
 
-      {verified && wallet?.address && <VerificationPanel key={wallet.address} address={wallet.address} />}
+      {verified && wallet?.address && <VerificationPanel key={`flow:${wallet.address}`} address={wallet.address} onLoanState={setLoanState} />}
 
       {!verified ? (
         <div role="status" className="mt-6 border border-line bg-white p-8">
           Verificando su sesión…
         </div>
       ) : wallet?.address ? (
-        <WalletPanel key={wallet.address} address={wallet.address} />
+        <WalletPanel key={`account:${wallet.address}`} address={wallet.address} loan={loanState?.wallet === wallet.address ? loanState : null} />
       ) : (
         <div className="mt-6 border border-line bg-white p-8">
           <h2 className="font-serif text-2xl font-semibold">Su cuenta aún no está lista</h2>

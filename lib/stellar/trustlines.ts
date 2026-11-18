@@ -26,7 +26,7 @@ export async function createTrustline(
   try {
     const result = await request;
     if (result.status === "error") {
-      throw new Error(`No se pudo habilitar ${asset.code}. ${result.details ?? "Intente nuevamente."}${result.code ? ` (${result.code})` : ""}`);
+      throw new Error(`No pudimos habilitar ${asset.code === 'USDC' ? 'los dólares digitales' : 'los bonos'} en su cuenta. Intente nuevamente.`);
     }
     pending.add(key);
   } finally {

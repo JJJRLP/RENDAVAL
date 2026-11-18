@@ -1,16 +1,18 @@
 "use client";
 
+import type { LoanState } from "@/lib/loan/model";
+import { formatNumber } from "@/lib/format";
 import { useState } from "react";
 import { USDC, VBOND } from "@/lib/stellar/assets";
 import { assetBalance, type Balance } from "@/lib/stellar/horizon";
 import { useWallet } from "./use-wallet";
 
 const amount = (balance: Balance | undefined) =>
-  balance ? new Intl.NumberFormat("es", { maximumFractionDigits: 2 }).format(Number(balance.balance)) : "—";
+  balance ? formatNumber(Number(balance.balance), 2) : "—";
 
 /** Balances in business terms; chain details stay one click away. */
-export function WalletPanel({ address }: { address: string }) {
-  const { balances, busy, progress, error, refresh } = useWallet(address);
+export function WalletPanel({ address, loan }: { address: string; loan: LoanState | null }) {
+  const { balances, busy, progress, error, refresh } = useWallet(address, loan);
   const [copyStatus, setCopyStatus] = useState("");
   async function copyAddress() {
     try {
@@ -22,7 +24,7 @@ export function WalletPanel({ address }: { address: string }) {
   }
   const tiles = [
     { label: "Dólares disponibles", unit: "USDC", balance: balances ? assetBalance(balances, USDC) : undefined },
-    { label: "Bonos disponibles", unit: "VBOND", balance: balances ? assetBalance(balances, VBOND) : undefined },
+    { label: "Bonos disponibles", unit: "USD", balance: balances ? assetBalance(balances, VBOND) : undefined },
   ];
   const native = balances?.find((item) => item.asset_type === "native");
 
@@ -47,11 +49,13 @@ export function WalletPanel({ address }: { address: string }) {
           <div key={tile.unit} className="min-w-0 border border-line bg-offwhite p-6">
             <p className="text-sm text-ink/70">{tile.label}</p>
             <p className="mt-3 break-words font-serif text-4xl font-semibold">
-              {amount(tile.balance)} <span className="font-sans text-base font-semibold text-teal">{tile.unit}</span>
+              {loan && busy ? formatNumber(tile.unit === "USDC" ? loan.usdc : loan.bonds, 2) : amount(tile.balance)} <span className="font-sans text-base font-semibold text-teal">{tile.unit}</span>
             </p>
           </div>
         ))}
       </div>
+
+      {loan?.escrow && <p className="mt-5 font-serif text-2xl">En garantía: USD {formatNumber(loan.locked, 2)} <span className="font-sans text-sm text-ink/60">en bonos</span></p>}
 
       {progress && (
         <p role="status" className="mt-5 text-sm text-ink/70">

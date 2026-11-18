@@ -6,7 +6,7 @@ import { TRUST_ASSETS, isClassicAddress } from "@/lib/stellar/assets";
 import { assetBalance, readBalances, type Balance } from "@/lib/stellar/horizon";
 import { confirmedTrustline, createTrustline } from "@/lib/stellar/trustlines";
 
-export function useWallet(address: string) {
+export function useWallet(address: string, revision?: unknown) {
   const { getClient } = usePollar();
   const [attempt, setAttempt] = useState(0);
   const [balances, setBalances] = useState<Balance[] | null>(null);
@@ -27,7 +27,7 @@ export function useWallet(address: string) {
         setBalances(current);
         for (const asset of TRUST_ASSETS) {
           if (!active()) return;
-          if (!isClassicAddress(asset.issuer)) throw new Error("El activo VBOND no está configurado. Contacte al equipo de Vault.");
+          if (!isClassicAddress(asset.issuer)) throw new Error("Los bonos de prueba no están configurados. Contacte al equipo de Vault.");
           if (assetBalance(current, asset)) {
             confirmedTrustline(address, asset);
             continue;
@@ -37,10 +37,10 @@ export function useWallet(address: string) {
           if (client.getWallet()?.address !== address || session.step !== "authenticated" || !session.verified) {
             throw new Error("Su sesión cambió. Ingrese nuevamente para continuar.");
           }
-          setProgress(`Habilitando ${asset.code} en su cuenta…`);
+          setProgress(`Habilitando ${asset.code === 'USDC' ? 'los dólares digitales' : 'los bonos'} en su cuenta…`);
           await createTrustline(address, asset, (value) => client.setTrustline(value));
           if (!active()) return;
-          setProgress(`Habilitando ${asset.code} en su cuenta…`);
+          setProgress(`Habilitando ${asset.code === 'USDC' ? 'los dólares digitales' : 'los bonos'} en su cuenta…`);
           // Horizon can index after the SDK responds. Never report success early.
           for (let i = 0; i < 5; i++) {
             current = await readBalances(address, controller.signal);
@@ -50,7 +50,7 @@ export function useWallet(address: string) {
             if (i < 4) await new Promise<void>((resolve) => setTimeout(resolve, 1500));
           }
           if (!assetBalance(current, asset)) {
-            throw new Error(`Todavía estamos habilitando ${asset.code} en su cuenta. Pulse Reintentar en unos segundos.`);
+            throw new Error(`Todavía estamos habilitando ${asset.code === 'USDC' ? 'los dólares digitales' : 'los bonos'} en su cuenta. Pulse Reintentar en unos segundos.`);
           }
           confirmedTrustline(address, asset);
         }
@@ -67,7 +67,7 @@ export function useWallet(address: string) {
     // Deferral lets Strict Mode cancel its rehearsal before any wallet mutation.
     const timer = setTimeout(() => void run(), 0);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [address, attempt, getClient]);
+  }, [address, attempt, getClient, revision]);
 
   return { balances, busy, progress, error, refresh: () => setAttempt((value) => value + 1) };
 }

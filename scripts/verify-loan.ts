@@ -1,0 +1,51 @@
+// node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-loan.ts
+// Only authentication is bypassed: these are the same helpers used by HTTP routes.
+import assert from 'node:assert/strict';
+import { Keypair, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
+import { attest } from '../lib/server/attestation';
+import { register } from '../lib/server/loan/register';
+import { accept } from '../lib/server/loan/accept';
+import { buildDeposit, submitDeposit } from '../lib/server/loan/deposit';
+import { disburse } from '../lib/server/loan/disburse';
+import { state } from '../lib/server/loan/state';
+import { bondAsset, dollarAsset, lenderKey, networkPassphrase, server } from '../lib/server/loan/network';
+import { exampleBond } from '../lib/loan/model';
+async function main() {
+  const company = Keypair.random(), wallet = company.publicKey();
+  console.log('company', wallet);
+  const funded = await fetch(`https://friendbot.stellar.org?addr=${wallet}`);
+  assert.ok(funded.ok, 'Friendbot');
+  const setup = new TransactionBuilder(await server.loadAccount(wallet), { fee: '10000', networkPassphrase }).addOperation(Operation.changeTrust({ asset: dollarAsset() })).addOperation(Operation.changeTrust({ asset: bondAsset() })).setTimeout(60).build();
+  setup.sign(company); await server.submitTransaction(setup);
+  console.log('attestation', await attest(wallet, `loan-test-${crypto.randomUUID()}`));
+  const treasuryBefore = (await server.loadAccount(lenderKey().publicKey())).balances;
+  console.log('treasuryBefore', treasuryBefore);
+  console.log('register', await register(wallet, exampleBond));
+  const registered = await state(wallet); assert.equal(registered.stage, 'bond_registered'); console.log('registered', registered);
+  await assert.rejects(() => register(wallet, exampleBond), { status: 409 });
+  const parallel = await Promise.allSettled([accept(wallet, exampleBond), accept(wallet, exampleBond)]);
+  console.log('parallelAccept', parallel.map(p => p.status === 'fulfilled' ? p.value : { rejected: true, message: p.reason instanceof Error ? p.reason.message : 'error' }));
+  const deployed = await accept(wallet, exampleBond); console.log('accept', deployed);
+  await assert.rejects(() => disburse(wallet), { status: 409 });
+  const wrong = new TransactionBuilder(await server.loadAccount(wallet), { fee: '10000', networkPassphrase }).addOperation(Operation.manageData({ name: 'not-a-deposit', value: 'test' })).setTimeout(60).build();
+  wrong.sign(company);
+  await assert.rejects(() => submitDeposit(wallet, wrong.toXDR()), { status: 400 });
+  console.log('invalidDeposit', '400 refused');
+  const reused = await accept(wallet, exampleBond); assert.equal(reused.contractId, deployed.contractId); console.log('acceptRepeated', reused);
+  const built = await buildDeposit(wallet);
+  const tx = TransactionBuilder.fromXDR(built.unsignedTransaction, networkPassphrase); tx.sign(company);
+  console.log('deposit', await submitDeposit(wallet, tx.toXDR()));
+  const locked = await state(wallet); assert.equal(locked.stage, 'collateral_locked'); console.log('locked', locked);
+  console.log('parallelDisburse', await Promise.all([disburse(wallet), disburse(wallet)]));
+  const active = await state(wallet); assert.equal(active.stage, 'active'); assert.equal(active.usdc, 500); console.log('active', active);
+  const beforeRepeat = await server.loadAccount(lenderKey().publicKey());
+  console.log('disburseRepeated', await disburse(wallet));
+  const afterRepeat = await server.loadAccount(lenderKey().publicKey());
+  assert.equal(afterRepeat.sequenceNumber(), beforeRepeat.sequenceNumber());
+  assert.deepEqual(afterRepeat.balances, beforeRepeat.balances);
+  assert.equal((await state(wallet)).usdc, active.usdc);
+  await assert.rejects(() => buildDeposit(wallet), { status: 409 });
+  console.log('secondDeposit', '409 refused');
+  console.log('noSecondPayment', { sequenceUnchanged: true, companyUSDC: active.usdc, treasuryAfter: afterRepeat.balances });
+}
+main().catch(error => { console.error(error instanceof Error ? error.message : 'Verification failed'); process.exitCode = 1; });
