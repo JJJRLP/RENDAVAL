@@ -1,0 +1,102 @@
+MVP phase 3 — Stellar testnet — 2026-11-18
+
+Implementation
+- Six authenticated Node route handlers under app/api/loan/.
+- lib/server/loan/: eligibility, bond validation and hash memo, escrow lookup,
+  acceptance, strict deposit validation, atomic payment + lender data marker,
+  transaction receipts, and durable deployment journal.
+- lib/loan/model.ts: shared bond, state and quotation types and demo exchange rate.
+- Guided UI: bond-form, loan-panel, use-loan; existing verification, stages and
+  account panels integrated. Existing KYB helper behavior remains unchanged.
+- .env.example documents server variables; the Trustless Work key was copied
+  privately into ignored .env.local. No credentials were printed or committed.
+- scripts/fund-lender.ts and scripts/verify-loan.ts are reproducible entrypoints.
+
+Real testnet evidence (final full run: loan-testnet.txt)
+Company: GC2T6HLNQFGU3HDDPKV4JF226IYSBAC3IBMRYGDKFCTVNOKVOXH66IQH
+Contract: CBL5WFN3CLELB34IUXMV6NW3GSAGXOQYEL2UFSTRP7V23BI2M2FRP6PU
+Register: 50955c46789cb49bfe26ee81bad0da2178eb3c26c519c7f4254ec8a969a80cdc
+Deploy: bbb18e0751c7800dc980bacc5ac142a505508d69a2a5fb798b497c730f06b705
+Deposit: 9d71886a563cdd4a30193b7303176cab41b71e956ac566294eca44105ea666d0
+Disburse: 0a86288d788851e6f3922aa65c8a43a562d7e1f908c9d987ac9a5d4a53cbd45a
+Company balances: 0 bonds / 0 USDC -> 1000 bonds / 0 USDC ->
+0 available bonds / 1000 locked bonds / 500 USDC. Final state: active.
+Terms: 500 USDC principal, 3.3333333333 interest, 503.3333333333 total;
+UI rounds to 3,33 and 503,33. Due: 2026-12-18T10:53:51Z.
+Lender USDC in final run: 1500 -> 1000.
+Parallel accepts created one contract; retry reused it.
+Invalid deposit transaction: 400. Disbursement before collateral: 409.
+Two parallel disbursements returned the SAME transaction hash, one payment.
+Repeated disbursement: reused=true, company USDC remains 500, lender balances
+and sequence unchanged. Second deposit build: 409 refused.
+
+Treasury (lender-funding.json)
+Purchased 2500 USDC once. USDC: 0 -> 2500.
+Quoted cost: 3488.0250396 XLM; allowed maximum with 2% slippage: 3557.7855404.
+XLM before: 9999.9965269; after: 6511.9714773 (includes fee).
+Funding hash: 724b268c928dfa6105bcfa50d8fdd292ea3156f1f4e1e6be8150da65f2efd56f
+Three test companies received 500 USDC each during development, leaving
+1000 USDC for human testing. Earlier contracts:
+CA4CHJAKEMVRXP3S4UGND5TV74GBLGYKQY6SYQJ7TXMTRFDUCB7LP5DN
+CCRIPW22RMDKCD5RHPUQONIVEEQRVVZOXOEEUPVRM7M3TUTSE523YGHG
+An intermediate concurrent submission returned a gateway error after the
+payment committed. The helper now rechecks the atomic marker on submission
+errors, so retry/recovery does not pay again.
+
+Trustless Work observations
+/api-json publishes no maxLength for title or description. A build-only probe
+with 10001 characters in EACH returned HTTP 201; it was never signed/submitted.
+This establishes an accepted size, not an undocumented absolute maximum.
+The real deployment used a 26-character title and 120-character JSON description.
+App input caps: issuer 80 characters, series 24; numeric/date fields validated.
+Request bodies and contractId response match the spike. SDK 17 XDR accessors use
+properties and Uint8Array, not older method/Buffer APIs.
+Custom-asset release remains out of scope and known to fail upstream.
+
+No-database concurrency
+The issuer account holds the Vault-signed deployment XDR in manageData chunks.
+Concurrent serverless requests share one durable transaction instead of relying
+on an in-memory lock. Expired/failed transactions are replaced only after Horizon
+proves they can no longer commit; confirmed deployments wait for role indexing.
+The sample uses 71 chunks plus one count entry: about 36 XLM in issuer reserve.
+This is additional testnet account state; no secret keys are stored there.
+Payment markers remain on the lender, atomically with payment as requested.
+Receipt lookup scans up to 4000 lender transactions for the payment date; this
+is sufficient for the demo treasury but needs an indexer for a larger history.
+
+Checks
+npm install succeeded (existing dependency audit: 6 moderate, 9 high).
+npm run lint and npm run build passed.
+HTTP on 127.0.0.1:3018: state GET and all five POST routes returned 401 without token.
+Static scan: 35 .next/static files, all 7 configured private names/values absent.
+git diff --check passed.
+Browser QA used the real React components with mocked Pollar/network responses:
+360 px and 1280 px, no horizontal overflow, register -> quote -> active,
+deposit error -> retry -> active, balances and locked collateral updated.
+Actual Pollar login/signature was not automated; testnet helper test signs with
+a fresh local keypair and bypasses only authentication.
+
+Reproduce
+node --env-file=.env.local --conditions=react-server --import tsx scripts/fund-lender.ts
+  (Buys ANOTHER 2500 USDC each run; it was run once in this task.)
+node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-loan.ts
+  (Creates a fresh company and spends another 500 USDC from the demo treasury.)
+npm run dev -- --hostname 127.0.0.1 --port 3018
+
+Human click list
+1. Open /app on an origin permitted in the Pollar dashboard. Use a fresh company
+   account for the complete journey; existing accounts resume their on-chain state.
+2. Click Ingresar; complete email/Google login. Wait for account preparation.
+3. Click Usar aprobación de prueba, or complete Comenzar verificación and return.
+4. In Registre su bono, retain the fictional Bs 6.960 example; click Registrar bono.
+5. Check Recibe 500,00 USDC; 8% annual; cost 3,33; total 503,33; 30-day due date.
+6. Click Aceptar y depositar garantía. Confirm the deposit when Pollar requests it.
+7. Watch the checklist through Dólares enviados. Expect Préstamo activo,
+   500 USDC available, USD 1.000 in collateral, and disabled repayment.
+8. Reload: the active loan and exact due date must remain. Open Ver detalle técnico
+   to inspect registration, creation, deposit and disbursement explorer links.
+9. To test resumption, cancel the signature or reload after escrow creation;
+   click Continuar con el depósito / Reintentar y continuar. A locked loan resumes
+   at desembolso. It must not ask for another deposit after funds are locked.
+10. Close the test server when done. No commit, push, branch creation or deployment
+    was performed by this task.

@@ -102,8 +102,8 @@ export function Hero() {
               conserva la titularidad y el rendimiento de los activos durante
               la vigencia del préstamo.
             </p>
-            <a href="#solicitar-acceso" className="btn-primary mt-10">
-              Solicitar acceso
+            <a href="/app" className="btn-primary mt-10">
+              Ingresar a Vault
               <span aria-hidden="true" className="btn-arrow">
                 →
               </span>

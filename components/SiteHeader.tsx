@@ -26,8 +26,8 @@ export function SiteHeader() {
         <a href="#hero" className="font-serif text-xl font-semibold tracking-tight">
           Vault
         </a>
-        <a href="#solicitar-acceso" className="btn-primary min-h-10 px-4 py-2 text-sm">
-          Solicitar acceso
+        <a href="/app" className="btn-primary min-h-10 px-4 py-2 text-sm">
+          Ingresar a Vault
         </a>
       </div>
     </header>
