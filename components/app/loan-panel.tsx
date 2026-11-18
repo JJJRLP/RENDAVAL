@@ -59,14 +59,16 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
   const t = state?.setup?.terms;
   const offer = stage === 'bond_registered' || stage === 'escrow_created' || stage === 'collateral_locked';
   const depositStep = Math.max(loan.step, stage === 'collateral_locked' ? 2 : stage === 'escrow_created' ? 1 : -1);
-  const eyebrow = offer ? 'Su oferta' : 'Su próximo paso';
+  const idle = !!state && !state.setup && state.loans.length > 0;
+  const eyebrow = offer ? 'Su oferta' : idle ? (state.limitReached ? 'Sus préstamos' : 'Nuevo préstamo') : 'Su próximo paso';
   const title = !state ? 'Consultando su progreso…' : offer ? 'Reciba dólares por sus bonos' : state.limitReached ? 'Sus préstamos en curso' : state.loans.length ? 'Registre otro bono' : 'Registre su bono';
   const nearest = state?.loans.filter(l => l.stage === 'active').sort((a, b) => a.terms.dueDate.localeCompare(b.terms.dueDate))[0]?.escrow?.contractId;
 
   return (
     <>
-      <VerificationStages verified pending={false} stage={state?.setup?.stage ?? state?.loans[0]?.stage} />
-      <section className="on-dark mt-4 bg-ink p-6 text-white md:p-10" aria-labelledby="next-step-title" aria-busy={loan.busy}>
+      {/* The bar describes the set-up in progress; each finished set-up shows its own status in the list. */}
+      {!idle && <VerificationStages verified pending={false} stage={state?.setup?.stage} />}
+      <section className={`on-dark ${idle ? "mt-10" : "mt-4"} bg-ink p-6 text-white md:p-10`} aria-labelledby="next-step-title" aria-busy={loan.busy}>
         <p className="text-xs font-semibold uppercase tracking-widest text-teal-bright">{eyebrow}</p>
         <h2 id="next-step-title" className="mt-4 font-serif text-3xl font-semibold">{title}</h2>
         {loan.bond && typeof loan.bond.issuer === 'string' && stage !== 'none' && (
