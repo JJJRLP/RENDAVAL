@@ -63,6 +63,7 @@ pub enum Status {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
+    pub publisher: Address,
     pub price_interval: u32,
     pub grace_period: u64,
     pub cure_period: u64,
@@ -93,6 +94,7 @@ pub struct Collateral {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Loan {
+    pub default_price: i128,
     pub defaulted_at: u64,
     pub recipient: Address,
     pub collateral: Collateral,
@@ -116,7 +118,7 @@ pub struct View {
     pub loan: Loan,
     pub debt: i128,
     pub value: i128,
-    pub health_bps: i128,
+    pub health_bps: Option<i128>,
     pub overdue: bool,
     pub shortfall: Option<i128>,
 }
@@ -133,6 +135,10 @@ enum Key {
 #[contractevent(topics = ["init"])]
 pub struct Initialized {
     pub config: Config,
+}
+#[contractevent(topics = ["publisher"])]
+pub struct PublisherChanged {
+    pub publisher: Address,
 }
 #[contractevent(topics = ["buyer"])]
 pub struct BuyerChanged {
@@ -387,16 +393,19 @@ impl LoanBook {
             || grace_period == 0
             || cure_period == 0
             || max_step_bps == 0
-            || max_step_bps > 10000
+            || max_step_bps > 2500
+            || issuer == operator
             || max_price_age == 0
             || discount_bps >= 10000
-            || margin_bps <= 5000
+            // At 50% LTV, rounded interest gives debt/value < 5034 bps.
+            || margin_bps < 5034
             || margin_bps >= default_bps
             || default_bps > 10000
         {
             return Err(Error::Invalid);
         }
         let c = Config {
+            publisher: issuer.clone(),
             price_interval,
             grace_period,
             cure_period,
@@ -484,9 +493,11 @@ impl LoanBook {
         principal: i128,
     ) -> Result<(), Error> {
         let c = config(&e);
-        c.operator.require_auth();
         lender.require_auth();
         borrower.require_auth();
+        if c.operator != lender && c.operator != borrower {
+            c.operator.require_auth();
+        }
         if e.storage().persistent().has(&Key::Loan(id.clone())) {
             return Err(Error::Exists);
         }
@@ -510,6 +521,7 @@ impl LoanBook {
             return Err(Error::Collateral);
         }
         let l = Loan {
+            default_price: 0,
             defaulted_at: 0,
             recipient: borrower.clone(),
             collateral,
@@ -544,7 +556,11 @@ impl LoanBook {
             _ => return Err(Error::Rules),
         }
         let rules = RulesClient::new(&e, &c.rules);
-        if rules.get_config().book != e.current_contract_address() {
+        let rc = rules.get_config();
+        if rc.book != e.current_contract_address()
+            || rc.issuer != c.issuer
+            || rc.operator != c.operator
+        {
             return Err(Error::Rules);
         }
         save(&e, &id, &l);
@@ -669,9 +685,21 @@ impl LoanBook {
         SeriesListed { series }.publish(&e);
         Ok(())
     }
+    // A separate price role; changing it requires both immutable authorities.
+    pub fn set_publisher(e: Env, publisher: Address) {
+        let mut c = config(&e);
+        c.issuer.require_auth();
+        c.operator.require_auth();
+        if c.publisher == publisher {
+            return;
+        }
+        c.publisher = publisher.clone();
+        e.storage().instance().set(&Key::Config, &c);
+        PublisherChanged { publisher }.publish(&e);
+    }
     pub fn publish_price(e: Env, series: Symbol, price: i128) -> Result<(), Error> {
         let c = config(&e);
-        c.issuer.require_auth();
+        c.publisher.require_auth();
         let old = quote(&e, &series)?;
         if price <= 0 || price > SCALE {
             return Err(Error::Invalid);
@@ -749,6 +777,7 @@ impl LoanBook {
                 return Err(Error::Healthy);
             }
         }
+        l.default_price = l.price;
         l.defaulted_at = e.ledger().timestamp();
         l.status = Status::Defaulted;
         save(&e, &id, &l);
@@ -812,6 +841,8 @@ impl LoanBook {
         ) {
             return Err(Error::Buyer);
         }
+        // A later publication cannot lower the sale floor fixed at default.
+        l.price = l.price.max(l.default_price);
         if expected_price != l.price {
             return Err(Error::PriceChanged);
         }
@@ -849,10 +880,10 @@ impl LoanBook {
             },
             debt: d,
             value: v,
-            health_bps: if v == 0 {
-                i128::MAX
+            health_bps: if !l.collateral.known || v == 0 {
+                None
             } else {
-                mul(d, 10000)? / v
+                Some(mul(d, 10000)? / v)
             },
             overdue: e.ledger().timestamp() > l.due,
             loan: l,

@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-11-21T04:28:25.044Z",
+  "network": "TESTNET",
+  "submitted": false,
+  "contractId": "CDALLEYS4JWSXA7CC2SASY2TZ5AWSNRMCPDU55A5NELEWLM4FOKT3253",
+  "probes": [
+    {
+      "route": "release-funds",
+      "status": 400,
+      "body": {
+        "statusCode": 400,
+        "message": "invalid version byte. expected 48, got 16",
+        "timestamp": "2026-11-21T04:28:25.714Z",
+        "path": "/escrow/single-release/release-funds"
+      }
+    },
+    {
+      "route": "resolve-dispute",
+      "status": 400,
+      "body": {
+        "statusCode": 400,
+        "message": "invalid version byte. expected 48, got 16",
+        "timestamp": "2026-11-21T04:28:26.328Z",
+        "path": "/escrow/single-release/resolve-dispute"
+      }
+    }
+  ]
+}

@@ -227,7 +227,7 @@ fn thresholds_exact_and_recovery() {
             assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::Healthy)));
         }
         f.publish(&f.id, price);
-        assert_eq!(c.get_loan(&f.id).health_bps, threshold as i128);
+        assert_eq!(c.get_loan(&f.id).health_bps, Some(threshold as i128));
         if threshold == 7000 {
             c.flag_margin(&f.id);
             c.flag_margin(&f.id);
@@ -604,7 +604,9 @@ fn constructor_guard_boundaries() {
         (1, 0, 0, false),
         (1, 1, 10000, false),
         (1, 1, 0, true),
-        (10000, 1, 9999, true),
+        (10000, 1, 9999, false),
+        (2500, 1, 9999, true),
+        (2501, 1, 0, false),
     ] {
         let f = Fixture::new();
         let e = f.e.clone();
@@ -919,8 +921,8 @@ fn shortfall_changes_health_and_defaults_without_price_or_auth() {
     let v = c.get_loan(&f.id);
     assert_eq!(v.value, 190 * SCALE);
     assert_eq!(v.shortfall, Some(10 * SCALE));
-    assert_eq!(v.health_bps, v.debt * 10000 / v.value);
-    assert!(v.health_bps < 7000); // default is not caused by the price ratio
+    assert_eq!(v.health_bps, Some(v.debt * 10000 / v.value));
+    assert!(v.health_bps.unwrap() < 7000); // default is not caused by the price ratio
     f.e.ledger().with_mut(|l| l.timestamp += 86401);
     f.e.mock_auths(&[]);
     c.mark_default(&f.id);
@@ -1020,6 +1022,7 @@ fn broken_token_is_unknown_and_does_not_affect_other_series_or_repayment() {
         let v = c.get_loan(&id);
         assert!(!v.loan.collateral.known);
         assert_eq!(v.shortfall, None);
+        assert_eq!(v.health_bps, None);
         assert_eq!(c.try_mark_default(&id), Err(Ok(Error::CollateralRead)));
         assert_eq!(
             c.try_open(
@@ -1602,4 +1605,255 @@ fn minimum_principal_and_positive_time_parameters() {
             )
         });
     }
+}
+
+// Second audit: positive paths use exactly one tree per distinct signer.
+#[test]
+fn a2_coinciding_roles_need_one_authorization_per_address() {
+    for shared in [0, 1, 2] {
+        let mut f = Fixture::new();
+        f.lender = Address::generate(&f.e);
+        f.borrower = Address::generate(&f.e);
+        if shared == 1 {
+            f.lender = f.operator.clone();
+        }
+        if shared == 2 {
+            f.borrower = f.operator.clone();
+        }
+        token::StellarAssetClient::new(&f.e, &f.usdc).mint(&f.lender, &(1000 * SCALE));
+        let args: soroban_sdk::Vec<soroban_sdk::Val> = (
+            f.id.clone(),
+            f.series.clone(),
+            f.borrower.clone(),
+            f.lender.clone(),
+            200 * SCALE,
+            100 * SCALE,
+        )
+            .into_val(&f.e);
+        let nested = [MockAuthInvoke {
+            contract: &f.usdc,
+            fn_name: "transfer",
+            args: (f.lender.clone(), f.borrower.clone(), 100 * SCALE).into_val(&f.e),
+            sub_invokes: &[],
+        }];
+        let lender_tree = MockAuthInvoke {
+            contract: &f.book,
+            fn_name: "open",
+            args: args.clone(),
+            sub_invokes: &nested,
+        };
+        let plain = MockAuthInvoke {
+            contract: &f.book,
+            fn_name: "open",
+            args,
+            sub_invokes: &[],
+        };
+        let mut auth = std::vec![
+            MockAuth {
+                address: &f.lender,
+                invoke: &lender_tree
+            },
+            MockAuth {
+                address: &f.borrower,
+                invoke: &plain
+            }
+        ];
+        if shared == 0 {
+            auth.push(MockAuth {
+                address: &f.operator,
+                invoke: &plain,
+            });
+        }
+        f.e.mock_auths(&auth);
+        f.open();
+        assert_eq!(f.balance(&f.borrower), 100 * SCALE);
+    }
+}
+
+#[test]
+fn a2_default_price_is_a_floor_even_after_further_price_cuts() {
+    let f = Fixture::new();
+    f.default(5_500_000);
+    let c = f.c();
+    f.publish(&f.id, 4_000_000);
+    c.mark_default(&f.id); // retry cannot lower the floor
+    assert_eq!(c.get_loan(&f.id).loan.default_price, 5_500_000);
+    c.set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 200 * SCALE);
+    assert_eq!(
+        c.try_liquidate(&f.id, &f.buyer, &4_000_000),
+        Err(Ok(Error::PriceChanged))
+    );
+    c.liquidate(&f.id, &f.buyer, &5_500_000);
+    assert_eq!(c.get_loan(&f.id).loan.proceeds, 104_5000000);
+}
+
+#[test]
+fn a2_rejects_immediate_default_thresholds_and_collapsed_authorities() {
+    let f = Fixture::new();
+    for (margin, default, collapsed, valid) in [
+        (5001, 5002, false, false),
+        (5033, 8500, false, false),
+        (5034, 5035, false, true),
+        (7000, 8500, true, false),
+    ] {
+        f.e.as_contract(&f.book, || {
+            assert_eq!(
+                LoanBook::__constructor(
+                    f.e.clone(),
+                    if collapsed {
+                        f.issuer.clone()
+                    } else {
+                        f.operator.clone()
+                    },
+                    f.issuer.clone(),
+                    f.usdc.clone(),
+                    f.rules.clone(),
+                    margin,
+                    default,
+                    2500,
+                    86400,
+                    500,
+                    30,
+                    30,
+                    60
+                )
+                .is_ok(),
+                valid
+            );
+        });
+    }
+}
+
+#[test]
+fn a2_publisher_and_buyer_approval_are_separate_roles() {
+    let f = Fixture::new();
+    let publisher = Address::generate(&f.e);
+    let c = f.c();
+    let args = (publisher.clone(),).into_val(&f.e);
+    let change = MockAuthInvoke {
+        contract: &f.book,
+        fn_name: "set_publisher",
+        args,
+        sub_invokes: &[],
+    };
+    c.mock_auths(&[
+        MockAuth {
+            address: &f.issuer,
+            invoke: &change,
+        },
+        MockAuth {
+            address: &f.operator,
+            invoke: &change,
+        },
+    ])
+    .set_publisher(&publisher);
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
+    let publish = MockAuthInvoke {
+        contract: &f.book,
+        fn_name: "publish_price",
+        args: (f.series.clone(), 7_500_000i128).into_val(&f.e),
+        sub_invokes: &[],
+    };
+    assert!(c
+        .mock_auths(&[MockAuth {
+            address: &f.issuer,
+            invoke: &publish
+        }])
+        .try_publish_price(&f.series, &7_500_000)
+        .is_err());
+    c.mock_auths(&[MockAuth {
+        address: &publisher,
+        invoke: &publish,
+    }])
+    .publish_price(&f.series, &7_500_000);
+    let buyer = MockAuthInvoke {
+        contract: &f.book,
+        fn_name: "set_buyer",
+        args: (f.buyer.clone(), true).into_val(&f.e),
+        sub_invokes: &[],
+    };
+    assert!(c
+        .mock_auths(&[MockAuth {
+            address: &publisher,
+            invoke: &buyer
+        }])
+        .try_set_buyer(&f.buyer, &true)
+        .is_err());
+    c.mock_auths(&[MockAuth {
+        address: &f.issuer,
+        invoke: &buyer,
+    }])
+    .set_buyer(&f.buyer, &true);
+}
+
+#[test]
+fn a2_rules_must_agree_on_both_authorities() {
+    for mismatch_issuer in [false, true] {
+        let f = Fixture::new();
+        let wrong = Address::generate(&f.e);
+        f.e.register_at(
+            &f.rules,
+            rendaval_bond_rules::BondRules,
+            (
+                if mismatch_issuer {
+                    wrong.clone()
+                } else {
+                    f.issuer.clone()
+                },
+                f.book.clone(),
+                if mismatch_issuer {
+                    f.operator.clone()
+                } else {
+                    wrong
+                },
+            ),
+        );
+        assert_eq!(
+            f.c().try_open(
+                &f.id,
+                &f.series,
+                &f.borrower,
+                &f.lender,
+                &(200 * SCALE),
+                &(100 * SCALE)
+            ),
+            Err(Ok(Error::Rules))
+        );
+        assert_eq!(f.balance(&f.borrower), 0);
+    }
+}
+
+#[test]
+fn a2_credit_conservation_across_settlement_retry_and_claim() {
+    let f = Fixture::new();
+    f.default(5_500_000);
+    let c = f.c();
+    c.set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 200 * SCALE);
+    let usdc = token::StellarAssetClient::new(&f.e, &f.usdc);
+    let invariant = || {
+        assert_eq!(
+            c.claimable(&f.lender) + c.claimable(&f.borrower) + c.claimable(&f.buyer),
+            f.balance(&f.book)
+        )
+    };
+    invariant();
+    usdc.set_authorized(&f.lender, &false);
+    usdc.set_authorized(&f.borrower, &false);
+    c.liquidate(&f.id, &f.buyer, &5_500_000);
+    invariant();
+    assert!(c.try_claim(&f.lender).is_err());
+    invariant();
+    assert!(c.try_liquidate(&f.id, &f.buyer, &5_500_000).is_err());
+    invariant();
+    usdc.set_authorized(&f.borrower, &true);
+    c.claim(&f.borrower);
+    invariant();
+    c.claim(&f.borrower);
+    invariant();
+    usdc.set_authorized(&f.lender, &true);
+    c.claim(&f.lender);
+    invariant();
+    assert_eq!(f.balance(&f.book), 0);
 }

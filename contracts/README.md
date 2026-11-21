@@ -1,3 +1,7 @@
+> **C3 está incompleta y no desplegada.** Véase [el informe C3](C3-REPORT.md):
+> bloqueo de integración TW V1, pruebas reproducibles y correcciones locales.
+> El texto C2 que sigue describe el despliegue vigente; no el ABI local modificado.
+
 # Contratos Rendaval — C2, RBOND en testnet
 
 El libro registra préstamos, cobra USDC y protege la garantía mediante reglas del

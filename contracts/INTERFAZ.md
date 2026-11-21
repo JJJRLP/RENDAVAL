@@ -1,3 +1,29 @@
+> **C3 está incompleta y no desplegada.** Véase [el informe C3](C3-REPORT.md):
+> bloqueo de integración TW V1, pruebas reproducibles y correcciones locales.
+> El texto C2 que sigue describe el despliegue vigente; no el ABI local modificado.
+
+## Cambios del ABI local pendientes de despliegue
+
+No usar estos campos contra la dirección C2 vigente:
+
+- `Config.publisher: Address`, inicialmente el emisor. `set_publisher(publisher)`
+  exige emisor y operador, emite `publisher(publisher)` si cambia y es idempotente.
+  `publish_price` exige al publicador; `set_buyer` sigue exigiendo al emisor.
+- `Loan.default_price: i128`, fijado en la primera marca de default. La oferta de
+  liquidación se construye con `max(loan.price, loan.default_price)` y se pasa como
+  `expected_price`. La frescura de la publicación sigue siendo obligatoria.
+- `View.health_bps: Option<i128>`; `None` significa ratio no calculable. Mostrar
+  «No disponible», nunca un valor sano. Revisar también `collateral.known`.
+- Constructor: emisor distinto de operador, `5034 <= margin < default <= 10000`,
+  `1 <= max_step_bps <= 2500`. El resto de límites C2 sigue vigente.
+- `open` comprueba emisor, operador y libro en reglas. El servidor prepara una sola
+  entrada por dirección distinta; si operador=prestamista, esa entrada incluye la
+  transferencia USDC; si operador=empresa, basta la autorización de la empresa.
+
+El flujo de TW y la bóveda aún no tienen una especificación implementada. No activar
+una deuda usando únicamente `resolved` o el saldo cero del escrow; el informe explica
+el contraejemplo. La sección siguiente se conserva como referencia del despliegue C2.
+
 # Interfaz C2 — especificación para la web
 
 Usar Stellar testnet y las direcciones de [la evidencia](../scripts/evidence/loan-book-testnet.json):
