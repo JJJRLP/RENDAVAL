@@ -5,6 +5,7 @@ use soroban_sdk::{
 };
 
 pub const SCALE: i128 = 10_000_000;
+pub const MAX_SERIES: u32 = 64;
 const TERM: u64 = 30 * 86400;
 // 120 days at five seconds per ledger. Persistent entries can be restored, never recreated.
 const TTL: u32 = 120 * 17280;
@@ -23,6 +24,7 @@ pub enum Error {
     PriceChanged = 8,
     PriceStep = 9,
     StalePrice = 10,
+    Capacity = 11,
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -76,7 +78,7 @@ pub struct View {
 enum Key {
     Config,
     Assets,
-    Asset(Symbol),
+    Series(Symbol),
     Loan(Address),
     Buyer(Address),
 }
@@ -102,11 +104,17 @@ pub struct MarginChanged {
     pub id: Address,
     pub flagged: bool,
 }
+#[contractevent(topics = ["series"])]
+pub struct SeriesRegistered {
+    #[topic]
+    pub series: Symbol,
+    pub timestamp: u64,
+}
 #[contractevent(topics = ["price"])]
 pub struct PriceChanged {
     pub timestamp: u64,
     #[topic]
-    pub id: Address,
+    pub series: Symbol,
     pub price: i128,
 }
 #[contractevent(topics = ["default"])]
@@ -120,6 +128,7 @@ pub struct Repaid {
     #[topic]
     pub id: Address,
     pub amount: i128,
+    pub loan: Loan,
 }
 #[contractevent(topics = ["liquidate"])]
 pub struct Liquidated {
@@ -178,14 +187,40 @@ fn config(e: &Env) -> Config {
 fn loan(e: &Env, id: &Address) -> Result<Loan, Error> {
     config(e);
     let k = Key::Loan(id.clone());
-    let l = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
-    bump(e, &k);
+    let mut l: Loan = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
+    if !closed(&l) {
+        bump(e, &k);
+        let p = quote(e, &l.asset)?;
+        l.price = p.price;
+        l.price_time = p.timestamp;
+        // Reconcile this loan only, never walk the holders of a series.
+        if l.status == Status::Margin && !above(&l, config(e).margin_bps)? {
+            l.status = Status::Active;
+            save(e, id, &l);
+            MarginChanged {
+                id: id.clone(),
+                flagged: false,
+            }
+            .publish(e);
+        }
+    }
     Ok(l)
 }
 fn save(e: &Env, id: &Address, l: &Loan) {
     let k = Key::Loan(id.clone());
     e.storage().persistent().set(&k, l);
+    if !closed(l) {
+        bump(e, &k);
+    }
+}
+fn closed(l: &Loan) -> bool {
+    l.status == Status::Repaid || l.status == Status::Liquidated
+}
+fn quote(e: &Env, name: &Symbol) -> Result<PriceData, Error> {
+    let k = Key::Series(name.clone());
+    let p = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
     bump(e, &k);
+    Ok(p)
 }
 fn debt(l: &Loan) -> Result<i128, Error> {
     add(l.principal, l.interest)
@@ -261,15 +296,9 @@ impl LoanBook {
             Asset::Other(name) => name,
             _ => return None,
         };
-        let k = Key::Asset(name);
-        let id: Address = e.storage().persistent().get(&k)?;
-        bump(&e, &k);
-        let l = loan(&e, &id).ok()?;
-        Some(PriceData {
-            price: l.price,
-            timestamp: l.price_time,
-        })
+        quote(&e, &name).ok()
     }
+
     // Retention is one record per asset, including after closing the loan.
     pub fn price(e: Env, asset: Asset, timestamp: u64) -> Option<PriceData> {
         Self::lastprice(e, asset).filter(|p| p.timestamp == timestamp)
@@ -289,8 +318,12 @@ impl LoanBook {
         c.issuer.require_auth();
         let k = Key::Buyer(buyer.clone());
         let old: bool = e.storage().persistent().get(&k).unwrap_or(false);
-        e.storage().persistent().set(&k, &allowed);
-        bump(&e, &k);
+        if allowed {
+            e.storage().persistent().set(&k, &true);
+            bump(&e, &k);
+        } else {
+            e.storage().persistent().remove(&k);
+        }
         if old != allowed {
             BuyerChanged { buyer, allowed }.publish(&e);
         }
@@ -306,6 +339,7 @@ impl LoanBook {
     pub fn open(
         e: Env,
         id: Address,
+        series: Symbol,
         borrower: Address,
         lender: Address,
         face: i128,
@@ -327,16 +361,10 @@ impl LoanBook {
         }
         // 8% * 30/360 = 1/150, rounded up to the smallest USDC unit.
         let interest = add(principal, 149)? / 150;
-        let mut quoted = assets(&e);
-        let mut name = *b"BOND_00000000";
-        let index = quoted.len();
-        for j in 0..8 {
-            name[5 + j] = b"0123456789abcdef"[((index >> (4 * (7 - j))) & 15) as usize];
-        }
-        let asset = Symbol::new(&e, core::str::from_utf8(&name).unwrap());
+        let p = quote(&e, &series)?;
         let l = Loan {
-            asset: asset.clone(),
-            price_time: e.ledger().timestamp(),
+            asset: series,
+            price_time: p.timestamp,
             borrower,
             lender,
             face,
@@ -348,7 +376,7 @@ impl LoanBook {
                 .checked_add(TERM)
                 .ok_or(Error::Overflow)?,
             status: Status::Active,
-            price: SCALE,
+            price: p.price,
             loss: 0,
             proceeds: 0,
             surplus: 0,
@@ -356,52 +384,69 @@ impl LoanBook {
         // Bound every subsequent product before transferring funds.
         mul(face, SCALE)?;
         mul(debt(&l)?, 10000)?;
-        quoted.push_back(Asset::Other(asset.clone()));
-        e.storage().persistent().set(&Key::Assets, &quoted);
-        bump(&e, &Key::Assets);
-        let ak = Key::Asset(asset);
-        e.storage().persistent().set(&ak, &id);
-        bump(&e, &ak);
+        fresh(&e, &l, &c)?;
+        // A shared series may already be below par at origination.
+        if principal > value(&l)? / 2 {
+            return Err(Error::Invalid);
+        }
         save(&e, &id, &l);
         token::Client::new(&e, &c.usdc).transfer(&l.lender, &l.borrower, &principal);
         Opened { id, loan: l }.publish(&e);
         Ok(())
     }
-    pub fn publish_price(e: Env, id: Address, price: i128) -> Result<(), Error> {
+    // Fixed capacity per oracle instance: every supported series fits in assets().
+    // Names and membership are permanent; no slot reuse can reset a price guard.
+    pub fn register_series(e: Env, series: Symbol) -> Result<(), Error> {
+        config(&e).issuer.require_auth();
+        let k = Key::Series(series.clone());
+        if e.storage().persistent().has(&k) {
+            return Err(Error::Exists);
+        }
+        let mut list = assets(&e);
+        if list.len() >= MAX_SERIES {
+            return Err(Error::Capacity);
+        }
+        let p = PriceData {
+            price: SCALE,
+            timestamp: e.ledger().timestamp(),
+        };
+        list.push_back(Asset::Other(series.clone()));
+        e.storage().persistent().set(&Key::Assets, &list);
+        bump(&e, &Key::Assets);
+        e.storage().persistent().set(&k, &p);
+        bump(&e, &k);
+        SeriesRegistered {
+            series,
+            timestamp: p.timestamp,
+        }
+        .publish(&e);
+        Ok(())
+    }
+    pub fn publish_price(e: Env, series: Symbol, price: i128) -> Result<(), Error> {
         let c = config(&e);
         c.issuer.require_auth();
-        let mut l = loan(&e, &id)?;
-        if l.status == Status::Repaid || l.status == Status::Liquidated {
-            return Err(Error::State);
-        }
+        let old = quote(&e, &series)?;
         if price <= 0 || price > SCALE {
             return Err(Error::Invalid);
         }
         let delta = price
-            .checked_sub(l.price)
+            .checked_sub(old.price)
             .ok_or(Error::Overflow)?
             .checked_abs()
             .ok_or(Error::Overflow)?;
-        if mul(delta, 10000)? > mul(l.price, c.max_step_bps as i128)? {
+        if mul(delta, 10000)? > mul(old.price, c.max_step_bps as i128)? {
             return Err(Error::PriceStep);
         }
         let timestamp = e.ledger().timestamp();
-        if l.price == price && l.price_time == timestamp {
+        if old.price == price && old.timestamp == timestamp {
             return Ok(());
         }
-        l.price = price;
-        l.price_time = timestamp;
-        if l.status == Status::Margin && !above(&l, c.margin_bps)? {
-            l.status = Status::Active;
-            MarginChanged {
-                id: id.clone(),
-                flagged: false,
-            }
-            .publish(&e);
-        }
-        save(&e, &id, &l);
+        e.storage().persistent().set(
+            &Key::Series(series.clone()),
+            &PriceData { price, timestamp },
+        );
         PriceChanged {
-            id,
+            series,
             price,
             timestamp,
         }
@@ -458,6 +503,7 @@ impl LoanBook {
         Repaid {
             id,
             amount: debt(&l)?,
+            loan: l,
         }
         .publish(&e);
         Ok(())

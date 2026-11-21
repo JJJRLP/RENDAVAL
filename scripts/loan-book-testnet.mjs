@@ -18,6 +18,7 @@ const borrower = Keypair.random();
 const buyer = Keypair.random();
 const a = s => new Address(s).toScVal();
 const i = n => nativeToScVal(BigInt(n), { type: 'i128' });
+const sym = s => nativeToScVal(s, { type: 'symbol' });
 const u = n => nativeToScVal(n, { type: 'u32' });
 const evidence = { network: 'testnet', sdk: '29.0.1', started: new Date().toISOString(), transactions: [],
   borrower: borrower.publicKey(), buyer: buyer.publicKey(), lender: lender.publicKey(), issuer: issuer.publicKey(), operator: vault.publicKey(), parameters: { maxStepBps: 2500, maxPriceAge: 86400, discountBps: 500 } };
@@ -29,6 +30,7 @@ function record(label, hash) {
 }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function submit(signer, operation, label, soroban = true) {
+  evidence.lastAction = label;
   const source = await server.getAccount(signer.publicKey());
   let tx = new TransactionBuilder(source, { fee: '10000', networkPassphrase: Networks.TESTNET })
     .addOperation(operation).setTimeout(180).build();
@@ -41,6 +43,12 @@ async function submit(signer, operation, label, soroban = true) {
       const address = Address.fromScAddress(entry.credentials.value.address).toString();
       assert.equal(address, vault.publicKey(), 'Unexpected non-source authorization');
       simulation.result.auth[j] = await authorizeEntry(entry, vault, simulation.latestLedger + 100, Networks.TESTNET);
+    }
+    if (label.startsWith('open_')) {
+      const resources = simulation.transactionData.build().resources;
+      (evidence.openResources ??= []).push({ label, minResourceFee: simulation.minResourceFee,
+        instructions: resources.instructions, diskReadBytes: resources.diskReadBytes, writeBytes: resources.writeBytes,
+        readOnlyEntries: resources.footprint.readOnly.length, readWriteEntries: resources.footprint.readWrite.length });
     }
     tx = rpc.assembleTransaction(tx, simulation).build();
   }
@@ -56,7 +64,11 @@ async function submit(signer, operation, label, soroban = true) {
   }
   for (let n = 0; n < 60; n++) {
     const result = await server.getTransaction(hash);
-    if (result.status === 'SUCCESS') { return result.returnValue; }
+    if (result.status === 'SUCCESS') {
+      Object.assign(evidence.transactions.find(t => t.hash === hash), { status: result.status, ledger: result.ledger });
+      if (evidencePath) writeFileSync(evidencePath, json(evidence) + '\n');
+      return result.returnValue;
+    }
     if (result.status === 'FAILED') throw new Error(`Transaction failed: ${label} ${hash}`);
     await sleep(2000);
   }
@@ -120,21 +132,28 @@ try {
   const id1 = StrKey.encodeContract(randomBytes(32)), id2 = StrKey.encodeContract(randomBytes(32));
   const id3 = StrKey.encodeContract(randomBytes(32));
   evidence.loanIds = [id1, id2, id3];
+  const series = new Map([[id1, 'DEMO_LIQ'], [id2, 'DEMO_REPAY'], [id3, 'DEMO_CURE']]);
+  evidence.series = Object.fromEntries(series);
+  for (const name of series.values()) await invoke(issuer, 'register_series', [sym(name)], `register_${name}`);
+  assert.equal((await read(book, 'assets', [])).length, 3);
   const open = async (id, label) => {
     reserve(500_000_000n);
-    await invoke(lender, 'open', [a(id), a(borrower.publicKey()), a(lender.publicKey()), i(1_000_000_000), i(500_000_000)], label);
+    await invoke(lender, 'open', [a(id), sym(series.get(id)), a(borrower.publicKey()), a(lender.publicKey()), i(1_000_000_000), i(500_000_000)], label);
   };
   await open(id1, 'open_liquidation_loan');
-  await invoke(issuer, 'publish_price', [a(id1), i(8_000_000)], 'price_80');
-  await invoke(issuer, 'publish_price', [a(id1), i(6_500_000)], 'price_margin');
+  await invoke(issuer, 'publish_price', [sym(series.get(id1)), i(8_000_000)], 'price_80');
+  await invoke(issuer, 'publish_price', [sym(series.get(id1)), i(6_500_000)], 'price_margin');
   await invoke(vault, 'flag_margin', [a(id1)]);
-  await invoke(issuer, 'publish_price', [a(id1), i(5_500_000)], 'price_default');
+  await invoke(issuer, 'publish_price', [sym(series.get(id1)), i(5_500_000)], 'price_default');
   await invoke(vault, 'mark_default', [a(id1)]);
   await invoke(issuer, 'set_buyer', [a(buyer.publicKey()), nativeToScVal(true)], 'authorize_buyer');
   await payment(lender, buyer, 522_500_000n, 'fund_buyer');
   const before = { lender: await balance(lender), borrower: await balance(borrower) };
   await invoke(buyer, 'liquidate', [a(id1), a(buyer.publicKey()), i(5_500_000)]);
   const first = await read(book, 'get_loan', [a(id1)]);
+  const untouched = await read(book, 'lastprice', [nativeToScVal(['Other', series.get(id2)], { type: ['symbol', 'symbol'] })]);
+  assert.equal(untouched.price, 10_000_000n);
+  evidence.isolatedSeriesVerified = true;
   assert.equal(first.loan.status[0], 'Liquidated'); assert.equal(first.loan.loss, 0n);
   assert.equal(first.loan.surplus, 19_166_666n);
   assert.equal(await balance(lender), before.lender + first.debt);
@@ -150,7 +169,7 @@ try {
   assert.equal(repaid.loan.status[0], 'Repaid');
   await open(id3, 'open_cure_loan');
   for (const price of [8_000_000, 6_500_000, 5_000_000]) {
-    await invoke(issuer, 'publish_price', [a(id3), i(price)], `cure_price_${price}`);
+    await invoke(issuer, 'publish_price', [sym(series.get(id3)), i(price)], `cure_price_${price}`);
   }
   await invoke(vault, 'mark_default', [a(id3)], 'default_before_cure');
   const defaulted = await read(book, 'get_loan', [a(id3)]);
@@ -167,6 +186,9 @@ try {
   evidence.loans = [first, repaid, cured]; evidence.grossLenderSpend = spent;
   evidence.storage = await verifyStorage(book, evidence.loanIds, evidence.wasmSha256);
   evidence.completed = true;
+} catch {
+  evidence.failure = 'Run failed; inspect the last public transaction hash. Do not blindly rerun.';
+  process.exitCode = 1;
 } finally {
   // Return recoverable USDC even if a later assertion or transaction fails.
   if (prepared) {

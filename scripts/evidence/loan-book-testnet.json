@@ -1,119 +1,187 @@
 {
   "network": "testnet",
   "sdk": "29.0.1",
-  "started": "2026-11-21T01:59:57.440Z",
+  "started": "2026-11-21T02:18:09.637Z",
   "transactions": [
     {
       "label": "upload_wasm",
-      "hash": "deaa624f9ab28c6171e10a0c98294ab488b71ffca60a2ba978d2910fb942b28b"
+      "hash": "0996b7b81a4279a11c90888990eb64872b18a94f696d8f1568f0c17b364991a6",
+      "status": "SUCCESS",
+      "ledger": 5840771
     },
     {
       "label": "deploy_initialize",
-      "hash": "e2edc0e1dcaa2facabd36a4b69e05090c8fb95c7ae3066b491bcc513da674c52"
+      "hash": "fcd61d96dbe5d906afbaa59297fd4f081db6673a806e8df60f5a3ea238480e1f",
+      "status": "SUCCESS",
+      "ledger": 5840772
     },
     {
       "label": "friendbot_borrower",
-      "hash": "41497ec0e7e6153e62f3f302631a777f6a8429e39a6a463d6d46b1f0b243c5b4"
+      "hash": "36de5d912b0841074843b1dc87991b648f9353cbc0ff5bbd7e9b7f691bf9c89b"
     },
     {
       "label": "trustline_borrower",
-      "hash": "d91aec9c8d9cf5d9d58892471a277fd70ccc8520c5a0693cc0165b2c82a63f94"
+      "hash": "1b2d82ee53dc3b58a5aa65b9f02d33e28fd395e590685c5e37dc7988dadd6f71",
+      "status": "SUCCESS",
+      "ledger": 5840774
     },
     {
       "label": "friendbot_buyer",
-      "hash": "7bcec58ac733082069d6d03a4c57840a9994360ef9eab22e930b036b70a1237c"
+      "hash": "258a3c58563e9c468192d656d67278a080996eb05ffb8d06b7c5cb1d528b25d8"
     },
     {
       "label": "trustline_buyer",
-      "hash": "f0df05392d31bc15ee8a07dfaf1a49b5a0023a108edc472ea130ca39d53d02ea"
+      "hash": "c7398a76b1b269f60e211ecf4e9c541e6c624548c0387af885a184beafdcc4ec",
+      "status": "SUCCESS",
+      "ledger": 5840776
+    },
+    {
+      "label": "register_DEMO_LIQ",
+      "hash": "884615edfd25a009cc472f5d9ddf9ec557753c77f2780fbdea4ba3fa4e7d21f4",
+      "status": "SUCCESS",
+      "ledger": 5840777
+    },
+    {
+      "label": "register_DEMO_REPAY",
+      "hash": "69aac741223b075b3de3d5020d34977ae74d1c8ca7cc821e0d076a7a532f0e9d",
+      "status": "SUCCESS",
+      "ledger": 5840778
+    },
+    {
+      "label": "register_DEMO_CURE",
+      "hash": "8f44bb43252b306662fe0e04f7ff2bbcd92154280060805323097944766fc374",
+      "status": "SUCCESS",
+      "ledger": 5840779
     },
     {
       "label": "open_liquidation_loan",
-      "hash": "1aa81a0af51e7833b3f42f96ed833be8d66bce345f78107afd501351d74d910b"
+      "hash": "11349f1e10ce7e3f1b79005df67269c44303af5a9dee4bae57cb3fa1a2de56be",
+      "status": "SUCCESS",
+      "ledger": 5840780
     },
     {
       "label": "price_80",
-      "hash": "40365ac8b589ee38b04072246fa0585f089b7c294fdcfa8363f4b20be0e51f55"
+      "hash": "af72c766fa714b679a6326198db86eefaf1c5b574672b57cac5fbcf148ba493d",
+      "status": "SUCCESS",
+      "ledger": 5840781
     },
     {
       "label": "price_margin",
-      "hash": "fef825def6f61aeedb647599f7ba880f2092eba8220978512d402fc1c45b163c"
+      "hash": "4e8cb51799c5e92dcd8ffcacae97112e941ac64d3880786307f12a802e86f6e2",
+      "status": "SUCCESS",
+      "ledger": 5840782
     },
     {
       "label": "flag_margin",
-      "hash": "47a7d22a39faa63558893ca1aca66d0de83fa76dfb1c69918ef7cd029e5ae830"
+      "hash": "f3b353bc112220530d2b5581ba70435b5fcbac087c53a60949a4f110affad614",
+      "status": "SUCCESS",
+      "ledger": 5840783
     },
     {
       "label": "price_default",
-      "hash": "e7b5acf111bd2a68ad605f25103f026702ca7f17667e5a285f6d19ff75fc430d"
+      "hash": "53f6a6ca1b74abc67fcf9b9805eb0ccc6d95336c039a4fb529d70d5756522f3f",
+      "status": "SUCCESS",
+      "ledger": 5840784
     },
     {
       "label": "mark_default",
-      "hash": "ec9802f78e72de37750ec7dd5e91a07cc64da6b176ec66529d50b2c25a943795"
+      "hash": "fd9790d729f6cd624768994d75fcf2a474782006226c1e96920a45d42f129449",
+      "status": "SUCCESS",
+      "ledger": 5840785
     },
     {
       "label": "authorize_buyer",
-      "hash": "c6b12bc26662a661198f5e66bfa97706485059a6563c2c84bc6fef2b38724443"
+      "hash": "4472ba12e246eee0a7fbf7aa3a71bfc0cebb00db5bfa07ca2ff4b0288ce26ab7",
+      "status": "SUCCESS",
+      "ledger": 5840786
     },
     {
       "label": "fund_buyer",
-      "hash": "29ef49ae56869ccc4e252f5af5539a7028d3aeebf0710a59935d721524cde9a7"
+      "hash": "ebe9fe8250ae592f4b7f3f266e25c5ec44c31e7bd8caedb69c7057992f0c6d87",
+      "status": "SUCCESS",
+      "ledger": 5840787
     },
     {
       "label": "liquidate",
-      "hash": "c311c2f2c91c6fac57f9ea7df3b80d669b2a0af2aa9f51d3226fbdc0ab8a2819"
+      "hash": "9ce621dbd8d2cc84b9e630ccca9ba84321919191d3d3e09a1b6ee1c5bd269dd2",
+      "status": "SUCCESS",
+      "ledger": 5840788
     },
     {
       "label": "return_first_loan_funds",
-      "hash": "cd0ec5dc3e30bd55889d11bf147ed32402fd9b4e584393c9256f5b8c8c5ebf12"
+      "hash": "97e75cb749b5e9a9de0e7035b907d664fd75cea867edd93f589bd199800e0e55",
+      "status": "SUCCESS",
+      "ledger": 5840789
     },
     {
       "label": "open_repayment_loan",
-      "hash": "ee920654078ec0d4dafd4cdfb33f044a2a57073e2d01714f97dd6fe860532372"
+      "hash": "ff910b145e9659ed1b6abbb2518df50f3e0f10e0e658a49c8253afe75c74c6f9",
+      "status": "SUCCESS",
+      "ledger": 5840790
     },
     {
       "label": "fund_demo_interest",
-      "hash": "726f2ad4f3c15591f07f90d9c49d037d5d435433f4131e0617034ba984ec7c52"
+      "hash": "384057408d9e15fdfde639dc588a399e18feb1572babf30dcfeb731538dcf1e7",
+      "status": "SUCCESS",
+      "ledger": 5840791
     },
     {
       "label": "repay",
-      "hash": "6dd49cb5d76aa19b2d50dfdb146f8c04145e87a2336a488cecb0515da96ccb6c"
+      "hash": "0b63d5f2998dbde8806dc836915549670a88e733f8c8172298312ec4085ee240",
+      "status": "SUCCESS",
+      "ledger": 5840792
     },
     {
       "label": "open_cure_loan",
-      "hash": "06d2ad5f2f2db96f182440cb1eaca11e9e1782c084395bfd929c6a0634e3d29b"
+      "hash": "5afe544c5f409ea6f5aeb8716e2fe0f18b675ac9ef6c527efeeb64357db384a8",
+      "status": "SUCCESS",
+      "ledger": 5840793
     },
     {
       "label": "cure_price_8000000",
-      "hash": "c9934d1c8345661cca6a1186feb641084e2f872019db66d94a6611cb32816563"
+      "hash": "94986f5c6867ca4ebd4501ef877cd778e4dfb91702a0a1ad5df4ae15a3e081c8",
+      "status": "SUCCESS",
+      "ledger": 5840794
     },
     {
       "label": "cure_price_6500000",
-      "hash": "c5f444c6e3e50ba463dbb84e170f8d98bf193b7b5a8794ae415ec98237d8bfd1"
+      "hash": "80efea5cb89840bcbd3125b7c5a52768afe6f5c5b7e3248906fe0446170735ce",
+      "status": "SUCCESS",
+      "ledger": 5840795
     },
     {
       "label": "cure_price_5000000",
-      "hash": "b641628db99fe9d6d2b3eabe8dd887d7601ffbe8384a84b2d268319716f50426"
+      "hash": "dfeb3fa35cc658844618e36d21343bcdebf1050c92ebec7babfaf9ace3c0fb46",
+      "status": "SUCCESS",
+      "ledger": 5840796
     },
     {
       "label": "default_before_cure",
-      "hash": "15a2ee3a6631e664ed81e8ab2071ead830c0fd6b9f12f5bf6f3a3cb96602be1d"
+      "hash": "034e50cc721dac1cab945e4e3edbaf297f9e17b468d0fb396cf373badfa5352f",
+      "status": "SUCCESS",
+      "ledger": 5840797
     },
     {
       "label": "fund_cure_interest",
-      "hash": "73ca5415b11c6ec060c7b62824de8558978bb5f59a885e8e4a3134e41d133375"
+      "hash": "cb5f44cc88b866cdc1aff165b4552945978572b58fc7803227a13fb621439f53",
+      "status": "SUCCESS",
+      "ledger": 5840798
     },
     {
       "label": "cure",
-      "hash": "aaf06b38e264e9ea6c86928a46859d41c885be3a18fadbcd6e6e7dea1234a91b"
+      "hash": "ac3586c46da2f5fef20f5ee4b27cfd6d8fcd8f05f55dd28cd5579f7bc3dbede9",
+      "status": "SUCCESS",
+      "ledger": 5840799
     },
     {
       "label": "revoke_demo_buyer",
-      "hash": "fc206f72530101aeaf59e0d6e7b9badf870cace70e56fd7283a04c5179f3f971"
+      "hash": "e3ee88c89ee226b24113c7bec1d6669817fe438ac3ff1befe1acf3373a566e34",
+      "status": "SUCCESS",
+      "ledger": 5840800
     }
   ],
-  "borrower": "GAWRELWSMG4SCRUW3X7O7KC2HIOYIA3JWSXTXXLKF45ZN7MZG5QFB3BH",
-  "buyer": "GCR4GW2JUCSN6IKKZGLFXM6PGYULYCOZSQL364G35CPMLWODDI7WPDQX",
+  "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
+  "buyer": "GBVYHJUBWOEJLIHURYQV2XO7PSE4YUKE2QZJ2M5J3V765TFHWZ4WEOLZ",
   "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
   "issuer": "GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT",
   "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
@@ -124,31 +192,67 @@
   },
   "protocol": 30,
   "initialLenderUsdc": "127490000000",
-  "wasmSha256": "1b191af7749d1aa6f511e958588c863cb8daaf31a3b08f39ea8ea61547f7712e",
-  "contractId": "CDODWB2OFCJMBXK5Z262MIXNUXNOZELI6SKT7LSPGJTHRRHC35DTXWU5",
+  "wasmSha256": "60496693b60ce09eb2d3c24ccf6e2f05443241e838c7538304fe12085bda409c",
+  "lastAction": "revoke_demo_buyer",
+  "contractId": "CAF6FEECQ4OBWCSQDPKF62DUVJJJOQ6OXRIRJPKPMM4IKGKHERKIMBR2",
   "loanIds": [
-    "CDSA6OLFKATQQXQYJWIQT67SYTBEH36L3JOAV4Y64PBPRUOQNXO7KZDM",
-    "CC724PFN373NJ72WMBMSAJDVJOSLHXV6ZYULTBAEVWW7KOAFNBTIT35Y",
-    "CAXWCF6FM2BCJNXWKZNA7FSQETLYU46TYVZHZQ2HRGR4UH6V5XVMUMI4"
+    "CCYACOHBMRJ2RGO3LSBUNQ3RSFHWHHCS5O635RHSQSSNOEMFHOU62PKS",
+    "CAY2VOYF5IN6STFIRPYBFFQVAZQTYPPGJS3ZW6LPOEOHWEAOKZYVDL46",
+    "CALYBOEWT563THLSHGTAQDSQ3XGS7R4Z6MBWNDMZFDIPQD4D33QHDTEY"
   ],
+  "series": {
+    "CCYACOHBMRJ2RGO3LSBUNQ3RSFHWHHCS5O635RHSQSSNOEMFHOU62PKS": "DEMO_LIQ",
+    "CAY2VOYF5IN6STFIRPYBFFQVAZQTYPPGJS3ZW6LPOEOHWEAOKZYVDL46": "DEMO_REPAY",
+    "CALYBOEWT563THLSHGTAQDSQ3XGS7R4Z6MBWNDMZFDIPQD4D33QHDTEY": "DEMO_CURE"
+  },
+  "openResources": [
+    {
+      "label": "open_liquidation_loan",
+      "minResourceFee": "1550971",
+      "instructions": 1968434,
+      "diskReadBytes": 376,
+      "writeBytes": 940,
+      "readOnlyEntries": 5,
+      "readWriteEntries": 4
+    },
+    {
+      "label": "open_repayment_loan",
+      "minResourceFee": "1559890",
+      "instructions": 1977938,
+      "diskReadBytes": 376,
+      "writeBytes": 944,
+      "readOnlyEntries": 5,
+      "readWriteEntries": 4
+    },
+    {
+      "label": "open_cure_loan",
+      "minResourceFee": "1559888",
+      "instructions": 1970521,
+      "diskReadBytes": 376,
+      "writeBytes": 944,
+      "readOnlyEntries": 5,
+      "readWriteEntries": 4
+    }
+  ],
+  "isolatedSeriesVerified": true,
   "oracleQuote": {
     "price": "5500000",
-    "timestamp": "1795226451"
+    "timestamp": "1795227561"
   },
   "loans": [
     {
       "debt": "503333334",
       "health_bps": "9151",
       "loan": {
-        "asset": "BOND_00000000",
-        "borrower": "GAWRELWSMG4SCRUW3X7O7KC2HIOYIA3JWSXTXXLKF45ZN7MZG5QFB3BH",
-        "due": "1797818431",
+        "asset": "DEMO_LIQ",
+        "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
+        "due": "1797819541",
         "face": "1000000000",
         "interest": "3333334",
         "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
         "loss": "0",
         "price": "5500000",
-        "price_time": "1795226451",
+        "price_time": "1795227561",
         "principal": "500000000",
         "proceeds": "522500000",
         "status": [
@@ -163,15 +267,15 @@
       "debt": "503333334",
       "health_bps": "5033",
       "loan": {
-        "asset": "BOND_00000001",
-        "borrower": "GAWRELWSMG4SCRUW3X7O7KC2HIOYIA3JWSXTXXLKF45ZN7MZG5QFB3BH",
-        "due": "1797818481",
+        "asset": "DEMO_REPAY",
+        "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
+        "due": "1797819591",
         "face": "1000000000",
         "interest": "3333334",
         "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
         "loss": "0",
         "price": "10000000",
-        "price_time": "1795226481",
+        "price_time": "1795227531",
         "principal": "500000000",
         "proceeds": "0",
         "status": [
@@ -186,15 +290,15 @@
       "debt": "503333334",
       "health_bps": "10066",
       "loan": {
-        "asset": "BOND_00000002",
-        "borrower": "GAWRELWSMG4SCRUW3X7O7KC2HIOYIA3JWSXTXXLKF45ZN7MZG5QFB3BH",
-        "due": "1797818496",
+        "asset": "DEMO_CURE",
+        "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
+        "due": "1797819606",
         "face": "1000000000",
         "interest": "3333334",
         "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
         "loss": "0",
         "price": "5000000",
-        "price_time": "1795226511",
+        "price_time": "1795227621",
         "principal": "500000000",
         "proceeds": "0",
         "status": [
@@ -208,14 +312,14 @@
   ],
   "grossLenderSpend": "2029166668",
   "storage": {
-    "latestLedger": 5840577,
+    "latestLedger": 5840799,
     "remainingLedgers": [
-      2073576,
+      2073573,
       2073581,
       2073591,
       2073594
     ],
-    "deployedWasmSha256": "1b191af7749d1aa6f511e958588c863cb8daaf31a3b08f39ea8ea61547f7712e"
+    "deployedWasmSha256": "60496693b60ce09eb2d3c24ccf6e2f05443241e838c7538304fe12085bda409c"
   },
   "completed": true,
   "finalLenderUsdc": "127490000000"

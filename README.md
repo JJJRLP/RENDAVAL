@@ -79,6 +79,11 @@ Rutas del servidor (Next.js, /api/kyb/* y /api/loan/*)
 
 Más detalle en [`docs/notas-tecnicas.md`](docs/notas-tecnicas.md).
 
+El [libro de préstamos propio, fase A3](contracts/README.md), está desplegado y
+probado por separado en testnet. Usa precios por serie y registros independientes
+de préstamos. La aplicación todavía debe integrar su [nueva interfaz](contracts/INTERFAZ.md)
+y un índice durable de eventos; el flujo del navegador descrito arriba no ha cambiado.
+
 ## Tecnologías
 
 - [Next.js 16](https://nextjs.org) (App Router), React 19, Tailwind CSS 4, TypeScript.
