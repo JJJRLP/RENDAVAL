@@ -1338,6 +1338,14 @@ name = "rendaval-loan-book"
 version = "0.1.0"
 dependencies = [
  "rendaval-bond-rules",
+ "rendaval-loan-vault",
+ "soroban-sdk",
+]
+
+[[package]]
+name = "rendaval-loan-vault"
+version = "0.1.0"
+dependencies = [
  "soroban-sdk",
 ]
 

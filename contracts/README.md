@@ -1,163 +1,123 @@
-> **C3 está incompleta y no desplegada.** Véase [el informe C3](C3-REPORT.md):
-> bloqueo de integración TW V1, pruebas reproducibles y correcciones locales.
-> El texto C2 que sigue describe el despliegue vigente; no el ABI local modificado.
+# Contratos Rendaval — C3b en Stellar testnet
 
-# Contratos Rendaval — C2, RBOND en testnet
+USDC entra por un escrow real de Trustless Work cuyo receiver es la bóveda del
+préstamo. RBOND entra directamente en esa bóveda. `open` registra la deuda,
+protege los bonos y entrega USDC a la empresa en una sola invocación propia.
+No consulta ni cree las banderas de TW. La integración web está especificada en
+[INTERFAZ.md](INTERFAZ.md); app/, components/ y lib/ no se modificaron en esta fase.
 
-El libro registra préstamos, cobra USDC y protege la garantía mediante reglas del
-bono. Los dos contratos tienen código inmutable. Las reglas permiten sustituir el
-libro con firmas del emisor y del operador **solo si no queda ninguna prenda**.
-No permiten cambiar el admin del SAC, emitir, quemar, confiscar ni transferir bonos.
+## Despliegue vigente
 
-La instancia y todos los hashes públicos están en
-[evidencia de despliegue y corrida](../scripts/evidence/loan-book-testnet.json).
-La [verificación independiente](../scripts/evidence/loan-book-testnet-verification.json)
-coteja hashes, WASM, configuración, firmas, eventos y saldos con la red.
-La web todavía no está conectada; su especificación es [INTERFAZ.md](INTERFAZ.md).
+| Contrato | Dirección |
+| --- | --- |
+| Libro C3b | `CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA` |
+| Reglas RBOND, sin cambios | `CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC` |
+| SAC RBOND | `CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3` |
+| SAC USDC | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
 
-- Libro: `CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS`.
-- Reglas: `CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC`.
-- SAC RBOND: `CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3`.
-- Escrow de pago: `CAWRSYEJGNXDF7I6RFI7ZMPVEDPZZ4LPINPT7RCPNZ5A3OSZWUR5ETX2`.
-- Escrow de liquidación: `CDIBNSBBFYFHRRCXEJ5NQGCFFDLT7EKFBVSKGBQG4RVEATSNOFB4TGJ4`.
+[Despliegue y tres recorridos](../scripts/evidence/c3-testnet.json),
+[verificación independiente](../scripts/evidence/c3-verification.json),
+[informe final](C3-REPORT.md). El libro se conectó mediante `replace_book`, con
+emisor y operador, partiendo de cero prendas. El admin de RBOND sigue en las mismas
+reglas. No se creó otro activo ni se modificó ese contrato inmutable.
 
-RBOND usa el emisor `GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6`.
-Sus flags son autorización requerida, revocable e inmutable; sin clawback.
-El USDC es `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA`.
-El operador procede de VAULT_SECRET_KEY, el prestamista de LENDER_SECRET_KEY y
-el emisor/publicador de NEW_BOND_ISSUER_SECRET_KEY. Ninguna clave se guarda en evidencia.
-El activo anterior se abandonó porque sus reglas no podían cambiar de libro.
+## Custodia y salidas
 
-## Cambios del examen de seguridad
+Una dirección identifica cada préstamo. El libro despliega dos instancias pequeñas
+del mismo WASM: la bóveda que recibe ambos activos y una custodia auxiliar de entrega.
+Esta segunda instancia evita que una trustline bloqueada impida cerrar y sustituir
+el libro. Ambas deben estar autorizadas por el emisor antes de open; ambas quedan
+protegidas mientras hay deuda. Las dos marcas se retiran dentro del cierre.
+Un contrato compartido ahorraría instancias, pero necesitaría contabilidad por dueño
+y préstamo; aquí los saldos y las facultades permanecen separados por dirección.
 
-1. El comprador paga al libro; un excedente que la empresa no pueda recibir queda
-   a su nombre en `claimable`. La liquidación ya está cerrada.
-2. La devolución también entra al libro. Si el prestamista no puede cobrar, queda
-   un crédito suyo: no puede impedir pagar ni forzar default por ese bloqueo.
-   `claim` intenta cobrar posteriormente; un fallo conserva íntegro el crédito.
-3. Cada cambio de precio espera un intervalo desde el cambio anterior. No acumula
-   permisos durante la inactividad. Hay gracia de mora y tiempo mínimo de cura.
-4. Fallos recuperables de transferencias USDC devuelven `Payment = 16`.
-5. `open` exige empresa, operador y prestamista. La empresa puede ser origen y
-   firmar una sola vez el sobre; el servidor firma las autorizaciones de los otros roles.
-6. La liberación con escrow vacío sigue siendo pública. `accept_collateral` permite
-   al beneficiario de un préstamo cerrado aceptar la entrega o renunciar al residuo;
-   el polvo no puede bloquearlo. La firma es de la empresa tras pago y del comprador
-   tras liquidación. Una deuda viva nunca admite esta salida.
-7. El paso de precio admite al menos una unidad mínima, incluso con precios 1–3.
-8. Capital mínimo: 1 USDC. El interés se redondea hacia arriba; no produce default
-   inmediato por redondeo en una apertura válida.
-9. Registrar no publica un precio. Abrir exige publicación explícita y fresca.
-   `prices(n)` devuelve la última publicación para todo n positivo; `resolution`
-   informa el intervalo mínimo de cambio, sin prometer publicaciones periódicas.
-10. El comprador necesita permiso del libro y autorización vigente del SAC del bono.
+- Antes de abrir, empresa o prestamista puede cancelar definitivamente. Cualquiera
+  puede activar después cada devolución, siempre al dueño fijo: bonos a empresa y
+  USDC a prestamista. No necesita permiso del operador ni acuerdo de la contraparte.
+- Repay cobra deuda completa y saca todos los bonos de la bóveda. Si la empresa no
+  recibe, van a su custodia de entrega. No queda una prenda esperando su firma.
+- Liquidate cobra al comprador y le entrega los bonos directamente en la misma
+  transacción. Si falla la entrega, se revierte también el pago. No hay segunda fase.
+- Tras 180 días en Defaulted, cualquiera puede ejecutar write_off: recuperación en
+  especie para el prestamista, directa o en la custodia autorizada. La deuda USDC se
+  registra como pérdida completa; no se finge una venta ni se usa un precio viejo.
+  Retirar de esa custodia exige que el destinatario pueda recibir RBOND.
+- USDC tardío tras cancelación o cierre pertenece al prestamista. Bonos tardíos al
+  destinatario del cierre. Ninguna donación vuelve a crear prendas ni deuda.
 
-La recuperación automática de Margin usa solamente un precio fresco. Si el emisor
-abandona las publicaciones, se puede pagar y declarar mora pasada la gracia, pero
-**liquidar sigue exigiendo precio fresco**. No se inventa un valor de venta a partir
-de una cotización vieja. Resolver esa dependencia exige otro publicador/oráculo o
-un procedimiento de valoración; queda fuera de esta corrección.
+Las transferencias USDC de liquidación y repayment que no lleguen al destinatario
+quedan como créditos en el libro. `claim` solo paga a su dueño y un fallo conserva
+el crédito. Los créditos sobreviven a la sustitución del libro. Sin donaciones,
+la suma de créditos coincide con su saldo; con donaciones externas, saldo >= créditos.
+No hay retirada administrativa de USDC ni de bonos.
 
-## Parámetros
+La custodia de entrega deja de estar protegida al cerrar: el emisor puede revocar
+su autorización entonces, como la de otros tenedores sin prenda. No se promete
+liquidez ni autorización perpetua de RBOND. Durante el préstamo, las reglas impiden
+revocar tanto la bóveda como su custodia auxiliar.
 
-| Parámetro | Demo desplegado | Referencia para una instancia real |
-| --- | --- | --- |
-| Margen / default | 70 % / 85 % | 70 % / 85 % |
-| Paso máximo | 25 % del precio anterior, mínimo una unidad | Igual; revisar con riesgo |
-| Intervalo entre cambios | 30 segundos | 86400 segundos (1 día) |
-| Gracia después de vencimiento | 30 segundos | 259200 segundos (3 días) |
-| Cura desde default | 60 segundos | 259200 segundos (3 días) |
-| Edad máxima del precio | 86400 segundos | 86400 segundos |
-| Descuento de liquidación | 5 % | 5 % |
-| Plazo / interés | 30 días; 8 % anual, base 360 | Igual |
-| Capital mínimo | 1 USDC | 1 USDC; la política comercial puede exigir más |
+## Importes y riesgo
 
-Los tiempos son parámetros obligatorios y positivos del constructor. Los valores
-reales son una referencia operativa, no validación económica del producto. El demo
-provoca default por precio; no acorta los 30 días contractuales del préstamo.
+La empresa debe el bruto y recibe el neto tras 0,3 % de TW. Con 20 USDC:
+recibe 19,94 y debe 20 + 0,1333334 de interés. La vista expone capital, comisión,
+neto e interés por separado. En cancelación el prestamista soporta la comisión TW.
+`open` exige el saldo **exacto** neto: monto incorrecto o resolución parcial no activa
+una deuda. Las tres partes autorizan los términos; no se intenta probar el origen
+del saldo de la bóveda ni reconstruir historia de TW dentro del libro.
 
-## Sustituir el libro sin abandonar el activo
+Se conservan LTV máximo 50 %, plazo de 30 días, interés anual 8 % base 360,
+capital mínimo 1 USDC, margen/default, gracia, cura, descuento y prioridad del
+prestamista. Publicar precio no recorre la cartera. El piso de liquidación es el
+precio fijado al primer default; una baja posterior no lo reduce. Emisor aprueba
+compradores, publicador fija precios; cambiar publicador exige emisor y operador.
 
-`replace_book(nuevo)` exige emisor y operador originales. Un contador en instance
-cuenta marcas persistentes en todos los tokens administrados. Crear una marca lo
-incrementa una vez; retirarla lo reduce una vez. Ni repetir llamadas, ni vaciar un
-escrow vivo, ni archivar entradas hacen cero el contador. Mientras exista cualquier
-marca, la sustitución falla con Pledged (101). El nuevo libro no puede desproteger
-marcas antiguas porque solo se acepta cuando ya no existen.
+Demo: margen 7000 bps, default 8500, paso máximo 2500, descuento 500,
+precio válido 86400 segundos, intervalo 30, gracia 30 y cura 60 segundos.
+El constructor exige margen >=5034 bps, paso <=2500 y autoridades diferentes.
+Para uso comercial, intervalo/gracia/cura deben revisarse; no son recomendaciones
+para dinero real. El plazo de 30 días y write_off de 180 días no se acortan en demo.
 
-Desplegar y verificar primero el nuevo libro y sus parámetros, cerrar los préstamos
-y entregar garantías, retirar todas las marcas y comprobar `live_pledges == 0`.
-Ambas autoridades firman el cambio. El libro anterior ya no puede abrir préstamos
-protegidos; sus créditos USDC siguen reclamándose allí. No borrar sus referencias
-mientras existan créditos. Las reglas y su admin del SAC permanecen iguales.
-
-## Pruebas y reproducción
+## Reproducir
 
 ```sh
 CARGO_HOME=/tmp/rendaval-cargo cargo test --manifest-path contracts/Cargo.toml --locked
 CARGO_HOME=/tmp/rendaval-cargo /tmp/rendaval-cli/stellar contract build --manifest-path contracts/Cargo.toml
 npx next build
-node scripts/bond-rules-verify.mjs
+node scripts/c3-verify.mjs
 ```
 
-Las pruebas usan tokens diferentes para pago y garantía y cuentas G con trustlines.
-Se conservaron los escenarios previos y la escala de 10.001 préstamos y más de
-1.024 series. Los escenarios `audit_*` proceden del scratch del auditor, convertidos
-en regresiones. La reproducción anterior y el resultado actual quedan resumidos en
-[pruebas C2](../scripts/evidence/contracts-c2-tests.json).
+El verificador no necesita claves ni envía transacciones. Coteja código desplegado,
+configuración, flags RBOND, cada hash, transferencias del mismo cierre, comisiones,
+prendas, créditos y saldos. Evidencia de la prueba previa de 1 USDC al receiver C:
+[contract-receiver.json](../scripts/research/c3/contract-receiver.json).
 
-El ejecutor envía transacciones, no sirve como consulta:
+`node --env-file=.env.local scripts/c3-testnet.mjs` **envía transacciones** y usa un
+journal público. Rechaza repetir una corrida completa. Las cuentas Friendbot de
+empresa y comprador se derivan solo en memoria para poder recuperar una interrupción;
+no se escriben sus claves. Si un hash está pendiente se consulta antes de reconstruir.
+El límite incluye 1 USDC de la prueba previa y las transferencias de apoyo al demo.
+No ejecutar scripts antiguos de C2 para actualizar este despliegue.
 
-```sh
-node scripts/bond-rules-testnet.mjs --throwaway
-node --env-file=.env.local scripts/bond-rules-testnet.mjs --final
-```
+## Pruebas y límites
 
-El primer modo usa Friendbot y activos desechables; el segundo RBOND y USDC testnet.
-Los hashes se guardan antes de enviar. Ante incertidumbre consultar el hash original;
-no borrar evidencia ni repetir pagos o emisiones a ciegas. Las claves desechables
-solo viven en memoria y no permiten reiniciar una corrida perdida. El modo final
-conserva salts y cuentas públicas; cualquier reanudación debe revisar estado y diario.
+**59 pruebas Rust aprobadas**, incluidas ambas pruebas de escala; build WASM y
+Next aprobados. [Resultados](../scripts/research/c3/validation.json).
 
-La corrida usa dos préstamos de 50 USDC y al operador como empresa. Para impedir
-recepción sin tocar el saldo, ajusta temporalmente el límite de la trustline al saldo
-actual. Restaura los límites originales y cobra ambos créditos. El comprador es el
-prestamista aprobado. El gasto bruto está acotado a 300 USDC y el ejecutor exige
-recuperar los saldos USDC iniciales de ambas cuentas. Devuelve los bonos al emisor.
-Si otra corrida usa esas cuentas, el cotejo global se detiene: ejecutar
-`node scripts/c2-reconcile.mjs --finalize` para conciliar eventos y completar
-la evidencia sin enviar transacciones. No compensar movimientos ajenos ni repetir pagos.
+Las regresiones cubren autorización exacta de apertura con roles coincidentes,
+depósito y cancelación, aislamiento entre préstamos, montos incorrectos, fondeo
+inexistente y tardío, release anterior al depósito, resolución parcial, cancelación,
+créditos, entrega atómica con comprador sin capacidad, polvo posterior al cierre,
+write_off sin precio ni comprador y sustitución con créditos pendientes.
+El fixture usa SAC auténtico con autorización requerida, revocable e inmutable,
+sin clawback. Las pruebas de daño que fuerzan burn o freeze bajo mocks son pruebas
+defensivas del libro, no facultades que el emisor tenga sobre una bóveda protegida.
 
-## Límites de lo verificado
+C3 reemplaza las pruebas C2 que exigían entrega externa/accept_collateral y las
+que permitían registrar un token arbitrario. Se mantienen precio, umbrales,
+SEP-40, TTL, créditos, errores, firmas y pruebas de escala. La identidad de series
+se deriva en cadena del Asset clásico. Ver [ESCALA.md](ESCALA.md).
 
-No se llamó Trustless Work ni se modificó app/, components/ o lib/. El auxiliar
-`test-escrow` permite a su dueño retirar: es exclusivamente una prueba. Liquidar
-cobra USDC pero no entrega bonos atómicamente; la siguiente fase debe verificar
-las rutas, roles y aprobaciones del escrow real antes de firmar open.
-
-Las cuentas G mantienen las rutas clásicas de autorización del emisor; por eso
-la garantía debe estar en una dirección C. Las reglas no evitan impago del emisor,
-emisión adicional ni una salida autorizada por el escrow. El libro comprueba admin,
-pero no certifica que un contrato arbitrario sea el SAC legítimo: usar solo RBOND
-verificado. Archivo/restauración tras días reales y Pollar en navegador quedan sin
-verificar en esta fase. Un token hostil o agotamiento de recursos puede abortar una
-transacción: el aislamiento de pagos cubre fallos recuperables del SAC conocido.
-
-46 pruebas Rust aprobadas, incluidas las ocho regresiones de auditoría y ambas
-pruebas de escala. `npx next build` y la reconstrucción WASM pasaron; los hashes
-reconstruidos coinciden con el código desplegado.
-
-## Resultado de la corrida final
-
-44 transacciones confirmadas, dos préstamos
-cerrados: uno Repaid y otro Liquidated. Pago con prestamista sin capacidad de recibir,
-liquidación con excedente bloqueado, ambas reclamaciones y ambas prendas retiradas.
-Se restauraron los límites de las trustlines; el libro quedó sin USDC ni créditos.
-Gasto bruto propio del prestamista: **153,7708334 USDC**, devuelto íntegramente.
-
-El saldo global bajó 20,06 USDC por tres movimientos ajenos a C2: dos salidas de
-20 y una entrada de 19,94. No se compensaron ni se tocaron esas operaciones.
-La [conciliación por hash](../scripts/evidence/c2-reconciliation.json) demuestra
-saldo neto propio cero para prestamista y empresa. El verificador vuelve a cotejar
-cada transferencia con sus eventos en cadena. Esto explica por qué el cotejo
-inicial del saldo global se detuvo, aunque todos los pasos C2 ya habían terminado.
+No se esperaron 30 o 180 días reales ni un archivo por TTL: esas fronteras se prueban
+con reloj controlado. No se probó Pollar ni la nueva interfaz en navegador. No se
+hizo auditoría independiente de C3b. Precio económico, solvencia del emisor,
+restricciones del activo y disponibilidad de la API siguen siendo dependencias.

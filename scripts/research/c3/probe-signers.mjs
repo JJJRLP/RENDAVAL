@@ -1,7 +1,7 @@
 // Unsigned API capability checks against an existing, already closed escrow.
 // This script never signs, submits, or moves funds.
 import { readFileSync, writeFileSync } from 'node:fs';
-const old = JSON.parse(readFileSync(new URL('../../evidence/loan-book-testnet.json', import.meta.url)));
+const old = JSON.parse(readFileSync(new URL('../../evidence/archive/c2/loan-book-testnet.json', import.meta.url)));
 const contractId = 'CDALLEYS4JWSXA7CC2SASY2TZ5AWSNRMCPDU55A5NELEWLM4FOKT3253';
 const out = { checkedAt: new Date().toISOString(), network: 'TESTNET', submitted: false, contractId, probes: [] };
 for (const [route, params] of [

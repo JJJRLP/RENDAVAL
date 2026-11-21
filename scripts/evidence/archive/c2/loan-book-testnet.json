@@ -1,0 +1,598 @@
+{
+  "phase": "C2",
+  "network": "testnet",
+  "final": true,
+  "started": "2026-11-21T03:44:36.538Z",
+  "issuer": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+  "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+  "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+  "borrower": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+  "bondAsset": "RBOND:GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+  "bondToken": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+  "usdc": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+  "transactions": [
+    {
+      "label": "create_bond_sac",
+      "hash": "eafc4d9833bc614ceb9c127c4eedf16caf26d30d4de2a415df762fa97a70d162",
+      "status": "SUCCESS",
+      "ledger": 5841808,
+      "resultXdr": "AAAAAAAA6vwAAAAAAAAAAQAAAAAAAAAYAAAAAGItGm1frVcHbkv3K5LV2O05mhvF/dyIFYaoH1JGLBBiAAAAAA=="
+    },
+    {
+      "label": "upload_rules",
+      "hash": "29b5ede7b774c8057036bfbba7bc9cc44a394e5c6ed667ce8d4bbb1be50dd0e6",
+      "status": "SUCCESS",
+      "ledger": 5841809,
+      "resultXdr": "AAAAAAAAN5cAAAAAAAAAAQAAAAAAAAAYAAAAAJYE/BqdGqiCGRLQoNz+ic5ONuJVZCo4zH2EksLWFJc+AAAAAA=="
+    },
+    {
+      "label": "deploy_rules",
+      "hash": "3a94bb783f3cb12da5248ec84e2942c153873bd53774fa81f7f96c15643abf87",
+      "status": "SUCCESS",
+      "ledger": 5841810,
+      "resultXdr": "AAAAAAAJrhkAAAAAAAAAAQAAAAAAAAAYAAAAAM8j6h8S1ScLVBWwwmDaliCMq+tc7htJTlTdOHhZ7f6CAAAAAA=="
+    },
+    {
+      "label": "upload_book",
+      "hash": "3635c503f33a79999d9f33f5f97d9e6d994981469a0f526459b371eb8a12c046",
+      "status": "SUCCESS",
+      "ledger": 5841811,
+      "resultXdr": "AAAAAAABCssAAAAAAAAAAQAAAAAAAAAYAAAAAByQTXAbtqvAfG3nFz/M6g61046Vp9rSGz+9GvuMZf+/AAAAAA=="
+    },
+    {
+      "label": "deploy_book",
+      "hash": "ece32cd82bcf51c947c66513563bc17ec18b68d73aa455464a4fc4ab4ef632cb",
+      "status": "SUCCESS",
+      "ledger": 5841812,
+      "resultXdr": "AAAAAAASsJgAAAAAAAAAAQAAAAAAAAAYAAAAAMGbkEQh+B/qnpJIxLlX0/Dmz5LC3cNUIZe4HAQlWQLmAAAAAA=="
+    },
+    {
+      "label": "handover_admin",
+      "hash": "a5833c771256003cbf70bde066774aa699d86d1e43820674d4b986a89dd17314",
+      "status": "SUCCESS",
+      "ledger": 5841813,
+      "resultXdr": "AAAAAAAADsoAAAAAAAAAAQAAAAAAAAAYAAAAADc8z9UVNhGU2Wxl8QAGTGZ+TOwrXoFY0fpyq99a9wlfAAAAAA=="
+    },
+    {
+      "label": "upload_escrow",
+      "hash": "c8a946e023e7a9bd0609e4c870496e7242947d64e3815b899dab9006e549bf37",
+      "status": "SUCCESS",
+      "ledger": 5841814,
+      "resultXdr": "AAAAAAAAD/YAAAAAAAAAAQAAAAAAAAAYAAAAAC/tfRpyUr+oCg3B7kIxTX8GIyxFy/JEv2e1D87X1NVxAAAAAA=="
+    },
+    {
+      "label": "deploy_escrow",
+      "hash": "11cb1a2d07f645e6bc6c018855447f11b0e0068cf17b0a7c24616ed4edac44c4",
+      "status": "SUCCESS",
+      "ledger": 5841815,
+      "resultXdr": "AAAAAAAAWuIAAAAAAAAAAQAAAAAAAAAYAAAAAI/ixWRWGWFksD/5Mex20OJ236eECqqMZsvKVRnzlWR5AAAAAA=="
+    },
+    {
+      "label": "upload_escrow2",
+      "hash": "01be8ac7eaa79dc153b0a40613cada5347e78f4da2e73bfcb56fe81764ed08bd",
+      "status": "SUCCESS",
+      "ledger": 5841816,
+      "resultXdr": "AAAAAAAAD/YAAAAAAAAAAQAAAAAAAAAYAAAAAC/tfRpyUr+oCg3B7kIxTX8GIyxFy/JEv2e1D87X1NVxAAAAAA=="
+    },
+    {
+      "label": "deploy_escrow2",
+      "hash": "ea62b502b3e69f62a561bf73ca1c311f4d65fa9efec44d7fa5d1d5b470616c50",
+      "status": "SUCCESS",
+      "ledger": 5841817,
+      "resultXdr": "AAAAAAAAWuIAAAAAAAAAAQAAAAAAAAAYAAAAAFURTeRpjCYCBodHwFts6wD6qTl2CnZ55q5ivVoDkDRpAAAAAA=="
+    },
+    {
+      "label": "borrower_bond_trustline",
+      "hash": "4b3e9f094821c40b8ac96e58d459c6e2126095f7964c5342ce4d7784c73f6ccc",
+      "status": "SUCCESS",
+      "ledger": 5841818,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA="
+    },
+    {
+      "label": "approve_borrower",
+      "hash": "0651097a147a6cb8465222dbdf60328b06405d94c2af790a7024354589695538",
+      "status": "SUCCESS",
+      "ledger": 5841819,
+      "resultXdr": "AAAAAAAAFf0AAAAAAAAAAQAAAAAAAAAYAAAAAIEqXHnqO8VZ4DNeWJr8SNXE6AsHUrrefo35gtjDTJF9AAAAAA=="
+    },
+    {
+      "label": "lender_bond_trustline",
+      "hash": "5ba1c534d8de1461ef91b098af65785bedff73edad5bf68aa077f56eb9d64230",
+      "status": "SUCCESS",
+      "ledger": 5841820,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA="
+    },
+    {
+      "label": "approve_lender",
+      "hash": "712a229080556e2c3825701c4f9f32cbdccfddd529bbe2987238b159dcc9c2d7",
+      "status": "SUCCESS",
+      "ledger": 5841821,
+      "resultXdr": "AAAAAAAAFf0AAAAAAAAAAQAAAAAAAAAYAAAAAHwhjVfdx4B60B7nMnkjMNL3+UwuUtFwikbl1cl3SlDwAAAAAA=="
+    },
+    {
+      "label": "approve_escrow_one",
+      "hash": "f9c55a437297aace52bdeaab386b3209bbbd2de1fa78a18fa943defdc66c158b",
+      "status": "SUCCESS",
+      "ledger": 5841822,
+      "resultXdr": "AAAAAAAByQwAAAAAAAAAAQAAAAAAAAAYAAAAACVVh+OxoHas+UGUQ5RxFHG0c46UoFoaLnYo+MYh8R5oAAAAAA=="
+    },
+    {
+      "label": "approve_escrow_two",
+      "hash": "9f25c6f4e6111c6f7c27f4c5365ed112cf1591b11fd98cb91aea06fd1ca37bdb",
+      "status": "SUCCESS",
+      "ledger": 5841823,
+      "resultXdr": "AAAAAAAByQwAAAAAAAAAAQAAAAAAAAAYAAAAAHQ+jArPEB8L8vKlMrLtSJDLqIDYMwJztRVk9gv8V8V5AAAAAA=="
+    },
+    {
+      "label": "issue_200_bonds",
+      "hash": "f58ad59c89025791d609c0c5b984bd614ed85a054f458b6e896ff8a2e522153d",
+      "status": "SUCCESS",
+      "ledger": 5841824,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAA="
+    },
+    {
+      "label": "deposit_one",
+      "hash": "b7d15ad73e1251c86cb413ee0a45270a9eb43d85394fea8290a12fa3d50a5f19",
+      "status": "SUCCESS",
+      "ledger": 5841825,
+      "resultXdr": "AAAAAAAAGZwAAAAAAAAAAQAAAAAAAAAYAAAAAGV6WNrKXMJDs2fOveuhm2P5f7Jz180BYOxZIIQGFhSgAAAAAA=="
+    },
+    {
+      "label": "deposit_two",
+      "hash": "8161e97e6e0b7dc0c46eb733bb599581d8f98e461d8edab22c36875a1ae39880",
+      "status": "SUCCESS",
+      "ledger": 5841826,
+      "resultXdr": "AAAAAAAAGZwAAAAAAAAAAQAAAAAAAAAYAAAAAK2FlMCp1G3zWSHR4aMBhywF32wlg7teHCOAnBxwyey2AAAAAA=="
+    },
+    {
+      "label": "register_series",
+      "hash": "83ac1dad7cd19c7bab9e1a8d502b9500cd254194ecf42f1eb211f545568f885a",
+      "status": "SUCCESS",
+      "ledger": 5841827,
+      "resultXdr": "AAAAAAAI8zQAAAAAAAAAAQAAAAAAAAAYAAAAAEXBuFi0G3vlmg0gVgk6PAzv1p8BZdrWR8ZNjclmTGy0AAAAAA=="
+    },
+    {
+      "label": "initial_price",
+      "hash": "903ab05964eccb88745d5c64ca1b3efb0d88ffd8dcc3c49e8d3e1d459a54f2c5",
+      "status": "SUCCESS",
+      "ledger": 5841828,
+      "resultXdr": "AAAAAAAAD7IAAAAAAAAAAQAAAAAAAAAYAAAAALsWK4OzF4ys0NlsaUdQV6/fUE2ny3coGRMyA0p2Zn/cAAAAAA=="
+    },
+    {
+      "label": "open",
+      "hash": "3719951dca21fbc90cc9fdaa732234816b981ed6ef30c61c7186c1df37e2ce2a",
+      "status": "SUCCESS",
+      "ledger": 5841829,
+      "resultXdr": "AAAAAAAgBC8AAAAAAAAAAQAAAAAAAAAYAAAAABDuo/PJ0yyRn3uFkPOkkOQ65esuvNTVd4oQTDCpukrNAAAAAA=="
+    },
+    {
+      "label": "fund_demo_interest",
+      "hash": "67c011040d8f38c240a6f94f328331aea384610fd66d3d4ec590a1fe2375c0b5",
+      "status": "SUCCESS",
+      "ledger": 5841830,
+      "resultXdr": "AAAAAAAAHEwAAAAAAAAAAQAAAAAAAAAYAAAAAFssoWZKJAi84BGnmV2LsBuLXNKkpTCcBKBcpvWNyc2sAAAAAA=="
+    },
+    {
+      "label": "cap_lender_trustline",
+      "hash": "882d2b5342ce182ff48be7e4da566ab02c36bbf2c5a0424386c6b6bb495b8e89",
+      "status": "SUCCESS",
+      "ledger": 5841831,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA="
+    },
+    {
+      "label": "repay_blocked_recipient",
+      "hash": "64aba11b909d4e04f0f68e38f0049eb9d48ff30b7ca7212c86d9ac6c20c8f243",
+      "status": "SUCCESS",
+      "ledger": 5841832,
+      "resultXdr": "AAAAAAAGY5sAAAAAAAAAAQAAAAAAAAAYAAAAAJkReA4YqmJVmZm2s51nRMySiJY2C0Gu/PlYS4S3y/MUAAAAAA=="
+    },
+    {
+      "label": "restore_lender_trustline",
+      "hash": "517ef1cd6e995d892a4b7b5c679faf4fafaf559f169533203a910b8eb65bdc1c",
+      "status": "SUCCESS",
+      "ledger": 5841833,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA="
+    },
+    {
+      "label": "lender_claim",
+      "hash": "6fb3da13fea5bc6632a8d0f70f5c11f8eb53ae5b62a41ed244ec92bc4659552c",
+      "status": "SUCCESS",
+      "ledger": 5841834,
+      "resultXdr": "AAAAAAAAIXsAAAAAAAAAAQAAAAAAAAAYAAAAAFPLoxe20RVoslJZ7xlx5pWNWOcxFtUoUK8WTqWvXZTpAAAAAA=="
+    },
+    {
+      "label": "return_one",
+      "hash": "923f750265010c91a923bff747a58b8c4ca5868748cdf17c6fdfc2a979faf24f",
+      "status": "SUCCESS",
+      "ledger": 5841835,
+      "resultXdr": "AAAAAAAAGaYAAAAAAAAAAQAAAAAAAAAYAAAAAPhptzZ+W7+q3+NnrjPOVYkmpuG5VV6BkEUojmeQLvuAAAAAAA=="
+    },
+    {
+      "label": "lift_one",
+      "hash": "e578d13c2da936eaa90565a715bc1f20e056375f2d9aaf5981db3fc3db505974",
+      "status": "SUCCESS",
+      "ledger": 5841836,
+      "resultXdr": "AAAAAAAAGbIAAAAAAAAAAQAAAAAAAAAYAAAAAMCd/OzKPwXjFt8CeA1q5Oq5ttq5d6Xscf+xyECaZUhOAAAAAA=="
+    },
+    {
+      "label": "open_two",
+      "hash": "61c96514ebb8175881fc2894427e3c91e00f3942db7e540476e4af569e3061e0",
+      "status": "SUCCESS",
+      "ledger": 5841837,
+      "resultXdr": "AAAAAAAe8BsAAAAAAAAAAQAAAAAAAAAYAAAAAMJEVdC/5cu/EdkeMyf5M3SuPItT5aRsbOEO9rsoxToCAAAAAA=="
+    },
+    {
+      "label": "approve_buyer",
+      "hash": "68099b16517e31e19dde2530e6333a75d67610f12ca424fdd6c498dbce6deb34",
+      "status": "SUCCESS",
+      "ledger": 5841838,
+      "resultXdr": "AAAAAAAEJ5YAAAAAAAAAAQAAAAAAAAAYAAAAAAgo3uc9ip4iVNvNfVnPr0gOWedW6dMiJnp90OFFChFrAAAAAA=="
+    },
+    {
+      "label": "price_75",
+      "hash": "a73778ead6b3a9cc09a42a60eeae2cd64549ea4f3fec6f16b5cdfbe47ad3562f",
+      "status": "SUCCESS",
+      "ledger": 5841839,
+      "resultXdr": "AAAAAAAAD7QAAAAAAAAAAQAAAAAAAAAYAAAAAPYmkjErmoCo1qzm5HRD8lTM0iFgbzbm60K28BSqgP6fAAAAAA=="
+    },
+    {
+      "label": "price_5625",
+      "hash": "74c32bf72dfe09c4847aa480b2facc85982da603bc916c6c1b8681bdb1064213",
+      "status": "SUCCESS",
+      "ledger": 5841846,
+      "resultXdr": "AAAAAAAAD7QAAAAAAAAAAQAAAAAAAAAYAAAAANiRSgdi2JqUzVfsIXhbc7Eqw9GcY7XGaBVUCm2uzPjnAAAAAA=="
+    },
+    {
+      "label": "mark_default",
+      "hash": "0f48d86ae0724ccd0ceff8dd46334a49d6950f901bac1355731f1293bafccb4c",
+      "status": "SUCCESS",
+      "ledger": 5841847,
+      "resultXdr": "AAAAAAAAN9UAAAAAAAAAAQAAAAAAAAAYAAAAANqagI9PFcIsqTwWZ0FLTM8HHXghds0pzrYl0zHfebfUAAAAAA=="
+    },
+    {
+      "label": "cap_borrower_trustline",
+      "hash": "47544bebf62b03077d3fa7cc172d6a225ed2a0e719eb57b9312fad6981cb4b04",
+      "status": "SUCCESS",
+      "ledger": 5841848,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA="
+    },
+    {
+      "label": "liquidate_blocked_surplus",
+      "hash": "11dd7202e14030c72e3d013795013ce66dcf820014158d9a2b3ffb1a0d48344f",
+      "status": "SUCCESS",
+      "ledger": 5841860,
+      "resultXdr": "AAAAAAAEtegAAAAAAAAAAQAAAAAAAAAYAAAAAJMRxImpT1RGnnZuOPRTKtMPtop5fnLTFFMTpZZCVk9pAAAAAA=="
+    },
+    {
+      "label": "restore_borrower_trustline",
+      "hash": "1751555e08db7def1d47cd0a9131c5c8c9d84c780fedd1ce67c8ec95a550aaef",
+      "status": "SUCCESS",
+      "ledger": 5841861,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA="
+    },
+    {
+      "label": "borrower_claim",
+      "hash": "410f694a0f5437f69c6d89b19f874a9597e108cf467e800942a200b6f325c89c",
+      "status": "SUCCESS",
+      "ledger": 5841862,
+      "resultXdr": "AAAAAAAAIXsAAAAAAAAAAQAAAAAAAAAYAAAAAGgZdUO29oSrhg6EmE+etiDavF5zdcIs9QoTHzuXU+ajAAAAAA=="
+    },
+    {
+      "label": "return_two",
+      "hash": "c8641d970416d29749738a931fa5371fab98a51f09d04be36bdb3f1f37a3d031",
+      "status": "SUCCESS",
+      "ledger": 5841863,
+      "resultXdr": "AAAAAAAAGaYAAAAAAAAAAQAAAAAAAAAYAAAAANDsDuxCS/C+LLzvKPRouJK/wCF6LVIOW11chZ0Gb6VwAAAAAA=="
+    },
+    {
+      "label": "deliver_buyer_bonds",
+      "hash": "8eaadf6766678b4d5566189ff7d2e89976c30a1462d9cdb20d6a2e4f5f539204",
+      "status": "SUCCESS",
+      "ledger": 5841864,
+      "resultXdr": "AAAAAAAAHHsAAAAAAAAAAQAAAAAAAAAYAAAAADRa4zM6Q0n2LSkVcUV+DSgT1SOr1FexMAyzZOewO6qkAAAAAA=="
+    },
+    {
+      "label": "lift_two",
+      "hash": "ea972effeb0d02939de0a97ec5f3ad7f2586497aaae33d7c6f294d26c8df9b3b",
+      "status": "SUCCESS",
+      "ledger": 5841865,
+      "resultXdr": "AAAAAAAAGbIAAAAAAAAAAQAAAAAAAAAYAAAAACPIxM2nlpWARIarfz4OdJ6C+0opCGFJXDNutCHtrn+CAAAAAA=="
+    },
+    {
+      "label": "return_demo_usdc",
+      "hash": "bba30acba1c03061ee0315c0ff0f52e4cf122c5252a2d495745b9f1cfb3fb4a8",
+      "status": "SUCCESS",
+      "ledger": 5841866,
+      "resultXdr": "AAAAAAAAHEwAAAAAAAAAAQAAAAAAAAAYAAAAAPRlTqWZAcWpTfL1NVck/yXjMAAvHIb6V4ZPIgzHhdqiAAAAAA=="
+    },
+    {
+      "label": "retire_borrower_bonds",
+      "hash": "7fdb0a74c3f723f0439f43e5227f51d50efcc139673299844e2bb1306473fc56",
+      "status": "SUCCESS",
+      "ledger": 5841867,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAA="
+    },
+    {
+      "label": "retire_lender_bonds",
+      "hash": "b7c96e856e8607a1ac741ef76a3c85f42e8062d85633fbd0c7cb3169c21d769b",
+      "status": "SUCCESS",
+      "ledger": 5841868,
+      "resultXdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAA="
+    }
+  ],
+  "checks": [
+    {
+      "label": "issuer_freeze_pledged",
+      "status": "SIMULATION_FAILED",
+      "error": "HostError: Error(Contract, #101)"
+    },
+    {
+      "label": "replacement_while_pledged",
+      "status": "SIMULATION_FAILED",
+      "error": "HostError: Error(Contract, #101)"
+    },
+    {
+      "label": "claim_lender_still_blocked",
+      "status": "SIMULATION_FAILED",
+      "error": "HostError: Error(Contract, #16)"
+    },
+    {
+      "label": "cure_window",
+      "status": "SIMULATION_FAILED",
+      "error": "HostError: Error(Contract, #18)"
+    },
+    {
+      "label": "claim_borrower_still_blocked",
+      "status": "SIMULATION_FAILED",
+      "error": "HostError: Error(Contract, #16)"
+    }
+  ],
+  "salts": {
+    "rules": "c563587473b39217a78cb98064f5f80e75ef946bae4a5124fdbbf03f980a520f",
+    "book": "8ce4780a5e2f42074484d181ca5c20b4df7e2e87c8b43c6a5fe9e68698888541",
+    "escrow": "5a104a38716b1b90b80d8a7a260f020c45fab84ca0dcd8aa293bd2211fbec1f3",
+    "escrow2": "e0165f691f55b8e6350c933cb9b41605d7a5dafd7c2311c25f7deda9d92eb0bd"
+  },
+  "parameters": {
+    "marginBps": 7000,
+    "defaultBps": 8500,
+    "maxStepBps": 2500,
+    "maxPriceAge": 86400,
+    "discountBps": 500,
+    "priceInterval": 30,
+    "gracePeriod": 30,
+    "curePeriod": 60
+  },
+  "beforeImmutable": {
+    "checkedAt": "2026-11-21T03:44:37.282Z",
+    "holders": 0,
+    "flags": {
+      "auth_required": true,
+      "auth_revocable": true,
+      "auth_immutable": true,
+      "auth_clawback_enabled": false
+    }
+  },
+  "issuerTrustlinesBefore": [],
+  "immutableFlags": {
+    "auth_required": true,
+    "auth_revocable": true,
+    "auth_immutable": true,
+    "auth_clawback_enabled": false
+  },
+  "lastAction": "retire_lender_bonds",
+  "rulesContractId": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+  "contractId": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+  "wasm": {
+    "rules": {
+      "sha256": "f76b91182e5a23bc2a0fb26ca711a43e94a1fa223bf358de403d67ec83e25139",
+      "bytes": 5144
+    },
+    "book": {
+      "sha256": "05f6790eebe0984e027d447f8087301f3396ce76ed31307e0de2ea866287ca25",
+      "bytes": 27278
+    },
+    "escrow": {
+      "sha256": "e558df1597e159cd3e066c0d845445db55f0d0288dc83c8bf6864ae706c099b2",
+      "bytes": 989
+    },
+    "escrow2": {
+      "sha256": "e558df1597e159cd3e066c0d845445db55f0d0288dc83c8bf6864ae706c099b2",
+      "bytes": 989
+    }
+  },
+  "rulesConfig": {
+    "book": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+    "issuer": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+    "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+  },
+  "bookConfig": {
+    "cure_period": "60",
+    "default_bps": 8500,
+    "discount_bps": 500,
+    "grace_period": "30",
+    "issuer": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+    "margin_bps": 7000,
+    "max_price_age": "86400",
+    "max_step_bps": 2500,
+    "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+    "price_interval": 30,
+    "rules": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+    "usdc": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+  },
+  "escrow": "CAWRSYEJGNXDF7I6RFI7ZMPVEDPZZ4LPINPT7RCPNZ5A3OSZWUR5ETX2",
+  "escrow2": "CDIBNSBBFYFHRRCXEJ5NQGCFFDLT7EKFBVSKGBQG4RVEATSNOFB4TGJ4",
+  "initial": {
+    "lender": {
+      "balance": "127288800000",
+      "limit": "922337203685.4775807"
+    },
+    "borrower": {
+      "balance": "0",
+      "limit": "922337203685.4775807"
+    }
+  },
+  "grossLenderSpend": "1537708334",
+  "openResources": {
+    "instructions": 3428144,
+    "diskReadBytes": 376,
+    "writeBytes": 1684,
+    "readOnlyEntries": 8,
+    "readWriteEntries": 6,
+    "minResourceFee": "2543260"
+  },
+  "opened": {
+    "debt": "503333334",
+    "health_bps": "5033",
+    "loan": {
+      "asset": "C2_DEMO",
+      "borrower": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "collateral": {
+        "authorized": true,
+        "balance": "1000000000",
+        "known": true
+      },
+      "defaulted_at": "0",
+      "due": "1797824786",
+      "face": "1000000000",
+      "interest": "3333334",
+      "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "loss": "0",
+      "price": "10000000",
+      "price_time": "1795232781",
+      "principal": "500000000",
+      "proceeds": "0",
+      "recipient": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "status": [
+        "Active"
+      ],
+      "surplus": "0"
+    },
+    "overdue": false,
+    "shortfall": "0",
+    "value": "1000000000"
+  },
+  "lenderCap": "12658.5466666",
+  "repaid": {
+    "debt": "503333334",
+    "health_bps": "5033",
+    "loan": {
+      "asset": "C2_DEMO",
+      "borrower": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "collateral": {
+        "authorized": true,
+        "balance": "1000000000",
+        "known": true
+      },
+      "defaulted_at": "0",
+      "due": "1797824786",
+      "face": "1000000000",
+      "interest": "3333334",
+      "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "loss": "0",
+      "price": "10000000",
+      "price_time": "1795232781",
+      "principal": "500000000",
+      "proceeds": "0",
+      "recipient": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "status": [
+        "Repaid"
+      ],
+      "surplus": "0"
+    },
+    "overdue": false,
+    "shortfall": "0",
+    "value": "1000000000"
+  },
+  "lenderCredit": "503333334",
+  "defaulted": {
+    "debt": "503333334",
+    "health_bps": "8948",
+    "loan": {
+      "asset": "C2_DEMO",
+      "borrower": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "collateral": {
+        "authorized": true,
+        "balance": "1000000000",
+        "known": true
+      },
+      "defaulted_at": "1795232876",
+      "due": "1797824826",
+      "face": "1000000000",
+      "interest": "3333334",
+      "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "loss": "0",
+      "price": "5625000",
+      "price_time": "1795232871",
+      "principal": "500000000",
+      "proceeds": "0",
+      "recipient": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "status": [
+        "Defaulted"
+      ],
+      "surplus": "0"
+    },
+    "overdue": false,
+    "shortfall": "0",
+    "value": "562500000"
+  },
+  "borrowerCap": "50.0000000",
+  "liquidated": {
+    "debt": "503333334",
+    "health_bps": "8948",
+    "loan": {
+      "asset": "C2_DEMO",
+      "borrower": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "collateral": {
+        "authorized": true,
+        "balance": "1000000000",
+        "known": true
+      },
+      "defaulted_at": "1795232876",
+      "due": "1797824826",
+      "face": "1000000000",
+      "interest": "3333334",
+      "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "loss": "0",
+      "price": "5625000",
+      "price_time": "1795232871",
+      "principal": "500000000",
+      "proceeds": "534375000",
+      "recipient": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "status": [
+        "Liquidated"
+      ],
+      "surplus": "31041666"
+    },
+    "overdue": false,
+    "shortfall": "0",
+    "value": "562500000"
+  },
+  "borrowerCredit": "31041666",
+  "finalState": {
+    "admin": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+    "livePledges": "0",
+    "bookUsdc": "0",
+    "lender": "127088200000",
+    "borrower": "0"
+  },
+  "reconciliation": {
+    "file": "archive/c2/c2-reconciliation.json",
+    "firstLedger": 5841821,
+    "lastLedger": 5841894,
+    "runLastLedger": 5841868,
+    "net": {
+      "lender": {
+        "own": "0",
+        "external": "-200600000"
+      },
+      "borrower": {
+        "own": "0",
+        "external": "0"
+      }
+    }
+  },
+  "completed": "2026-11-21T03:52:03.445Z",
+  "historical": true,
+  "supersededBy": "../../c3-testnet.json"
+}

@@ -2,7 +2,7 @@
 
 Producto para empresas de cualquier país; Bolivia es el primer mercado y el país predeterminado. Detalle de cada fase del MVP. La visión general está en el [README](../README.md).
 
-Para el reinicio C2 con RBOND, consultar [la especificación de contratos](../contracts/INTERFAZ.md).
+Para los contratos C3b con RBOND, consultar [la especificación de contratos](../contracts/INTERFAZ.md).
 Estas notas describen la web anterior, todavía sin integrar el nuevo libro ni reglas.
 Su configuración VBOND no debe usarse para nuevas operaciones de RBOND.
 

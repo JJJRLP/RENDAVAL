@@ -2,7 +2,7 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {Address,Contract,Networks,TransactionBuilder,rpc,StrKey,scValToNative} from '@stellar/stellar-sdk';
-const e=JSON.parse(readFileSync('scripts/evidence/loan-book-testnet.json'));
+const e=JSON.parse(readFileSync('scripts/evidence/archive/c2/loan-book-testnet.json'));
 const r=new rpc.Server('https://soroban-testnet.stellar.org');
 const own=new Set(e.transactions.map(t=>t.hash));
 const first=e.transactions.find(t=>t.label==='approve_lender').ledger;
@@ -42,7 +42,7 @@ for(const role of ['lender','borrower']) {
  net[role]={own:sum(true).toString(),external:sum(false).toString()};
 }
 const result={firstLedger:first,lastLedger:last,runLastLedger,movements:movements.sort((a,b)=>a.ledger-b.ledger),net};
-writeFileSync('scripts/evidence/c2-reconciliation.json',JSON.stringify(result,null,2)+'\n');
+writeFileSync('scripts/evidence/archive/c2/c2-reconciliation.json',JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify({net,external:movements.filter(x=>!x.own)},null,2));
 
 if(process.argv.includes('--finalize')) {
@@ -71,6 +71,6 @@ if(process.argv.includes('--finalize')) {
  assert(e.grossLenderSpend<=300n*10000000n);
  e.reconciliation={file:'c2-reconciliation.json',firstLedger:first,lastLedger:last,runLastLedger,net};
  e.completed=new Date().toISOString();
- writeFileSync('scripts/evidence/loan-book-testnet.json',JSON.stringify(e,(_,x)=>typeof x==='bigint'?x.toString():x,2)+'\n');
+ writeFileSync('scripts/evidence/archive/c2/loan-book-testnet.json',JSON.stringify(e,(_,x)=>typeof x==='bigint'?x.toString():x,2)+'\n');
  console.log('Finalized with exact account reconciliation; no transactions sent');
 }

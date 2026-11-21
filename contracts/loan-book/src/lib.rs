@@ -1,7 +1,7 @@
 #![no_std]
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, token, Address, Env,
-    Symbol, Vec,
+    Symbol, Vec, Bytes, BytesN,
 };
 
 // Wire-only client avoids linking another contract's exported functions into this WASM.
@@ -20,6 +20,45 @@ pub trait RulesInterface {
     fn release(e: Env, token: Address, holder: Address);
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum VaultState { Pending, Active, Closed }
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VaultConfig {
+    pub book: Address, pub bond: Address, pub usdc: Address,
+    pub borrower: Address, pub lender: Address, pub delivery: Option<Address>,
+    pub recipient: Address, pub state: VaultState,
+}
+#[soroban_sdk::contractclient(name = "VaultClient")]
+pub trait VaultInterface {
+    fn get_config(e: Env) -> VaultConfig;
+    fn activate(e: Env, net: i128);
+    fn finish(e: Env, recipient: Address, fallback: bool);
+    fn assign(e: Env, recipient: Address);
+    fn cancel(e: Env, party: Address);
+}
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VaultSpec {
+    pub series: Symbol, pub borrower: Address, pub lender: Address,
+    pub face: i128, pub principal: i128, pub delivery: Address,
+}
+pub const ABANDONMENT: u64 = 180 * 86400;
+fn net(principal: i128) -> Result<i128, Error> {
+    principal.checked_sub(mul(principal, 30)? / 10000).ok_or(Error::Overflow)
+}
+fn finish(e: &Env, c: &Config, id: &Address, l: &Loan, fallback: bool) -> Result<(), Error> {
+    let spec: VaultSpec = e.storage().persistent().get(&Key::Vault(id.clone())).ok_or(Error::Missing)?;
+    let token = series(e, &l.asset)?.token;
+    // Delivery assignment and collateral movement are in the settlement transaction.
+    VaultClient::new(e, &spec.delivery).assign(&if fallback { l.recipient.clone() } else { l.borrower.clone() });
+    VaultClient::new(e, id).finish(&l.recipient, &fallback);
+    let rules = RulesClient::new(e, &c.rules);
+    rules.release(&token, id);
+    rules.release(&token, &spec.delivery);
+    Ok(())
+}
 pub const SCALE: i128 = 10_000_000;
 pub const MAX_LISTED_SERIES: u32 = 64;
 const TERM: u64 = 30 * 86400;
@@ -59,6 +98,7 @@ pub enum Status {
     Defaulted,
     Repaid,
     Liquidated,
+    WrittenOff,
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -94,6 +134,8 @@ pub struct Collateral {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Loan {
+    pub net_disbursement: i128,
+    pub escrow_fee: i128,
     pub default_price: i128,
     pub defaulted_at: u64,
     pub recipient: Address,
@@ -126,6 +168,8 @@ pub struct View {
 #[derive(Clone)]
 enum Key {
     Config,
+    VaultCode,
+    Vault(Address),
     Assets,
     Series(Symbol),
     Loan(Address),
@@ -197,6 +241,12 @@ pub struct Liquidated {
     pub buyer: Address,
     pub loan: Loan,
 }
+#[contractevent(topics = ["vault"])]
+pub struct VaultCreated { #[topic] pub id: Address, pub spec: VaultSpec }
+#[contractevent(topics = ["cancel"])]
+pub struct Cancelled { #[topic] pub id: Address }
+#[contractevent(topics = ["writeoff"])]
+pub struct WrittenOff { #[topic] pub id: Address, pub loan: Loan }
 #[contractevent(topics = ["credit"])]
 pub struct Credited {
     #[topic]
@@ -294,7 +344,7 @@ fn save(e: &Env, id: &Address, l: &Loan) {
     }
 }
 fn closed(l: &Loan) -> bool {
-    l.status == Status::Repaid || l.status == Status::Liquidated
+    l.status == Status::Repaid || l.status == Status::Liquidated || l.status == Status::WrittenOff
 }
 fn series(e: &Env, name: &Symbol) -> Result<Series, Error> {
     let k = Key::Series(name.clone());
@@ -520,7 +570,17 @@ impl LoanBook {
         if !collateral.authorized || collateral.balance < face {
             return Err(Error::Collateral);
         }
+        let spec: VaultSpec = e.storage().persistent().get(&Key::Vault(id.clone())).ok_or(Error::Missing)?;
+        if spec.series != series || spec.borrower != borrower || spec.lender != lender
+            || spec.face != face || spec.principal != principal { return Err(Error::Invalid); }
+        let vc = VaultClient::new(&e, &id).get_config();
+        if vc.state != VaultState::Pending { return Err(Error::State); }
+        if !token::StellarAssetClient::new(&e, &registered.token).authorized(&spec.delivery) {
+            return Err(Error::Collateral);
+        }
         let l = Loan {
+            net_disbursement: net(principal)?,
+            escrow_fee: principal - net(principal)?,
             default_price: 0,
             defaulted_at: 0,
             recipient: borrower.clone(),
@@ -565,50 +625,71 @@ impl LoanBook {
         }
         save(&e, &id, &l);
         rules.protect(&registered.token, &id);
-        pay(&e, &c, &l.lender, &l.borrower, principal)?;
+        rules.protect(&registered.token, &spec.delivery);
+        if VaultClient::new(&e, &id).try_activate(&l.net_disbursement).is_err() { return Err(Error::Payment); }
         Opened { id, loan: l }.publish(&e);
         Ok(())
     }
-    // Permissionless trigger, but only this book authorizes the nested rules call.
-    // Read the final loan directly: do not reconcile or trust its closing balance.
+    // Retained as an idempotent compatibility read: terminal settlement already released both marks.
     pub fn release_pledge(e: Env, id: Address) -> Result<(), Error> {
-        let c = config(&e);
-        let l: Loan = e
-            .storage()
-            .persistent()
-            .get(&Key::Loan(id.clone()))
-            .ok_or(Error::Missing)?;
-        if !closed(&l) {
-            return Err(Error::State);
-        }
-        let token = series(&e, &l.asset)?.token;
-        let rules = RulesClient::new(&e, &c.rules);
-        if !rules.pledged(&token, &id) {
-            return Ok(());
-        }
-        match token::Client::new(&e, &token).try_balance(&id) {
-            Ok(Ok(0)) => (),
-            Ok(Ok(n)) if n > 0 => return Err(Error::Nonempty),
-            _ => return Err(Error::CollateralRead),
-        }
-        rules.release(&token, &id);
+        let l: Loan = e.storage().persistent().get(&Key::Loan(id)).ok_or(Error::Missing)?;
+        if !closed(&l) { return Err(Error::State); }
         Ok(())
     }
-    // The entitled recipient may acknowledge delivery or abandon residual dust.
-    // Live debt can never be unprotected through this path.
-    pub fn accept_collateral(e: Env, id: Address) -> Result<(), Error> {
-        let c = config(&e);
-        let l: Loan = e
-            .storage()
-            .persistent()
-            .get(&Key::Loan(id.clone()))
-            .ok_or(Error::Missing)?;
-        if !closed(&l) {
+    // Code is pinned once; changing vault semantics requires a new book.
+    pub fn set_vault_code(e: Env, wasm_hash: BytesN<32>) -> Result<(), Error> {
+        let c = config(&e); c.issuer.require_auth(); c.operator.require_auth();
+        if let Some(old) = e.storage().instance().get::<_, BytesN<32>>(&Key::VaultCode) {
+            if old != wasm_hash { return Err(Error::Exists); }
+            return Ok(());
+        }
+        e.storage().instance().set(&Key::VaultCode, &wasm_hash); Ok(())
+    }
+    pub fn create_vault(e: Env, salt: BytesN<32>, series: Symbol, borrower: Address,
+        lender: Address, face: i128, principal: i128) -> Result<Address, Error> {
+        let c = config(&e); c.operator.require_auth();
+        if borrower == lender || face <= 0 || principal < MIN_PRINCIPAL || principal > face / 2 {
+            return Err(Error::Invalid);
+        }
+        mul(face, SCALE)?; mul(add(principal, add(principal, 149)? / 150)?, 10000)?; net(principal)?;
+        let token = self::series(&e, &series)?.token;
+        let hash: BytesN<32> = e.storage().instance().get(&Key::VaultCode).ok_or(Error::Missing)?;
+        let id = e.deployer().with_current_contract(salt.clone()).deployed_address();
+        if e.storage().persistent().has(&Key::Vault(id.clone())) { return Err(Error::Exists); }
+        let delivery_salt: BytesN<32> = e.crypto().sha256(&salt.to_bytes()).into();
+        let vc = VaultConfig { book: e.current_contract_address(), bond: token, usdc: c.usdc,
+            borrower: borrower.clone(), lender: lender.clone(), delivery: None,
+            recipient: borrower.clone(), state: VaultState::Pending };
+        let delivery = e.deployer().with_current_contract(delivery_salt).deploy_contract(soroban_sdk::ContractExecutable::Wasm(hash.clone()), (vc.clone(),));
+        let mut main = vc; main.delivery = Some(delivery.clone());
+        e.deployer().with_current_contract(salt).deploy_contract(soroban_sdk::ContractExecutable::Wasm(hash), (main,));
+        let k = Key::Vault(id.clone());
+        e.storage().persistent().set(&k, &VaultSpec { series, borrower, lender, face, principal, delivery });
+        bump(&e, &k);
+        VaultCreated { id: id.clone(), spec: e.storage().persistent().get(&k).unwrap() }.publish(&e); Ok(id)
+    }
+    pub fn get_vault(e: Env, id: Address) -> Result<VaultSpec, Error> {
+        config(&e); let k = Key::Vault(id); bump(&e, &k);
+        e.storage().persistent().get(&k).ok_or(Error::Missing)
+    }
+    pub fn cancel(e: Env, id: Address, party: Address) -> Result<(), Error> {
+        party.require_auth();
+        let spec = Self::get_vault(e.clone(), id.clone())?;
+        VaultClient::new(&e, &id).cancel(&party);
+        VaultClient::new(&e, &spec.delivery).assign(&spec.borrower);
+        Cancelled { id }.publish(&e); Ok(())
+    }
+    // After six months in default, collateral in kind replaces an unavailable auction.
+    // No fresh price or buyer approval; the protected delivery contract is already an approved holder.
+    pub fn write_off(e: Env, id: Address) -> Result<(), Error> {
+        let c = config(&e); let mut l = loan(&e, &id)?;
+        if l.status == Status::WrittenOff { return Ok(()); }
+        if l.status != Status::Defaulted || e.ledger().timestamp() < l.defaulted_at.checked_add(ABANDONMENT).ok_or(Error::Overflow)? {
             return Err(Error::State);
         }
-        l.recipient.require_auth();
-        RulesClient::new(&e, &c.rules).release(&series(&e, &l.asset)?.token, &id);
-        Ok(())
+        l.loss = debt(&l)?; l.recipient = l.lender.clone(); l.status = Status::WrittenOff;
+        finish(&e, &c, &id, &l, true)?; save(&e, &id, &l);
+        WrittenOff { id, loan: l }.publish(&e); Ok(())
     }
     pub fn claimable(e: Env, recipient: Address) -> i128 {
         config(&e);
@@ -633,11 +714,10 @@ impl LoanBook {
         Ok(())
     }
     // Registration never loads the catalogue; names and token bindings are permanent.
-    pub fn register_series(e: Env, series: Symbol, token: Address) -> Result<(), Error> {
+    pub fn register_series(e: Env, series: Symbol, classic_asset: Bytes) -> Result<(), Error> {
         config(&e).issuer.require_auth();
-        if token.to_string().to_bytes().get(0) != Some(b'C') {
-            return Err(Error::Invalid);
-        }
+        // Network-bound SAC address derived by the host from the classic asset XDR.
+        let token = e.deployer().with_stellar_asset(classic_asset).deployed_address();
         let k = Key::Series(series.clone());
         if e.storage().persistent().has(&k) {
             return Err(Error::Exists);
@@ -804,6 +884,7 @@ impl LoanBook {
             debt(&l)?,
         )?;
         credit(&e, &c, &l.lender, debt(&l)?)?;
+        finish(&e, &c, &id, &l, true)?;
         Repaid {
             id,
             amount: debt(&l)?,
@@ -865,6 +946,7 @@ impl LoanBook {
         pay(&e, &c, &buyer, &e.current_contract_address(), proceeds)?;
         credit(&e, &c, &l.lender, paid)?;
         credit(&e, &c, &l.borrower, l.surplus)?;
+        finish(&e, &c, &id, &l, false)?;
         Liquidated { id, buyer, loan: l }.publish(&e);
         Ok(())
     }

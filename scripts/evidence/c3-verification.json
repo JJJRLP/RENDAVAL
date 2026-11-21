@@ -1,0 +1,1014 @@
+{
+  "network": "TESTNET",
+  "verifiedAt": "2026-11-21T04:59:11.326Z",
+  "contractId": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+  "transactions": [
+    {
+      "label": "receiver",
+      "group": "prerequisite",
+      "hash": "823ef55f5fca0a241091b2b09c8455c8225091239fb679a2e772b7b68ce57085",
+      "ledger": 5842458,
+      "feeStroops": "23064"
+    },
+    {
+      "label": "complete",
+      "group": "prerequisite",
+      "hash": "c8ab64c4598ffe851824a957c305d8545b7c74d244f9c6a029a362ba95a14a4f",
+      "ledger": 5842467,
+      "feeStroops": "10903"
+    },
+    {
+      "label": "deploy",
+      "group": "prerequisite",
+      "hash": "2ac324157c6550111e88cbc06de6b337b53b17c722d2ab9cbbb3048c954a12a5",
+      "ledger": 5842461,
+      "feeStroops": "164080"
+    },
+    {
+      "label": "fund",
+      "group": "prerequisite",
+      "hash": "035e2be84c9968d70d49610137d5be162f843a7d92da0ab21ecd544ec6f5e31e",
+      "ledger": 5842464,
+      "feeStroops": "123332"
+    },
+    {
+      "label": "cleanup",
+      "group": "prerequisite",
+      "hash": "215d06692e85f070540cf689113a85ee3f67f0f29df2a6c066bfd74b479629e0",
+      "ledger": 5842476,
+      "feeStroops": "6544"
+    },
+    {
+      "label": "approve",
+      "group": "prerequisite",
+      "hash": "3ea1f25de966e471056a1073dde90125a9b3df552b51b1faa5028a2534fddbc0",
+      "ledger": 5842471,
+      "feeStroops": "7022"
+    },
+    {
+      "label": "release",
+      "group": "prerequisite",
+      "hash": "e1c76f0b57412c120892b8d10ceb366a60974344c9af9fc2e3934c2708d40ebe",
+      "ledger": 5842473,
+      "feeStroops": "122280"
+    },
+    {
+      "label": "borrower_bond_trustline",
+      "group": "C3b",
+      "hash": "350a8c473c69ce67303b872eb818853d41c3ab0d7993d631a9073d9e503ee7d2",
+      "ledger": 5842616,
+      "feeStroops": "100"
+    },
+    {
+      "label": "approve_borrower",
+      "group": "C3b",
+      "hash": "c7aa48d322de9ddd5bf6989e979c2b9935a4a52beccb104c16abbad39eae1ba8",
+      "ledger": 5842617,
+      "feeStroops": "5631"
+    },
+    {
+      "label": "borrower_usd_trustline",
+      "group": "C3b",
+      "hash": "3446104d71b9adffe33a5fe012818da79601b8134e68b644f6d6da0ae858ef00",
+      "ledger": 5842615,
+      "feeStroops": "100"
+    },
+    {
+      "label": "friendbot_borrower",
+      "group": "C3b",
+      "hash": "c41bf09df075ae470b8ba6aab852a58b464e32a4dba861c03180b878092c217b",
+      "ledger": 5842614,
+      "feeStroops": "100"
+    },
+    {
+      "label": "approve_buyer",
+      "group": "C3b",
+      "hash": "1fa93a39900af039f7e9c15b950d24158e4c5161afc13cf83339def53dedb4f7",
+      "ledger": 5842621,
+      "feeStroops": "5631"
+    },
+    {
+      "label": "buyer_bond_trustline",
+      "group": "C3b",
+      "hash": "0bfbd7b60646320a97cd2e32b579f82a6705f8c6056e993dc2352fa25711c07a",
+      "ledger": 5842620,
+      "feeStroops": "100"
+    },
+    {
+      "label": "buyer_usd_trustline",
+      "group": "C3b",
+      "hash": "b03792c7689f5a15dac43cb179e09b5d5e6cb6e7024e4c1b818954a6cd5115bb",
+      "ledger": 5842619,
+      "feeStroops": "100"
+    },
+    {
+      "label": "friendbot_buyer",
+      "group": "C3b",
+      "hash": "bd7d14e1e0fd388541916efd673dd8b6814d970ce7a584dd714fa2ac9f1bbd77",
+      "ledger": 5842618,
+      "feeStroops": "100"
+    },
+    {
+      "label": "deploy_book",
+      "group": "C3b",
+      "hash": "c2628780df3e44820569d43be060f5c14549bf516c3a55835ab9faa116866d4a",
+      "ledger": 5842624,
+      "feeStroops": "461852943"
+    },
+    {
+      "label": "pin_vault_code",
+      "group": "C3b",
+      "hash": "a1ffd1b804e57b79f745056c35c982c97d432c603c8bbbc461977774687a877a",
+      "ledger": 5842625,
+      "feeStroops": "147554"
+    },
+    {
+      "label": "upload_vault",
+      "group": "C3b",
+      "hash": "0744fb1978d5262d91bccb275d9d789bdae070ad8b00d9dc54b8144d822b6aef",
+      "ledger": 5842622,
+      "feeStroops": "6089775"
+    },
+    {
+      "label": "upload_book",
+      "group": "C3b",
+      "hash": "2ce16bc500fab4197772459536a8acec5b56dbc4344e773cef01f17ec56dea71",
+      "ledger": 5842623,
+      "feeStroops": "28628470"
+    },
+    {
+      "label": "replace_book",
+      "group": "C3b",
+      "hash": "b7f571a3d434ec5ebb3cdd21ae9d237bb2f71f92fb14a9212053d29e327dad87",
+      "ledger": 5842626,
+      "feeStroops": "8423"
+    },
+    {
+      "label": "register_series",
+      "group": "C3b",
+      "hash": "4950e2732b63a27034e5fa30d5f31602f8cce20a3b7def9e50fc14a237ef3498",
+      "ledger": 5842627,
+      "feeStroops": "578275"
+    },
+    {
+      "label": "publish_initial_price",
+      "group": "C3b",
+      "hash": "045c73342e25a245ab02d180b5137ec8f7db45992ccfdfc752ac6becfa207592",
+      "ledger": 5842628,
+      "feeStroops": "4040"
+    },
+    {
+      "label": "borrower_topup",
+      "group": "C3b",
+      "hash": "8a3e86970ccb8d490313d083dbe78ab0f6a10d4581c213bb67ac9a08e5b6260d",
+      "ledger": 5842629,
+      "feeStroops": "7244"
+    },
+    {
+      "label": "create_repaid",
+      "group": "C3b",
+      "hash": "bc19f37ac383fcbf786d836990c7e2917a3ea653b710518932528e4388db151f",
+      "ledger": 5842632,
+      "feeStroops": "942418"
+    },
+    {
+      "label": "authorize_repaid_main",
+      "group": "C3b",
+      "hash": "f214f4e3a2f15d5eadf64b1e972bb19ee624aff0d6640bb08410642b5b91c3ad",
+      "ledger": 5842633,
+      "feeStroops": "115420"
+    },
+    {
+      "label": "buyer_liquidity",
+      "group": "C3b",
+      "hash": "620b8356efdf4f1665fbf6f53182a0bdae5bfa3a7ab78875a85958cecef61730",
+      "ledger": 5842630,
+      "feeStroops": "7244"
+    },
+    {
+      "label": "issue_bonds",
+      "group": "C3b",
+      "hash": "ca1bbdaf7296c56344f6f49cecd16ac6618a0d4e5b1fed2af0212223b5973267",
+      "ledger": 5842631,
+      "feeStroops": "100"
+    },
+    {
+      "label": "deposit_repaid",
+      "group": "C3b",
+      "hash": "70a2591ae09211bf31d40ec4ddb95e95732d3853b9b8efccf968064785a2c7ea",
+      "ledger": 5842635,
+      "feeStroops": "98944818"
+    },
+    {
+      "label": "authorize_repaid_delivery",
+      "group": "C3b",
+      "hash": "f0f9c7f9c02ed8f07484ea0caac4e388bf3dad328ec17a61719c1a20bf8f1bf2",
+      "ledger": 5842634,
+      "feeStroops": "115420"
+    },
+    {
+      "label": "tw_deploy_repaid",
+      "group": "C3b",
+      "hash": "0e8e75ae459b396a98a12286e13d6e6ae2ffa7581ca75c9ddf9ddd6f9d0df4f0",
+      "ledger": 5842636,
+      "feeStroops": "158189"
+    },
+    {
+      "label": "tw_fund_repaid",
+      "group": "C3b",
+      "hash": "92baa5c5326fbbb95e58667c37735560b0f01d139da8c618dcf5e5a87eb0e47b",
+      "ledger": 5842637,
+      "feeStroops": "122765"
+    },
+    {
+      "label": "tw_approve-milestone_repaid",
+      "group": "C3b",
+      "hash": "01afa1763a6eb7ec48eb5b35e876921321f43fe843646766d31788a1d0708690",
+      "ledger": 5842639,
+      "feeStroops": "6896"
+    },
+    {
+      "label": "tw_change-milestone-status_repaid",
+      "group": "C3b",
+      "hash": "6212daf63b72751ec5bb0252fe5f3d44da89ee757a33767d8b2d941c4485a271",
+      "ledger": 5842638,
+      "feeStroops": "10764"
+    },
+    {
+      "label": "tw_release-funds_repaid",
+      "group": "C3b",
+      "hash": "86517627bcc4ece818483e1e0cb46a1c0e5f5b62d3486d729889bac9f4a38d89",
+      "ledger": 5842640,
+      "feeStroops": "121886"
+    },
+    {
+      "label": "open_repaid",
+      "group": "C3b",
+      "hash": "02e39a13e3a410be0e4f4a94b39154e50eac45a6c3781dc4d9fa14a11638e4b7",
+      "ledger": 5842641,
+      "feeStroops": "2588953"
+    },
+    {
+      "label": "create_cancelled",
+      "group": "C3b",
+      "hash": "afa569fd8d88379a7324f40c2134d57c91ff1429ca07fafb6351f20e40d78b0d",
+      "ledger": 5842643,
+      "feeStroops": "942416"
+    },
+    {
+      "label": "authorize_cancelled_delivery",
+      "group": "C3b",
+      "hash": "ccaf310a8702dae14539e49cf46c85e9a7861b9d1318b351853aecec65d34cb9",
+      "ledger": 5842645,
+      "feeStroops": "115420"
+    },
+    {
+      "label": "authorize_cancelled_main",
+      "group": "C3b",
+      "hash": "3344b46178b1db2d8c995a1f68bd0f5fd8bcd590c8adc48b714157d4e7de8412",
+      "ledger": 5842644,
+      "feeStroops": "115420"
+    },
+    {
+      "label": "repay",
+      "group": "C3b",
+      "hash": "c0cc4eeb490d4cd4cc47ca8e08fa9f64b30850c4ceb606deb4a6a023e815ceb2",
+      "ledger": 5842642,
+      "feeStroops": "1110458"
+    },
+    {
+      "label": "deposit_cancelled",
+      "group": "C3b",
+      "hash": "732a6875ae343d06e969fb88c10f5eb596b542672d9a2a81f1643b9195d55a6f",
+      "ledger": 5842646,
+      "feeStroops": "1043106"
+    },
+    {
+      "label": "tw_fund_cancelled",
+      "group": "C3b",
+      "hash": "dd5e913e59e9915e4e56e0918b894bfe5b3cab873d0685098200ed219c2e0710",
+      "ledger": 5842649,
+      "feeStroops": "122801"
+    },
+    {
+      "label": "tw_dispute",
+      "group": "C3b",
+      "hash": "a61673ced257503d3f0f9b198553eeb2704da863456ab6b37fa1cb98f1ae8f8f",
+      "ledger": 5842650,
+      "feeStroops": "6759"
+    },
+    {
+      "label": "tw_deploy_cancelled",
+      "group": "C3b",
+      "hash": "2a8789e2a289baea7b8c7bfc5feda16e3e8fb639af1673cb67f3e0f291c73941",
+      "ledger": 5842647,
+      "feeStroops": "159169"
+    },
+    {
+      "label": "tw_refund",
+      "group": "C3b",
+      "hash": "241dfb7d9fe4b1cd19de7cfd56c6ef2a2fec97a21e6bcc570259042dce0e34f4",
+      "ledger": 5842651,
+      "feeStroops": "14907"
+    },
+    {
+      "label": "cancel",
+      "group": "C3b",
+      "hash": "e017548f48a75aaf31f3f8b9e8dd65e6ac443cc4d89e2fdbf85a2064b0391f67",
+      "ledger": 5842652,
+      "feeStroops": "977179"
+    },
+    {
+      "label": "refund_cancelled_vault",
+      "group": "C3b",
+      "hash": "246efdb2a944f6e07555e86af4cb54aeb7ba51812072e5d70ce06c4abae331d0",
+      "ledger": 5842654,
+      "feeStroops": "1993"
+    },
+    {
+      "label": "return_cancelled_bonds",
+      "group": "C3b",
+      "hash": "206e174b292ccc6349ca92969709027709f3b7a7a33edbfeeda84c6aff46c8be",
+      "ledger": 5842653,
+      "feeStroops": "6308"
+    },
+    {
+      "label": "create_liquidated",
+      "group": "C3b",
+      "hash": "a6dc192226c2c4bac7cb7dfc6966e1844a8a5cc77731c82f19151f73e59a1040",
+      "ledger": 5842655,
+      "feeStroops": "942416"
+    },
+    {
+      "label": "authorize_liquidated_main",
+      "group": "C3b",
+      "hash": "bd319436b54732dc1b90e16f478839784af1423ec83a4ce88d7b8725eb014a2f",
+      "ledger": 5842656,
+      "feeStroops": "115420"
+    },
+    {
+      "label": "deposit_liquidated",
+      "group": "C3b",
+      "hash": "28525971942163f74d9a9b2d06c256f4261a566abb369a1e352dd3eb8e850e9d",
+      "ledger": 5842658,
+      "feeStroops": "1043106"
+    },
+    {
+      "label": "authorize_liquidated_delivery",
+      "group": "C3b",
+      "hash": "5cca58303b8cf4af81daed2bf30bc594b226a59beea3c0988c1f70213b8d8c0c",
+      "ledger": 5842657,
+      "feeStroops": "115420"
+    },
+    {
+      "label": "tw_change-milestone-status_liquidated",
+      "group": "C3b",
+      "hash": "f13d47c44f7d04c6ae7629aeb63e3d6f089bc0625773ef5e1df59f3caf7f088a",
+      "ledger": 5842661,
+      "feeStroops": "10787"
+    },
+    {
+      "label": "tw_approve-milestone_liquidated",
+      "group": "C3b",
+      "hash": "00d36330c1df29eed929f3a6a7d2f9433e4ccf0df685e283d31cb4e073a07fac",
+      "ledger": 5842662,
+      "feeStroops": "6920"
+    },
+    {
+      "label": "tw_fund_liquidated",
+      "group": "C3b",
+      "hash": "099d319d9c4154a8cb940dfa528b8f9e60c7224417efb1106acb4682a9a2d783",
+      "ledger": 5842660,
+      "feeStroops": "122801"
+    },
+    {
+      "label": "tw_deploy_liquidated",
+      "group": "C3b",
+      "hash": "1489a6b8e6047d5cf2ed091a3cc661637e9e5f7cc0d5431f2702d6e5064e0d87",
+      "ledger": 5842659,
+      "feeStroops": "159169"
+    },
+    {
+      "label": "open_liquidated",
+      "group": "C3b",
+      "hash": "bb120a2373b61109f1d4fe7c1dde1df9af733d31eab316eed096d6b8937dbe1e",
+      "ledger": 5842664,
+      "feeStroops": "2588956"
+    },
+    {
+      "label": "price_5625000",
+      "group": "C3b",
+      "hash": "55a8941966e2ff1f1d9acbabf2d73b9ff43ec6e9cb355ffc58781b2509986ef9",
+      "ledger": 5842672,
+      "feeStroops": "4042"
+    },
+    {
+      "label": "price_7500000",
+      "group": "C3b",
+      "hash": "5fd423ca14c6efbc3fb8fd0e495ec434778a76346ff5f743711f31d503dad094",
+      "ledger": 5842665,
+      "feeStroops": "4042"
+    },
+    {
+      "label": "tw_release-funds_liquidated",
+      "group": "C3b",
+      "hash": "38f6973de4a72b639a25027494e133089a2458ac33183155f8c9d595aec6e0b3",
+      "ledger": 5842663,
+      "feeStroops": "121888"
+    },
+    {
+      "label": "retire_borrower_bonds",
+      "group": "C3b",
+      "hash": "9258cd0baeeecfec8831ee166835060aa8d1032a03d1c830b2f7a473f827351a",
+      "ledger": 5842696,
+      "feeStroops": "100"
+    },
+    {
+      "label": "default",
+      "group": "C3b",
+      "hash": "6541ea504e8941d3c4ebd2727c2db2d7a672161ffae185ab3d988a704543bd4b",
+      "ledger": 5842673,
+      "feeStroops": "14584"
+    },
+    {
+      "label": "approve_liquidation_buyer",
+      "group": "C3b",
+      "hash": "444cc8793d83ba2e1c83153b980103cdeabdc0aeeb64d10c38989ac27b04adf6",
+      "ledger": 5842694,
+      "feeStroops": "267766"
+    },
+    {
+      "label": "liquidate",
+      "group": "C3b",
+      "hash": "ca5f4dad137bde0da67e177743af0724e7b21fb9040646f8f0fde52dece66ed5",
+      "ledger": 5842695,
+      "feeStroops": "1001086"
+    },
+    {
+      "label": "return_borrower_usdc",
+      "group": "C3b",
+      "hash": "e18a1206151ddc4ef4cf7438799a98e7e03b0e3958944ff93156b7c2d7ab6205",
+      "ledger": 5842697,
+      "feeStroops": "7244"
+    },
+    {
+      "label": "retire_buyer_bonds",
+      "group": "C3b",
+      "hash": "e9cb3708a687aa4ef7860d72a8de7e781dff2b312fbea9091ba4deb55a1c97d6",
+      "ledger": 5842698,
+      "feeStroops": "100"
+    },
+    {
+      "label": "return_buyer_usdc",
+      "group": "C3b",
+      "hash": "1c96c0b143a685ea1e8ed53fe91f2ce7f0e4b084296f630def30b00da1f69f6e",
+      "ledger": 5842699,
+      "feeStroops": "7244"
+    }
+  ],
+  "movements": [
+    {
+      "group": "prerequisite",
+      "label": "fund",
+      "hash": "035e2be84c9968d70d49610137d5be162f843a7d92da0ab21ecd544ec6f5e31e",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+      "amount": "10000000"
+    },
+    {
+      "group": "prerequisite",
+      "label": "cleanup",
+      "hash": "215d06692e85f070540cf689113a85ee3f67f0f29df2a6c066bfd74b479629e0",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CDIDP5VJEYEUD3WOK7D4OBKGXFTSBDDPQIYKCAK5F3GTRRPW655S3LRE",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "9970000"
+    },
+    {
+      "group": "prerequisite",
+      "label": "release",
+      "hash": "e1c76f0b57412c120892b8d10ceb366a60974344c9af9fc2e3934c2708d40ebe",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+      "to": "GA6KH5VWPCHBOEF63X57SPX6T4H366YFFKKGCVDBTXT2N7JVL6PJCK7G",
+      "amount": "30000"
+    },
+    {
+      "group": "prerequisite",
+      "label": "release",
+      "hash": "e1c76f0b57412c120892b8d10ceb366a60974344c9af9fc2e3934c2708d40ebe",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+      "to": "CDIDP5VJEYEUD3WOK7D4OBKGXFTSBDDPQIYKCAK5F3GTRRPW655S3LRE",
+      "amount": "9970000"
+    },
+    {
+      "group": "C3b",
+      "label": "friendbot_borrower",
+      "hash": "c41bf09df075ae470b8ba6aab852a58b464e32a4dba861c03180b878092c217b",
+      "token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "from": "GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "100000000000"
+    },
+    {
+      "group": "C3b",
+      "label": "friendbot_buyer",
+      "hash": "bd7d14e1e0fd388541916efd673dd8b6814d970ce7a584dd714fa2ac9f1bbd77",
+      "token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "from": "GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR",
+      "to": "GBTNBRYSMFVFDN3LKQDIXGIUDULQ2KR3NGXV3XOTMVCGN5L23K5PDGZI",
+      "amount": "100000000000"
+    },
+    {
+      "group": "C3b",
+      "label": "borrower_topup",
+      "hash": "8a3e86970ccb8d490313d083dbe78ab0f6a10d4581c213bb67ac9a08e5b6260d",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "10000000"
+    },
+    {
+      "group": "C3b",
+      "label": "buyer_liquidity",
+      "hash": "620b8356efdf4f1665fbf6f53182a0bdae5bfa3a7ab78875a85958cecef61730",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "GBTNBRYSMFVFDN3LKQDIXGIUDULQ2KR3NGXV3XOTMVCGN5L23K5PDGZI",
+      "amount": "300000000"
+    },
+    {
+      "group": "C3b",
+      "label": "deposit_repaid",
+      "hash": "70a2591ae09211bf31d40ec4ddb95e95732d3853b9b8efccf968064785a2c7ea",
+      "token": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+      "from": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "to": "CAA4DGE2N67XMIVSLKLXT234D5BFQZNH6BWYCACL4WEUCOITVPLSIJT5",
+      "amount": "400000000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_fund_repaid",
+      "hash": "92baa5c5326fbbb95e58667c37735560b0f01d139da8c618dcf5e5a87eb0e47b",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CB6CUPWRKEN7WD7F3GHLIECIWA4XSNQW43PIPW5W7CZDGZ2WFQGHCSF2",
+      "amount": "200000000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_release-funds_repaid",
+      "hash": "86517627bcc4ece818483e1e0cb46a1c0e5f5b62d3486d729889bac9f4a38d89",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CB6CUPWRKEN7WD7F3GHLIECIWA4XSNQW43PIPW5W7CZDGZ2WFQGHCSF2",
+      "to": "GA6KH5VWPCHBOEF63X57SPX6T4H366YFFKKGCVDBTXT2N7JVL6PJCK7G",
+      "amount": "600000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_release-funds_repaid",
+      "hash": "86517627bcc4ece818483e1e0cb46a1c0e5f5b62d3486d729889bac9f4a38d89",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CB6CUPWRKEN7WD7F3GHLIECIWA4XSNQW43PIPW5W7CZDGZ2WFQGHCSF2",
+      "to": "CAA4DGE2N67XMIVSLKLXT234D5BFQZNH6BWYCACL4WEUCOITVPLSIJT5",
+      "amount": "199400000"
+    },
+    {
+      "group": "C3b",
+      "label": "open_repaid",
+      "hash": "02e39a13e3a410be0e4f4a94b39154e50eac45a6c3781dc4d9fa14a11638e4b7",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CAA4DGE2N67XMIVSLKLXT234D5BFQZNH6BWYCACL4WEUCOITVPLSIJT5",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "199400000"
+    },
+    {
+      "group": "C3b",
+      "label": "repay",
+      "hash": "c0cc4eeb490d4cd4cc47ca8e08fa9f64b30850c4ceb606deb4a6a023e815ceb2",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "to": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+      "amount": "201333334"
+    },
+    {
+      "group": "C3b",
+      "label": "repay",
+      "hash": "c0cc4eeb490d4cd4cc47ca8e08fa9f64b30850c4ceb606deb4a6a023e815ceb2",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "201333334"
+    },
+    {
+      "group": "C3b",
+      "label": "repay",
+      "hash": "c0cc4eeb490d4cd4cc47ca8e08fa9f64b30850c4ceb606deb4a6a023e815ceb2",
+      "token": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+      "from": "CAA4DGE2N67XMIVSLKLXT234D5BFQZNH6BWYCACL4WEUCOITVPLSIJT5",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "400000000"
+    },
+    {
+      "group": "C3b",
+      "label": "deposit_cancelled",
+      "hash": "732a6875ae343d06e969fb88c10f5eb596b542672d9a2a81f1643b9195d55a6f",
+      "token": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+      "from": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "to": "CA5WKOGC2UNVIYDZA6NSF74K4TDNFVWQULNPHWA3XMH4YCOGJR225M2O",
+      "amount": "400000000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_fund_cancelled",
+      "hash": "dd5e913e59e9915e4e56e0918b894bfe5b3cab873d0685098200ed219c2e0710",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CB2SZKCEYOL3C32LDYWD4JBE4U64RBOPP5WSK75LBJGO4G6UIGKZOGGU",
+      "amount": "200000000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_refund",
+      "hash": "241dfb7d9fe4b1cd19de7cfd56c6ef2a2fec97a21e6bcc570259042dce0e34f4",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CB2SZKCEYOL3C32LDYWD4JBE4U64RBOPP5WSK75LBJGO4G6UIGKZOGGU",
+      "to": "GA6KH5VWPCHBOEF63X57SPX6T4H366YFFKKGCVDBTXT2N7JVL6PJCK7G",
+      "amount": "600000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_refund",
+      "hash": "241dfb7d9fe4b1cd19de7cfd56c6ef2a2fec97a21e6bcc570259042dce0e34f4",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CB2SZKCEYOL3C32LDYWD4JBE4U64RBOPP5WSK75LBJGO4G6UIGKZOGGU",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "199400000"
+    },
+    {
+      "group": "C3b",
+      "label": "return_cancelled_bonds",
+      "hash": "206e174b292ccc6349ca92969709027709f3b7a7a33edbfeeda84c6aff46c8be",
+      "token": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+      "from": "CA5WKOGC2UNVIYDZA6NSF74K4TDNFVWQULNPHWA3XMH4YCOGJR225M2O",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "400000000"
+    },
+    {
+      "group": "C3b",
+      "label": "deposit_liquidated",
+      "hash": "28525971942163f74d9a9b2d06c256f4261a566abb369a1e352dd3eb8e850e9d",
+      "token": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+      "from": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "to": "CCZ3J6Z3FFTDDECRSN33HHLHRKH24BYAML4WTPMHMPW7JOGSBZVG44VS",
+      "amount": "400000000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_fund_liquidated",
+      "hash": "099d319d9c4154a8cb940dfa528b8f9e60c7224417efb1106acb4682a9a2d783",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CACGJ6ACTSWG6SSGUKV2SGYKJJVBPJKWBHQRKIQWBDJPCG3EPZUJAHVK",
+      "amount": "200000000"
+    },
+    {
+      "group": "C3b",
+      "label": "open_liquidated",
+      "hash": "bb120a2373b61109f1d4fe7c1dde1df9af733d31eab316eed096d6b8937dbe1e",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CCZ3J6Z3FFTDDECRSN33HHLHRKH24BYAML4WTPMHMPW7JOGSBZVG44VS",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "199400000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_release-funds_liquidated",
+      "hash": "38f6973de4a72b639a25027494e133089a2458ac33183155f8c9d595aec6e0b3",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CACGJ6ACTSWG6SSGUKV2SGYKJJVBPJKWBHQRKIQWBDJPCG3EPZUJAHVK",
+      "to": "GA6KH5VWPCHBOEF63X57SPX6T4H366YFFKKGCVDBTXT2N7JVL6PJCK7G",
+      "amount": "600000"
+    },
+    {
+      "group": "C3b",
+      "label": "tw_release-funds_liquidated",
+      "hash": "38f6973de4a72b639a25027494e133089a2458ac33183155f8c9d595aec6e0b3",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CACGJ6ACTSWG6SSGUKV2SGYKJJVBPJKWBHQRKIQWBDJPCG3EPZUJAHVK",
+      "to": "CCZ3J6Z3FFTDDECRSN33HHLHRKH24BYAML4WTPMHMPW7JOGSBZVG44VS",
+      "amount": "199400000"
+    },
+    {
+      "group": "C3b",
+      "label": "liquidate",
+      "hash": "ca5f4dad137bde0da67e177743af0724e7b21fb9040646f8f0fde52dece66ed5",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBTNBRYSMFVFDN3LKQDIXGIUDULQ2KR3NGXV3XOTMVCGN5L23K5PDGZI",
+      "to": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+      "amount": "213750000"
+    },
+    {
+      "group": "C3b",
+      "label": "liquidate",
+      "hash": "ca5f4dad137bde0da67e177743af0724e7b21fb9040646f8f0fde52dece66ed5",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "201333334"
+    },
+    {
+      "group": "C3b",
+      "label": "liquidate",
+      "hash": "ca5f4dad137bde0da67e177743af0724e7b21fb9040646f8f0fde52dece66ed5",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+      "to": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "amount": "12416666"
+    },
+    {
+      "group": "C3b",
+      "label": "liquidate",
+      "hash": "ca5f4dad137bde0da67e177743af0724e7b21fb9040646f8f0fde52dece66ed5",
+      "token": "CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3",
+      "from": "CCZ3J6Z3FFTDDECRSN33HHLHRKH24BYAML4WTPMHMPW7JOGSBZVG44VS",
+      "to": "GBTNBRYSMFVFDN3LKQDIXGIUDULQ2KR3NGXV3XOTMVCGN5L23K5PDGZI",
+      "amount": "400000000"
+    },
+    {
+      "group": "C3b",
+      "label": "return_borrower_usdc",
+      "hash": "e18a1206151ddc4ef4cf7438799a98e7e03b0e3958944ff93156b7c2d7ab6205",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "219883332"
+    },
+    {
+      "group": "C3b",
+      "label": "return_buyer_usdc",
+      "hash": "1c96c0b143a685ea1e8ed53fe91f2ce7f0e4b084296f630def30b00da1f69f6e",
+      "token": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "from": "GBTNBRYSMFVFDN3LKQDIXGIUDULQ2KR3NGXV3XOTMVCGN5L23K5PDGZI",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "86250000"
+    }
+  ],
+  "wasm": {
+    "book": {
+      "id": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+      "sha256": "1d7df137f8076dd584eb193231ecb7c219ca58e741f2b68a6e0bc56799210626",
+      "liveUntilLedgerSeq": 7916224
+    },
+    "rules": {
+      "id": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+      "sha256": "f76b91182e5a23bc2a0fb26ca711a43e94a1fa223bf358de403d67ec83e25139",
+      "liveUntilLedgerSeq": 7915410
+    },
+    "repaid": {
+      "id": "CAA4DGE2N67XMIVSLKLXT234D5BFQZNH6BWYCACL4WEUCOITVPLSIJT5",
+      "sha256": "d3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395",
+      "liveUntilLedgerSeq": 7916235
+    },
+    "repaid_delivery": {
+      "id": "CAQ2IHTXVH33ZYPHWYDY6JUHKN4AL5VH7KA6WJBJP6KL47JN7HM4BBAN",
+      "sha256": "d3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395",
+      "liveUntilLedgerSeq": 7916242
+    },
+    "cancelled": {
+      "id": "CA5WKOGC2UNVIYDZA6NSF74K4TDNFVWQULNPHWA3XMH4YCOGJR225M2O",
+      "sha256": "d3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395",
+      "liveUntilLedgerSeq": 7916246
+    },
+    "cancelled_delivery": {
+      "id": "CBY5I6O5N5P6HJWLXUFULZNPF4LVRNHNZ2KPIVCL22XFUXW3Q3ECF7LB",
+      "sha256": "d3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395",
+      "liveUntilLedgerSeq": 7916252
+    },
+    "liquidated": {
+      "id": "CCZ3J6Z3FFTDDECRSN33HHLHRKH24BYAML4WTPMHMPW7JOGSBZVG44VS",
+      "sha256": "d3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395",
+      "liveUntilLedgerSeq": 7916258
+    },
+    "liquidated_delivery": {
+      "id": "CAJQUGIE5CS5C2EFYQZJFQWHVH66D2SOAPJLGDEXMHUBDXGMQJY5P5VW",
+      "sha256": "d3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395",
+      "liveUntilLedgerSeq": 7916295
+    }
+  },
+  "loans": {
+    "repaid": {
+      "id": "CAA4DGE2N67XMIVSLKLXT234D5BFQZNH6BWYCACL4WEUCOITVPLSIJT5",
+      "delivery": "CAQ2IHTXVH33ZYPHWYDY6JUHKN4AL5VH7KA6WJBJP6KL47JN7HM4BBAN",
+      "escrow": "CB6CUPWRKEN7WD7F3GHLIECIWA4XSNQW43PIPW5W7CZDGZ2WFQGHCSF2",
+      "vaultState": [
+        "Closed"
+      ],
+      "twFlags": {
+        "disputed": false,
+        "released": true,
+        "resolved": false
+      },
+      "view": {
+        "debt": "201333334",
+        "health_bps": "5033",
+        "loan": {
+          "asset": "C3_DEMO",
+          "borrower": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+          "collateral": {
+            "authorized": true,
+            "balance": "400000000",
+            "known": true
+          },
+          "default_price": "0",
+          "defaulted_at": "0",
+          "due": "1797828846",
+          "escrow_fee": "600000",
+          "face": "400000000",
+          "interest": "1333334",
+          "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+          "loss": "0",
+          "net_disbursement": "199400000",
+          "price": "10000000",
+          "price_time": "1795236781",
+          "principal": "200000000",
+          "proceeds": "0",
+          "recipient": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+          "status": [
+            "Repaid"
+          ],
+          "surplus": "0"
+        },
+        "overdue": false,
+        "shortfall": "0",
+        "value": "400000000"
+      }
+    },
+    "cancelled": {
+      "id": "CA5WKOGC2UNVIYDZA6NSF74K4TDNFVWQULNPHWA3XMH4YCOGJR225M2O",
+      "delivery": "CBY5I6O5N5P6HJWLXUFULZNPF4LVRNHNZ2KPIVCL22XFUXW3Q3ECF7LB",
+      "escrow": "CB2SZKCEYOL3C32LDYWD4JBE4U64RBOPP5WSK75LBJGO4G6UIGKZOGGU",
+      "vaultState": [
+        "Closed"
+      ],
+      "twFlags": {
+        "disputed": false,
+        "released": false,
+        "resolved": true
+      }
+    },
+    "liquidated": {
+      "id": "CCZ3J6Z3FFTDDECRSN33HHLHRKH24BYAML4WTPMHMPW7JOGSBZVG44VS",
+      "delivery": "CAJQUGIE5CS5C2EFYQZJFQWHVH66D2SOAPJLGDEXMHUBDXGMQJY5P5VW",
+      "escrow": "CACGJ6ACTSWG6SSGUKV2SGYKJJVBPJKWBHQRKIQWBDJPCG3EPZUJAHVK",
+      "vaultState": [
+        "Closed"
+      ],
+      "twFlags": {
+        "disputed": false,
+        "released": true,
+        "resolved": false
+      },
+      "view": {
+        "debt": "201333334",
+        "health_bps": "8948",
+        "loan": {
+          "asset": "C3_DEMO",
+          "borrower": "GDDHJOA6TKG2B3PPF5A72FYGYFEB4LI3GHJMEGBIO4K6HITH7JVJ23BR",
+          "collateral": {
+            "authorized": true,
+            "balance": "400000000",
+            "known": true
+          },
+          "default_price": "5625000",
+          "defaulted_at": "1795237006",
+          "due": "1797828961",
+          "escrow_fee": "600000",
+          "face": "400000000",
+          "interest": "1333334",
+          "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+          "loss": "0",
+          "net_disbursement": "199400000",
+          "price": "5625000",
+          "price_time": "1795237001",
+          "principal": "200000000",
+          "proceeds": "213750000",
+          "recipient": "GBTNBRYSMFVFDN3LKQDIXGIUDULQ2KR3NGXV3XOTMVCGN5L23K5PDGZI",
+          "status": [
+            "Liquidated"
+          ],
+          "surplus": "12416666"
+        },
+        "overdue": false,
+        "shortfall": "0",
+        "value": "225000000"
+      }
+    }
+  },
+  "costs": {
+    "prerequisite:receiver": "23064",
+    "prerequisite:complete": "10903",
+    "prerequisite:deploy": "164080",
+    "prerequisite:fund": "123332",
+    "prerequisite:cleanup": "6544",
+    "prerequisite:approve": "7022",
+    "prerequisite:release": "122280",
+    "C3b:borrower_bond_trustline": "100",
+    "C3b:approve_borrower": "5631",
+    "C3b:borrower_usd_trustline": "100",
+    "C3b:friendbot_borrower": "100",
+    "C3b:approve_buyer": "5631",
+    "C3b:buyer_bond_trustline": "100",
+    "C3b:buyer_usd_trustline": "100",
+    "C3b:friendbot_buyer": "100",
+    "C3b:deploy_book": "461852943",
+    "C3b:pin_vault_code": "147554",
+    "C3b:upload_vault": "6089775",
+    "C3b:upload_book": "28628470",
+    "C3b:replace_book": "8423",
+    "C3b:register_series": "578275",
+    "C3b:publish_initial_price": "4040",
+    "C3b:borrower_topup": "7244",
+    "C3b:create_repaid": "942418",
+    "C3b:authorize_repaid_main": "115420",
+    "C3b:buyer_liquidity": "7244",
+    "C3b:issue_bonds": "100",
+    "C3b:deposit_repaid": "98944818",
+    "C3b:authorize_repaid_delivery": "115420",
+    "C3b:tw_deploy_repaid": "158189",
+    "C3b:tw_fund_repaid": "122765",
+    "C3b:tw_approve-milestone_repaid": "6896",
+    "C3b:tw_change-milestone-status_repaid": "10764",
+    "C3b:tw_release-funds_repaid": "121886",
+    "C3b:open_repaid": "2588953",
+    "C3b:create_cancelled": "942416",
+    "C3b:authorize_cancelled_delivery": "115420",
+    "C3b:authorize_cancelled_main": "115420",
+    "C3b:repay": "1110458",
+    "C3b:deposit_cancelled": "1043106",
+    "C3b:tw_fund_cancelled": "122801",
+    "C3b:tw_dispute": "6759",
+    "C3b:tw_deploy_cancelled": "159169",
+    "C3b:tw_refund": "14907",
+    "C3b:cancel": "977179",
+    "C3b:refund_cancelled_vault": "1993",
+    "C3b:return_cancelled_bonds": "6308",
+    "C3b:create_liquidated": "942416",
+    "C3b:authorize_liquidated_main": "115420",
+    "C3b:deposit_liquidated": "1043106",
+    "C3b:authorize_liquidated_delivery": "115420",
+    "C3b:tw_change-milestone-status_liquidated": "10787",
+    "C3b:tw_approve-milestone_liquidated": "6920",
+    "C3b:tw_fund_liquidated": "122801",
+    "C3b:tw_deploy_liquidated": "159169",
+    "C3b:open_liquidated": "2588956",
+    "C3b:price_5625000": "4042",
+    "C3b:price_7500000": "4042",
+    "C3b:tw_release-funds_liquidated": "121888",
+    "C3b:retire_borrower_bonds": "100",
+    "C3b:default": "14584",
+    "C3b:approve_liquidation_buyer": "267766",
+    "C3b:liquidate": "1001086",
+    "C3b:return_borrower_usdc": "7244",
+    "C3b:retire_buyer_bonds": "100",
+    "C3b:return_buyer_usdc": "7244"
+  },
+  "issuerFlags": {
+    "auth_required": true,
+    "auth_revocable": true,
+    "auth_immutable": true,
+    "auth_clawback_enabled": false
+  },
+  "rulesConfig": {
+    "book": "CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA",
+    "issuer": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+    "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+  },
+  "bookConfig": {
+    "cure_period": "60",
+    "default_bps": 8500,
+    "discount_bps": 500,
+    "grace_period": "30",
+    "issuer": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+    "margin_bps": 7000,
+    "max_price_age": "86400",
+    "max_step_bps": 2500,
+    "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+    "price_interval": 30,
+    "publisher": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+    "rules": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+    "usdc": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+  },
+  "net": {
+    "prerequisiteLender": "-30000",
+    "prerequisiteFee": "30000",
+    "lender": "-1800000",
+    "fee": "1800000"
+  },
+  "lenderGross": "920000000",
+  "lenderNow": "127485170000",
+  "lenderChangeDuringRun": "-1800000",
+  "verified": true
+}

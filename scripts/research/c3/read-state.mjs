@@ -1,7 +1,7 @@
 // Read-only: no signing keys, transaction submission, or API credentials.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { contract, Contract, Networks, rpc, scValToNative, TransactionBuilder } from '@stellar/stellar-sdk';
-const old = JSON.parse(readFileSync(new URL('../../evidence/loan-book-testnet.json', import.meta.url)));
+const old = JSON.parse(readFileSync(new URL('../../evidence/archive/c2/loan-book-testnet.json', import.meta.url)));
 const server = new rpc.Server('https://soroban-testnet.stellar.org');
 const out = { network: 'TESTNET', checkedAt: new Date().toISOString(), submitted: false, reads: [] };
 for (const [id, methods] of [

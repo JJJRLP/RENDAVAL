@@ -7,7 +7,7 @@ import { Address, Asset, Contract, Keypair, Networks, Operation, StrKey, hash,
   TransactionBuilder, authorizeEntry, nativeToScVal, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 const final = process.argv.includes('--final');
 assert(final || process.argv.includes('--throwaway'), 'Choose --throwaway or --final');
-const path = final ? 'scripts/evidence/loan-book-testnet.json' : 'scripts/evidence/bond-rules-throwaway.json';
+const path = final ? 'scripts/evidence/archive/c2/loan-book-testnet.json' : 'scripts/evidence/archive/c2/bond-rules-throwaway.json';
 const server = new rpc.Server('https://soroban-testnet.stellar.org');
 const horizon = 'https://horizon-testnet.stellar.org';
 const networkPassphrase = Networks.TESTNET;

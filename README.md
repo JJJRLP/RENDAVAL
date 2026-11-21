@@ -1,14 +1,14 @@
 # Rendaval
 
-Préstamos en dólares digitales (USDC) para empresas de cualquier país, con Bolivia como primer mercado y país predeterminado, respaldados por sus bonos tokenizados. La empresa deja sus bonos en garantía en un escrow sobre Stellar, recibe USDC y recupera los bonos al devolver el préstamo. Los bonos siguen siendo suyos durante todo el plazo.
+Préstamos en dólares digitales (USDC) para empresas de cualquier país, con Bolivia como primer mercado y país predeterminado, respaldados por sus bonos tokenizados. La empresa deja sus bonos en garantía en una bóveda sobre Stellar, recibe USDC y recupera los bonos al devolver el préstamo. Los bonos siguen siendo suyos durante todo el plazo.
 
 > **Estado:** MVP de hackathon sobre la **red de pruebas de Stellar**. Los bonos y los dólares no tienen valor real, la tokenización del bono es simulada (no hay custodio) y los servicios externos se usan en modo sandbox.
 
-La fase C2 del reinicio con **RBOND** entrega el libro y las reglas de garantía
-protegida; [contratos/README](contracts/README.md) y [la interfaz](contracts/INTERFAZ.md)
+La fase C3b con **RBOND** entrega bóvedas propias y desembolso USDC por
+Trustless Work, con apertura y entrega de garantía atómicas; [contratos/README](contracts/README.md) y [la interfaz](contracts/INTERFAZ.md)
 son la referencia para la próxima integración web. El recorrido de la aplicación
 que se describe abajo todavía usa el flujo anterior de VBOND. No usar su clave
-emisora para el nuevo activo: C2 usa `NEW_BOND_ISSUER_SECRET_KEY`.
+emisora para el nuevo activo: C3b usa `NEW_BOND_ISSUER_SECRET_KEY`.
 
 ## Qué incluye
 

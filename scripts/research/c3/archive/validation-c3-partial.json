@@ -1,0 +1,35 @@
+{
+  "phase": "C3-partial",
+  "network": "TESTNET",
+  "deployed": false,
+  "transactionsSubmitted": 0,
+  "lenderUsdcSpent": "0",
+  "workspaceTests": {
+    "passed": 52,
+    "failed": 0,
+    "loanBookSeconds": 324.94,
+    "includesBothScaleTests": true
+  },
+  "upstreamTests": {
+    "passed": 4,
+    "failed": 0,
+    "sourceRevision": "ec4182547a0258d4f81694fa596ab90c11a06bd0",
+    "nativeOnly": true
+  },
+  "nextBuild": "passed",
+  "wasmBuild": "passed",
+  "localLoanBookWasm": {
+    "sha256": "4e4f3b071394d7f167f1a7b4539b66ceb94b6ddb21e34217f7307bb6d85952a5",
+    "bytes": 28148,
+    "deployed": false
+  },
+  "uncompleted": [
+    "collateral vault",
+    "atomic bond delivery",
+    "TW disbursement reconciliation",
+    "genuine SAC derivation",
+    "long-deadline default exit",
+    "testnet replacement and three real loan flows",
+    "C3 web integration specification"
+  ]
+}

@@ -1,5 +1,5 @@
 [workspace]
-members = ["loan-book", "bond-rules", "test-escrow"]
+members = ["loan-book", "bond-rules", "test-escrow", "loan-vault"]
 resolver = "2"
 
 [workspace.dependencies]

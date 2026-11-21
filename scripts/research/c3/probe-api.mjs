@@ -1,6 +1,6 @@
 // Builds unsigned testnet transactions only. Never signs or submits.
 import { readFileSync, writeFileSync } from 'node:fs';
-const old = JSON.parse(readFileSync(new URL('../../evidence/loan-book-testnet.json', import.meta.url)));
+const old = JSON.parse(readFileSync(new URL('../../evidence/archive/c2/loan-book-testnet.json', import.meta.url)));
 const roles = { approver: old.lender, serviceProvider: old.operator, platformAddress: old.operator, releaseSigner: old.operator, disputeResolver: old.operator, receiver: old.operator };
 const out = { network: 'TESTNET', checkedAt: new Date().toISOString(), submitted: false, probes: [] };
 for (const role of ['receiver', 'releaseSigner', 'disputeResolver', 'platformAddress']) {

@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { Address, Contract, Networks, StrKey, TransactionBuilder, rpc, scValToNative } from '@stellar/stellar-sdk';
-const input=process.argv[2]??'scripts/evidence/loan-book-testnet.json';
+const input=process.argv[2]??'scripts/evidence/archive/c2/loan-book-testnet.json';
 const output=input.replace(/\.json$/, '-verification.json');
 const e=JSON.parse(readFileSync(input));assert.equal(e.phase,'C2');assert(e.completed);
 const r=new rpc.Server('https://soroban-testnet.stellar.org');
