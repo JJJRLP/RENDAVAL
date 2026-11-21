@@ -20,6 +20,32 @@ Préstamos en dólares digitales (USDC) para empresas de cualquier país, con Bo
 5. **Garantía y desembolso.** La empresa firma el depósito de los bonos en un escrow (Trustless Work) y el prestamista envía los USDC.
 6. **Reembolso.** La empresa devuelve capital más interés con una firma; el prestamista aprueba y Rendaval libera la garantía.
 
+## Verifíquelo en Stellar
+
+Todo lo que hace la aplicación queda en la red de pruebas de Stellar y se puede revisar sin instalar nada. Los enlaces abren el explorador [stellar.expert](https://stellar.expert/explorer/testnet).
+
+**Cuentas y activos**
+
+| Qué | Identificador |
+| --- | --- |
+| Rendaval: crea los escrows y guarda las constancias de verificación | [`GABI…TXW5`](https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5) |
+| Emisor del bono digital `VBOND` | [`GDR5…YOXT`](https://stellar.expert/explorer/testnet/account/GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT) |
+| Contrato del activo `VBOND` (Stellar Asset Contract) | [`CDMT…4TAL`](https://stellar.expert/explorer/testnet/contract/CDMT46AH26WLTMVTWR57HL5KJIICB2F2SEWUXYY4YJRIOVXE3NQU4TAL) |
+| Prestamista de demostración | [`GBCS…GXZ7`](https://stellar.expert/explorer/testnet/account/GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7) |
+
+**Un préstamo completo, paso a paso** (empresa de prueba [`GAPU…TMLL`](https://stellar.expert/explorer/testnet/account/GAPUFWCFTYQIHZPMV4MCZ54PNQRJRJLMQ2XQZRP4PTLOFIRHTEDMTMLL), 18 de noviembre de 2026)
+
+| Paso | Qué ocurre en la red | Transacción o contrato |
+| --- | --- | --- |
+| Verificación | Entrada de datos `kyb:<cuenta>` en la cuenta de Rendaval | [Datos de la cuenta](https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5?filter=data) |
+| Registro del bono | El emisor entrega 200 `VBOND`, con el hash de los datos del bono en el memo | [`48db7273…`](https://stellar.expert/explorer/testnet/tx/48db72731705857ae6a893fedd6177ec19f3ecde4073d894acbf46bd45080e8a) |
+| Escrow | Contrato Soroban de Trustless Work creado para este préstamo | [`CAIZ…6UIU`](https://stellar.expert/explorer/testnet/contract/CAIZXBP4BIMGIYU76SWSAFHYQLCWF35XX7P3W47AVF2HJ7SHTNQM6UIU) |
+| Garantía | La empresa deposita los 200 `VBOND` en el escrow | [`58d18110…`](https://stellar.expert/explorer/testnet/tx/58d181102bfb719fc1b6dcd21b0bf33a5f5b0c2ef68f715e68c1a1f6f8e971b3) |
+| Desembolso | El prestamista envía 100 USDC y deja el marcador del préstamo en la misma transacción | [`bd85ffae…`](https://stellar.expert/explorer/testnet/tx/bd85ffaeab1018b97569ef8cef2e1fa8905f07131d97bea959237b382408ec91) |
+| Reembolso | La empresa paga 100,6666667 USDC con el memo propio del préstamo | [`652b6fed…`](https://stellar.expert/explorer/testnet/tx/652b6fed67f62205e4806c17fd52742ff14804b6cae89c38a2ace4402927a05f) |
+
+La devolución de los bonos de este préstamo sigue pendiente por la limitación descrita en [Limitaciones conocidas](#limitaciones-conocidas). Un préstamo congelado por disputa puede verse en el contrato [`CBCI…A5AE`](https://stellar.expert/explorer/testnet/contract/CBCIAOMI32WMA3CYS6NSMBIGWH3E3DDRFQC3A3GNJQA36QTIXDWRA5AE).
+
 ## Arquitectura
 
 ```
