@@ -1,4 +1,4 @@
-# Escala del libro de préstamos — C1
+# Escala del libro de préstamos — C2
 
 Revisión del 20 de noviembre de 2026. Una entrada por préstamo y otra por serie:
 ni abrir ni registrar ni publicar un precio recorre lo que ya existe. El límite
@@ -56,10 +56,14 @@ Una simulación sola no mantiene vivo el estado.
 La guía oficial de [estrategias de almacenamiento](https://developers.stellar.org/docs/build/guides/storage/storage-strategies)
 recomienda una clave por entidad para poblaciones crecientes, catálogos con
 límite para conjuntos pequeños e índices de eventos fuera del contrato cuando
-se necesita enumerar. Eso es lo que conserva C1. No se intenta devolver un millón
+se necesita enumerar. Eso es lo que conserva C2. No se intenta devolver un millón
 de préstamos en una llamada ni renovar toda la cartera a la vez.
 
-## Diseño C1
+## Diseño C2
+
+C2 añade un contador de prendas en instance de reglas y una entrada Credit por
+receptor con cobro pendiente. Ambas operaciones siguen siendo O(1). El beneficiario
+puede retirar protección residual de un préstamo cerrado con accept_collateral.
 
 `Loan(id)` guarda el préstamo y su última foto de garantía. `Series(nombre)`
 guarda token inmutable y último precio. `Assets` guarda hasta 64 nombres
@@ -106,8 +110,8 @@ exige autorización; pagar permite cerrar aunque haya faltante o congelación.
 
 La semántica de autorización y clawback de balances de contrato está definida
 en [CAP-46-6](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0046-06.md).
-La prueba destructiva C1 usa un activo desechable con autorización obligatoria,
-revocación, flags inmutables y sin clawback. La corrida final usa RVBOND con esa
+La prueba destructiva C2 usa un activo desechable con autorización obligatoria,
+revocación, flags inmutables y sin clawback. La corrida final usa RBOND con esa
 misma política y admin en las reglas. Ninguna llama Trustless Work. Verificar saldo no acredita propiedad del escrow ni entrega futura.
 
 Las llamadas try_* capturan errores recuperables y tipos inesperados. Un saldo
@@ -162,29 +166,27 @@ posteriores del token. Conservan firmas, atomicidad, umbrales, cura, descuento,
 reparto y pérdidas, reintentos, SEP-40 y TTL.
 
 [La evidencia testnet](../scripts/evidence/loan-book-testnet.json) identifica
-la única instancia vigente C1, reglas, SAC RVBOND, auxiliar de prueba, hashes WASM
-y transacciones. La simulación de la apertura real usó 3.243.457 instrucciones,
-9 entradas de solo lectura, 5 de escritura, 376 bytes leídos de disco y 1.232
-bytes escritos. Son recursos de esa invocación concreta, no una tarifa fija.
-Incluye préstamo abierto, rechazo
-de congelación, pago, rechazo de retirada con bonos pendientes, salida y retirada
-exitosa. La verificación independiente compara WASM, flags, configuración y hashes.
+la única instancia vigente C2, reglas, SAC RBOND, auxiliar de prueba, hashes WASM
+y transacciones. Los recursos actuales se conservan en openResources de esa evidencia.
+La corrida verifica pago con prestamista bloqueado y liquidación con excedente bloqueado,
+reclamaciones posteriores, cura mínima y retirada de ambas prendas. La verificación
+independiente compara WASM, flags, configuración, autorizaciones, eventos y hashes.
 
 [La prueba desechable](../scripts/evidence/bond-rules-throwaway.json) conserva
 los ataques con cuentas Friendbot y un token de pago sin valor, sin fondos del
 prestamista real. Distingue fallos enviados en ledger de rechazos en simulación,
 autorización enforce y construcción SDK. Las pruebas defensivas Rust anteriores
 que fuerzan congelación o clawback conservan mocks privilegiados: no representan
-facultades disponibles sobre RVBOND. Siguen comprobando valoración y pago frente
+facultades disponibles sobre RBOND. Siguen comprobando valoración y pago frente
 a garantía dañada o tokens defectuosos.
 
 ## Límites pendientes
 
 No hay atomicidad entre pago de liquidación y entrega externa del bono. No se
 verifican las condiciones de salida del escrow. Precio y token son decisiones
-del emisor; la guarda de paso no impide varios pasos consecutivos ni garantiza
+del emisor; la guarda limita cada cambio por intervalo, pero no garantiza
 un precio económico correcto. No hay actualización del contrato, amortización
-parcial ni compensación por una salida autorizada del escrow. La protección de C1
+parcial ni compensación por una salida autorizada del escrow. La protección de C2
 impide la congelación y clawback unilateral del emisor sobre la garantía del
 SAC configurado, no el impago económico del bono.
 

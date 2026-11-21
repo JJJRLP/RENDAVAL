@@ -1,0 +1,125 @@
+{
+  "firstLedger": 5841821,
+  "lastLedger": 5841894,
+  "runLastLedger": 5841868,
+  "movements": [
+    {
+      "hash": "3719951dca21fbc90cc9fdaa732234816b981ed6ef30c61c7186c1df37e2ce2a",
+      "ledger": 5841829,
+      "at": "2026-11-21T03:46:26Z",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "amount": "500000000",
+      "own": true
+    },
+    {
+      "hash": "899455eba5de9e1b76acb9e1cddd740c1a0e809e7d115f97d8b7762670b03740",
+      "ledger": 5841829,
+      "at": "2026-11-21T03:46:26Z",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CAD22WTYGHVCBUUHVNPWZCKD4I7VNK4Z6ZFWBXNQIQNVZJHZLERP6C6T",
+      "amount": "200000000",
+      "own": false
+    },
+    {
+      "hash": "67c011040d8f38c240a6f94f328331aea384610fd66d3d4ec590a1fe2375c0b5",
+      "ledger": 5841830,
+      "at": "2026-11-21T03:46:31Z",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "amount": "3333334",
+      "own": true
+    },
+    {
+      "hash": "64aba11b909d4e04f0f68e38f0049eb9d48ff30b7ca7212c86d9ac6c20c8f243",
+      "ledger": 5841832,
+      "at": "2026-11-21T03:46:41Z",
+      "from": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "to": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "amount": "503333334",
+      "own": true
+    },
+    {
+      "hash": "6fb3da13fea5bc6632a8d0f70f5c11f8eb53ae5b62a41ed244ec92bc4659552c",
+      "ledger": 5841834,
+      "at": "2026-11-21T03:46:51Z",
+      "from": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "503333334",
+      "own": true
+    },
+    {
+      "hash": "61c96514ebb8175881fc2894427e3c91e00f3942db7e540476e4af569e3061e0",
+      "ledger": 5841837,
+      "at": "2026-11-21T03:47:06Z",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "amount": "500000000",
+      "own": true
+    },
+    {
+      "hash": "995631b965f48b2266ad573091c681fabb9dbc93094b07ce6b4886821827e188",
+      "ledger": 5841846,
+      "at": "2026-11-21T03:47:51Z",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CDALLEYS4JWSXA7CC2SASY2TZ5AWSNRMCPDU55A5NELEWLM4FOKT3253",
+      "amount": "200000000",
+      "own": false
+    },
+    {
+      "hash": "9fb9c73001515f282a0c873c37c6a7260040c47dd766d0d2069e01aad2d5f806",
+      "ledger": 5841859,
+      "at": "2026-11-21T03:48:56Z",
+      "from": "GBXE4CZ7HEIVGNW5BYAH2BVVM3TNG5SESKKI2QULRYNIHYOJCNUQCOIH",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "199400000",
+      "own": false
+    },
+    {
+      "hash": "11dd7202e14030c72e3d013795013ce66dcf820014158d9a2b3ffb1a0d48344f",
+      "ledger": 5841860,
+      "at": "2026-11-21T03:49:01Z",
+      "from": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "to": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "amount": "534375000",
+      "own": true
+    },
+    {
+      "hash": "11dd7202e14030c72e3d013795013ce66dcf820014158d9a2b3ffb1a0d48344f",
+      "ledger": 5841860,
+      "at": "2026-11-21T03:49:01Z",
+      "from": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "503333334",
+      "own": true
+    },
+    {
+      "hash": "410f694a0f5437f69c6d89b19f874a9597e108cf467e800942a200b6f325c89c",
+      "ledger": 5841862,
+      "at": "2026-11-21T03:49:11Z",
+      "from": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "to": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "amount": "31041666",
+      "own": true
+    },
+    {
+      "hash": "bba30acba1c03061ee0315c0ff0f52e4cf122c5252a2d495745b9f1cfb3fb4a8",
+      "ledger": 5841866,
+      "at": "2026-11-21T03:49:31Z",
+      "from": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "to": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "amount": "531041666",
+      "own": true
+    }
+  ],
+  "net": {
+    "lender": {
+      "own": "0",
+      "external": "-200600000"
+    },
+    "borrower": {
+      "own": "0",
+      "external": "0"
+    }
+  }
+}

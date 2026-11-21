@@ -1,0 +1,64 @@
+{
+  "phase": "C2",
+  "completedAt": "2026-11-21T04:14:57.442847+00:00",
+  "baselineCommit": "07c7dbb547b9e4f0452322c32d0cbddd96999a3a",
+  "auditReferenceSha256": "6c0f274b4325498eba35b4ca664c359227bdbcb6929494032ff4e084ae13bea2",
+  "before": {
+    "auditScenarios": 8,
+    "failedSecurityAssertions": 8,
+    "note": "Original contracts in isolated /tmp/c2-before; auditor scenarios with assertions requiring secure behavior. Baseline crate names isolated from current build."
+  },
+  "after": {
+    "rustTests": 46,
+    "loanBookTests": 41,
+    "bondRulesTests": 5,
+    "failed": 0,
+    "auditRegressions": [
+      "audit_borrower_blocks_liquidation_with_surplus",
+      "audit_lender_blocks_repay_then_buys",
+      "audit_price_crash_default_liquidate_same_ledger",
+      "audit_price_stuck_at_tiny",
+      "audit_dust_blocks_release",
+      "audit_dust_loan_defaultable_at_open",
+      "audit_open_without_borrower_auth_and_liquidate_unauthorized_bond_buyer",
+      "audit_error_code_aliasing"
+    ],
+    "command": "CARGO_HOME=/tmp/rendaval-cargo cargo test --manifest-path contracts/Cargo.toml --locked -- --nocapture",
+    "scaleLoans": 10001,
+    "scaleAdditionalSeries": 1025
+  },
+  "nextBuild": {
+    "command": "npx next build",
+    "exitCode": 0
+  },
+  "wasmBuild": {
+    "command": "CARGO_HOME=/tmp/rendaval-cargo /tmp/rendaval-cli/stellar contract build --manifest-path contracts/Cargo.toml",
+    "exitCode": 0,
+    "rebuiltHashesMatchDeployment": true
+  },
+  "sourceSha256": {
+    "contracts/loan-book/src/lib.rs": "f0176b452ad22c27486eecd3d7c1bea96ee1aca24888929d86be6bd99b5e2548",
+    "contracts/loan-book/src/test.rs": "d649a6c5d4679642d10797e3df1d1d0307c1e41661dfacfde8757cacbfeef681",
+    "contracts/bond-rules/src/lib.rs": "bc692b285f7b7c84226d3bf5c4c597b061e0d8b655e224e67425b2d8f76b89e7",
+    "contracts/test-escrow/src/lib.rs": "76eff38aa66431590922884f7cfa0ae2f6f5409336ad7ce84378640f40d8c899"
+  },
+  "logsSha256": {
+    "c2-audit-before.log": "79ba6ea9b0e235a4ba8406094e08fccce477601242792e2ca83e97696db12e3b",
+    "c2-final-tests.log": "3758eebcaa4234b8e02ae2fc1d2196515b503060ff45c13c2c3dcdd36a3537c8",
+    "c2-next.log": "f4e7e616f057a076349c2d1dc72cccbcaee4db58032fd2297a393273296ff3f6",
+    "c2-final-build.log": "0eb8ae6acefa0e07afa2ac9d1e66afbcd75ff6bd857d0f7d4a19e97fbacb4b58"
+  },
+  "testnet": {
+    "finalEvidence": "loan-book-testnet.json",
+    "finalVerification": "loan-book-testnet-verification.json",
+    "throwawayEvidence": "bond-rules-throwaway.json",
+    "throwawayVerification": "bond-rules-throwaway-verification.json",
+    "reconciliation": "c2-reconciliation.json"
+  },
+  "untouched": [
+    "app/",
+    "components/",
+    "lib/"
+  ],
+  "committed": false
+}

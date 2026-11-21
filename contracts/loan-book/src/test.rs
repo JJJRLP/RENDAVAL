@@ -12,6 +12,7 @@ struct Fixture {
     issuer: Address,
     operator: Address,
     token: Address,
+    usdc: Address,
     lender: Address,
     borrower: Address,
     buyer: Address,
@@ -35,11 +36,23 @@ impl Fixture {
             .issuer()
             .set_flag(soroban_sdk::testutils::IssuerFlags::ClawbackEnabledFlag);
         let token = asset.address();
+        let usd_asset = e.register_stellar_asset_contract_v2(issuer.clone());
+        usd_asset
+            .issuer()
+            .set_flag(soroban_sdk::testutils::IssuerFlags::RevocableFlag);
+        let usdc = usd_asset.address();
+        let account = || {
+            let other = e.register_stellar_asset_contract_v2(Address::generate(&e));
+            let a = other.issuer().address();
+            token::StellarAssetClient::new(&e, &usdc).trust(&a);
+            token::StellarAssetClient::new(&e, &token).trust(&a);
+            a
+        };
         let operator = Address::generate(&e);
         let book = Address::generate(&e);
         let rules = e.register(
             rendaval_bond_rules::BondRules,
-            (issuer.clone(), book.clone()),
+            (issuer.clone(), book.clone(), operator.clone()),
         );
         e.register_at(
             &book,
@@ -47,19 +60,22 @@ impl Fixture {
             (
                 operator.clone(),
                 issuer.clone(),
-                token.clone(),
+                usdc.clone(),
                 rules.clone(),
                 7000u32,
                 8500u32,
                 2500u32,
                 86400u64,
                 500u32,
+                30u32,
+                30u64,
+                60u64,
             ),
         );
         let f = Self {
-            lender: Address::generate(&e),
-            borrower: Address::generate(&e),
-            buyer: Address::generate(&e),
+            lender: account(),
+            borrower: account(),
+            buyer: account(),
             id: Address::generate(&e),
             series: Symbol::new(&e, "BOND_A"),
             e,
@@ -68,10 +84,12 @@ impl Fixture {
             issuer,
             operator,
             token,
+            usdc,
         };
-        token::StellarAssetClient::new(&f.e, &f.token).mint(&f.lender, &(1000 * SCALE));
+        token::StellarAssetClient::new(&f.e, &f.usdc).mint(&f.lender, &(1000 * SCALE));
         token::StellarAssetClient::new(&f.e, &f.token).set_admin(&f.rules);
         f.c().register_series(&f.series, &f.token);
+        f.c().publish_price(&f.series, &SCALE);
         f.c().list_series(&f.series);
         f.mint(&f.id, 200 * SCALE);
         f
@@ -90,10 +108,15 @@ impl Fixture {
         );
     }
     fn balance(&self, a: &Address) -> i128 {
-        token::Client::new(&self.e, &self.token).balance(a)
+        token::Client::new(&self.e, &self.usdc).balance(a)
     }
     fn mint(&self, a: &Address, n: i128) {
-        token::StellarAssetClient::new(&self.e, &self.token).mint(a, &n);
+        let t = if *a == self.borrower || *a == self.lender || *a == self.buyer {
+            &self.usdc
+        } else {
+            &self.token
+        };
+        token::StellarAssetClient::new(&self.e, t).mint(a, &n);
     }
     fn publish(&self, id: &Address, price: i128) {
         let c = self.c();
@@ -104,7 +127,11 @@ impl Fixture {
             } else {
                 old + old / 4
             };
+            self.e.ledger().with_mut(|l| l.timestamp += 30);
             c.publish_price(&c.get_loan(id).loan.asset, &old);
+        }
+        if old != price {
+            self.e.ledger().with_mut(|l| l.timestamp += 30);
         }
         c.publish_price(&c.get_loan(id).loan.asset, &price);
     }
@@ -112,6 +139,7 @@ impl Fixture {
         self.open();
         self.publish(&self.id, price);
         self.c().mark_default(&self.id);
+        self.e.ledger().with_mut(|l| l.timestamp += 60);
     }
 }
 #[test]
@@ -163,8 +191,15 @@ fn validates_amounts_and_cap() {
             .try_open(&f.id, &f.series, &f.borrower, &f.lender, &face, &principal)
             .is_err());
     }
-    c.open(&f.id, &f.series, &f.borrower, &f.lender, &200, &100);
-    assert_eq!(c.get_loan(&f.id).loan.interest, 1);
+    c.open(
+        &f.id,
+        &f.series,
+        &f.borrower,
+        &f.lender,
+        &(200 * SCALE),
+        &(100 * SCALE),
+    );
+    assert_eq!(c.get_loan(&f.id).loan.interest, (100 * SCALE + 149) / 150);
 }
 #[test]
 fn thresholds_exact_and_recovery() {
@@ -173,9 +208,18 @@ fn thresholds_exact_and_recovery() {
         let f = Fixture::new();
         let c = f.c();
         // debt 150, value 150. Choose face to make debt/value equal requested threshold.
-        let principal = if threshold == 7000 { 10430 } else { 12665 };
+        f.mint(&f.id, 30000 * SCALE);
+        f.mint(&f.lender, 30000 * SCALE);
+        let principal = (if threshold == 7000 { 10500 } else { 12750 }) * SCALE * 150 / 151;
         // debt 10500 or 12750; collateral at price .5 is 15000.
-        c.open(&f.id, &f.series, &f.borrower, &f.lender, &30000, &principal);
+        c.open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(30000 * SCALE),
+            &principal,
+        );
         f.publish(&f.id, price + 1000);
         if threshold == 7000 {
             assert_eq!(c.try_flag_margin(&f.id), Err(Ok(Error::Healthy)));
@@ -206,7 +250,7 @@ fn healthy_and_overdue() {
     let due = c.get_loan(&f.id).loan.due;
     f.e.ledger().with_mut(|l| l.timestamp = due);
     assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::StalePrice)));
-    f.e.ledger().with_mut(|l| l.timestamp = due + 1);
+    f.e.ledger().with_mut(|l| l.timestamp = due + 31);
     c.mark_default(&f.id);
     assert_eq!(c.get_loan(&f.id).loan.status, Status::Defaulted);
 }
@@ -275,6 +319,8 @@ fn authorization_and_isolated_prices() {
     f.mint(&second, 200 * SCALE);
     let series2 = Symbol::new(&f.e, "BOND_B");
     c.register_series(&series2, &f.token);
+
+    c.publish_price(&series2, &SCALE);
     c.open(
         &second,
         &series2,
@@ -293,10 +339,11 @@ fn authorization_and_isolated_prices() {
             &f.series,
             &f.borrower,
             &f.lender,
-            &200,
-            &100
+            &(200 * SCALE),
+            &(100 * SCALE)
         )
         .is_err());
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
     c.mock_auths(&[MockAuth {
         address: &f.issuer,
         invoke: &MockAuthInvoke {
@@ -398,7 +445,9 @@ fn events_and_retries() {
 
 #[test]
 fn operator_required_even_with_lender_signature() {
-    let f = Fixture::new();
+    let mut f = Fixture::new();
+    f.lender = Address::generate(&f.e);
+    f.mint(&f.lender, 1000 * SCALE);
     let c = f.c();
     f.e.mock_auths(&[]);
     assert!(c
@@ -419,7 +468,14 @@ fn operator_required_even_with_lender_signature() {
                 sub_invokes: &[],
             },
         }])
-        .try_open(&f.id, &f.series, &f.borrower, &f.lender, &200, &100)
+        .try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        )
         .is_err());
     assert_eq!(c.try_get_loan(&f.id), Err(Ok(Error::Missing)));
     assert_eq!(f.balance(&f.borrower), 0);
@@ -436,14 +492,18 @@ fn step_boundaries_and_demo_path() {
         c.try_publish_price(&f.series, &7_499_999),
         Err(Ok(Error::PriceStep))
     );
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
     c.publish_price(&f.series, &7_500_000);
     assert_eq!(
         c.try_publish_price(&f.series, &9_375_001),
         Err(Ok(Error::PriceStep))
     );
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
     c.publish_price(&f.series, &9_375_000);
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
     c.publish_price(&f.series, &SCALE);
     for p in [8_000_000, 6_500_000, 5_000_000] {
+        f.e.ledger().with_mut(|l| l.timestamp += 30);
         c.publish_price(&f.series, &p);
     }
     assert_eq!(
@@ -458,16 +518,16 @@ fn freshness_refresh_and_overdue_liquidation() {
     f.open();
     let c = f.c();
     f.publish(&f.id, 5_500_000);
-    f.e.ledger().with_mut(|l| l.timestamp = 1000 + 86401);
+    f.e.ledger().with_mut(|l| l.timestamp += 86401);
     assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::StalePrice)));
     assert_eq!(c.try_flag_margin(&f.id), Err(Ok(Error::StalePrice)));
     c.publish_price(&f.series, &5_500_000);
-    assert_eq!(c.get_loan(&f.id).loan.price_time, 87401);
+    assert_eq!(c.get_loan(&f.id).loan.price_time, f.e.ledger().timestamp());
     f.e.ledger().with_mut(|l| l.timestamp += 86400);
     c.mark_default(&f.id); // age equal to max is accepted
     c.set_buyer(&f.buyer, &true);
     f.mint(&f.buyer, 200 * SCALE);
-    f.e.ledger().with_mut(|l| l.timestamp += 1);
+    f.e.ledger().with_mut(|l| l.timestamp += 60);
     assert_eq!(
         c.try_liquidate(&f.id, &f.buyer, &5_500_000),
         Err(Ok(Error::StalePrice))
@@ -478,9 +538,10 @@ fn freshness_refresh_and_overdue_liquidation() {
     let g = Fixture::new();
     g.open();
     let c = g.c();
-    g.e.ledger().with_mut(|l| l.timestamp += TERM + 1);
+    g.e.ledger().with_mut(|l| l.timestamp += TERM + 31);
     c.mark_default(&g.id);
     c.set_buyer(&g.buyer, &true);
+    g.e.ledger().with_mut(|l| l.timestamp += 60);
     assert_eq!(
         c.try_liquidate(&g.id, &g.buyer, &SCALE),
         Err(Ok(Error::StalePrice))
@@ -512,7 +573,7 @@ fn sep40_reads_and_retention() {
     let asset = Asset::Other(c.get_loan(&f.id).loan.asset);
     assert_eq!(c.base(), Asset::Other(Symbol::new(&f.e, "USD")));
     assert_eq!(c.decimals(), 7);
-    assert_eq!(c.resolution(), 1);
+    assert_eq!(c.resolution(), 30);
     assert_eq!(c.assets(), soroban_sdk::vec![&f.e, asset.clone()]);
     let p = PriceData {
         price: SCALE,
@@ -522,7 +583,7 @@ fn sep40_reads_and_retention() {
     assert_eq!(c.price(&asset, &1000), Some(p.clone()));
     assert_eq!(c.prices(&asset, &1), Some(soroban_sdk::vec![&f.e, p]));
     assert_eq!(c.prices(&asset, &0), None);
-    assert_eq!(c.prices(&asset, &2), None);
+    assert_eq!(c.prices(&asset, &2).unwrap().len(), 1);
     assert_eq!(c.price(&asset, &999), None);
     assert_eq!(c.lastprice(&Asset::Stellar(f.id.clone())), None);
     assert_eq!(
@@ -559,6 +620,9 @@ fn constructor_guard_boundaries() {
                 step,
                 age,
                 discount,
+                30,
+                30,
+                60,
             );
             assert_eq!(result.is_ok(), valid);
         });
@@ -568,6 +632,7 @@ fn constructor_guard_boundaries() {
 #[test]
 fn opening_cost_is_independent_of_ten_thousand_existing_loans() {
     let mut f = Fixture::new();
+    f.mint(&f.lender, 2_000_000 * SCALE);
     f.e.set_config(soroban_sdk::testutils::EnvTestConfig {
         capture_snapshot_at_drop: false,
     });
@@ -590,11 +655,12 @@ fn opening_cost_is_independent_of_ten_thousand_existing_loans() {
             e.register_at(
                 &f.rules,
                 rendaval_bond_rules::BondRules,
-                (rebind(&f.issuer), f.book.clone()),
+                (rebind(&f.issuer), f.book.clone(), rebind(&f.operator)),
             );
             f.operator = rebind(&f.operator);
             f.issuer = rebind(&f.issuer);
             f.token = rebind(&f.token);
+            f.usdc = rebind(&f.usdc);
             f.borrower = rebind(&f.borrower);
             f.lender = rebind(&f.lender);
             f.buyer = rebind(&f.buyer);
@@ -606,21 +672,30 @@ fn opening_cost_is_independent_of_ten_thousand_existing_loans() {
                 (
                     f.operator.clone(),
                     f.issuer.clone(),
-                    f.token.clone(),
+                    f.usdc.clone(),
                     f.rules.clone(),
                     7000u32,
                     8500u32,
                     2500u32,
                     86400u64,
                     500u32,
+                    30u32,
+                    30u64,
+                    60u64,
                 ),
             );
             f.e = e;
         }
         let id = Address::generate(&f.e);
-        f.mint(&id, 200);
-        f.c()
-            .open(&id, &f.series, &f.borrower, &f.lender, &200, &100);
+        f.mint(&id, 200 * SCALE);
+        f.c().open(
+            &id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE),
+        );
         let r = f.e.cost_estimate().resources();
         if n == 10 {
             baseline = Some(r.clone());
@@ -659,7 +734,7 @@ fn opening_cost_is_independent_of_ten_thousand_existing_loans() {
         .count();
     // Loan x 10,001 + Series + Assets, including those not touched by the last call.
     assert_eq!(entries, 10_003);
-    assert_eq!(f.balance(&f.borrower), 1_000_100);
+    assert_eq!(f.balance(&f.borrower), 1_000_100 * SCALE);
 }
 
 #[test]
@@ -677,6 +752,7 @@ fn series_capacity_and_shared_price() {
         &(200 * SCALE),
         &(100 * SCALE),
     );
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
     c.publish_price(&f.series, &8_000_000);
     assert_eq!(c.get_price(&f.id), 8_000_000);
     assert_eq!(c.get_price(&second), 8_000_000);
@@ -687,35 +763,53 @@ fn series_capacity_and_shared_price() {
     for n in 1..MAX_LISTED_SERIES {
         let name = Symbol::new(&f.e, &std::format!("SERIES_{n:025}"));
         c.register_series(&name, &f.token);
+
+        c.publish_price(&name, &SCALE);
         c.list_series(&name);
     }
     assert_eq!(c.assets().len(), MAX_LISTED_SERIES);
     use soroban_sdk::xdr::ToXdr;
     assert!(c.assets().to_xdr(&f.e).len() < 5000);
     c.register_series(&Symbol::new(&f.e, "FULL"), &f.token);
+
+    c.publish_price(&Symbol::new(&f.e, "FULL"), &SCALE);
     assert_eq!(
         c.try_list_series(&Symbol::new(&f.e, "FULL")),
         Err(Ok(Error::Capacity))
     );
     // Full catalogue does not prevent more loans in an existing series.
     let extra = Address::generate(&f.e);
-    f.mint(&extra, 200);
-    c.open(&extra, &f.series, &f.borrower, &f.lender, &200, &80);
+    f.mint(&extra, 2000 * SCALE);
+    c.open(
+        &extra,
+        &f.series,
+        &f.borrower,
+        &f.lender,
+        &(2000 * SCALE),
+        &(800 * SCALE),
+    );
     assert!(c
         .try_open(
             &Address::generate(&f.e),
             &f.series,
             &f.borrower,
             &f.lender,
-            &200,
-            &81
+            &(200 * SCALE),
+            &(81 * SCALE)
         )
         .is_err());
     let stale_id = Address::generate(&f.e);
-    f.mint(&stale_id, 200);
+    f.mint(&stale_id, 2000 * SCALE);
     f.e.ledger().with_mut(|l| l.timestamp += 86401);
     assert_eq!(
-        c.try_open(&stale_id, &f.series, &f.borrower, &f.lender, &200, &80),
+        c.try_open(
+            &stale_id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(2000 * SCALE),
+            &(800 * SCALE)
+        ),
         Err(Ok(Error::StalePrice))
     );
 }
@@ -733,6 +827,7 @@ fn closed_loans_keep_snapshot_and_do_not_renew_rent() {
     let before = f.e.as_contract(&f.book, || {
         f.e.storage().persistent().get_ttl(&Key::Loan(f.id.clone()))
     });
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
     c.publish_price(&f.series, &8_000_000);
     assert_eq!(c.get_loan(&f.id), initial);
     c.repay(&f.id);
@@ -742,7 +837,14 @@ fn closed_loans_keep_snapshot_and_do_not_renew_rent() {
     assert_eq!(before, after);
     assert!(after < TTL / 2);
     assert_eq!(
-        c.try_open(&f.id, &f.series, &f.borrower, &f.lender, &200, &80),
+        c.try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(2000 * SCALE),
+            &(800 * SCALE)
+        ),
         Err(Ok(Error::Exists))
     );
     c.set_buyer(&f.buyer, &true);
@@ -758,25 +860,53 @@ fn opening_requires_real_authorized_collateral() {
     let c = f.c();
     let id = Address::generate(&f.e);
     assert_eq!(
-        c.try_open(&id, &f.series, &f.borrower, &f.lender, &200, &100),
+        c.try_open(
+            &id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        ),
         Err(Ok(Error::Collateral))
     );
-    f.mint(&id, 199);
+    f.mint(&id, 199 * SCALE);
     assert_eq!(
-        c.try_open(&id, &f.series, &f.borrower, &f.lender, &200, &100),
+        c.try_open(
+            &id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        ),
         Err(Ok(Error::Collateral))
     );
-    f.mint(&id, 1);
+    f.mint(&id, SCALE);
     let sac = token::StellarAssetClient::new(&f.e, &f.token);
     sac.set_authorized(&id, &false);
     assert_eq!(
-        c.try_open(&id, &f.series, &f.borrower, &f.lender, &200, &100),
+        c.try_open(
+            &id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        ),
         Err(Ok(Error::Collateral))
     );
     assert_eq!(f.balance(&f.borrower), 0);
     assert_eq!(c.try_get_loan(&id), Err(Ok(Error::Missing)));
     sac.set_authorized(&id, &true);
-    c.open(&id, &f.series, &f.borrower, &f.lender, &200, &100);
+    c.open(
+        &id,
+        &f.series,
+        &f.borrower,
+        &f.lender,
+        &(200 * SCALE),
+        &(100 * SCALE),
+    );
 }
 
 #[test]
@@ -823,10 +953,12 @@ fn frozen_collateral_defaults_but_cannot_be_sold_until_authorized() {
     f.e.mock_all_auths();
     c.set_buyer(&f.buyer, &true);
     c.publish_price(&f.series, &SCALE);
+    f.e.ledger().with_mut(|l| l.timestamp += 60);
     assert_eq!(
         c.try_liquidate(&f.id, &f.buyer, &SCALE),
         Err(Ok(Error::Collateral))
     );
+    f.e.ledger().with_mut(|l| l.timestamp += 60);
     sac.set_authorized(&f.id, &true);
     assert_eq!(c.get_loan(&f.id).loan.status, Status::Defaulted);
     // Buyer pays only remaining bonds; excess above face never increases payment.
@@ -872,6 +1004,8 @@ fn broken_token_is_unknown_and_does_not_affect_other_series_or_repayment() {
     let broken = f.e.register(BrokenToken, (f.rules.clone(),));
     let name = Symbol::new(&f.e, "BROKEN");
     c.register_series(&name, &broken);
+
+    c.publish_price(&name, &SCALE);
     let id = Address::generate(&f.e);
     c.open(
         &id,
@@ -893,8 +1027,8 @@ fn broken_token_is_unknown_and_does_not_affect_other_series_or_repayment() {
                 &name,
                 &f.borrower,
                 &f.lender,
-                &200,
-                &100
+                &(200 * SCALE),
+                &(100 * SCALE)
             ),
             Err(Ok(Error::CollateralRead))
         );
@@ -903,8 +1037,9 @@ fn broken_token_is_unknown_and_does_not_affect_other_series_or_repayment() {
         assert!(c.lastprice(&Asset::Other(name.clone())).is_some());
         c.publish_price(&f.series, &SCALE);
     }
-    f.e.ledger().with_mut(|l| l.timestamp += TERM + 1);
+    f.e.ledger().with_mut(|l| l.timestamp += TERM + 31);
     c.mark_default(&id); // overdue does not need a working token
+    f.e.ledger().with_mut(|l| l.timestamp += 60);
     c.set_buyer(&f.buyer, &true);
     assert_eq!(
         c.try_liquidate(&id, &f.buyer, &SCALE),
@@ -941,30 +1076,35 @@ fn series_registration_cost_is_constant_and_unlisted_quotes_work() {
             e.register_at(
                 &f.rules,
                 rendaval_bond_rules::BondRules,
-                (rebind(&f.issuer), f.book.clone()),
+                (rebind(&f.issuer), f.book.clone(), rebind(&f.operator)),
             );
             f.issuer = rebind(&f.issuer);
             f.operator = rebind(&f.operator);
             f.token = rebind(&f.token);
+            f.usdc = rebind(&f.usdc);
             e.register_at(
                 &f.book,
                 LoanBook,
                 (
                     f.operator.clone(),
                     f.issuer.clone(),
-                    f.token.clone(),
+                    f.usdc.clone(),
                     f.rules.clone(),
                     7000u32,
                     8500u32,
                     2500u32,
                     86400u64,
                     500u32,
+                    30u32,
+                    30u64,
+                    60u64,
                 ),
             );
             f.e = e;
         }
         let name = Symbol::new(&f.e, &std::format!("DEMO_{n:027}"));
         f.c().register_series(&name, &f.token);
+
         let r = f.e.cost_estimate().resources();
         if n == 64 {
             baseline = Some(r.clone());
@@ -988,6 +1128,7 @@ fn series_registration_cost_is_constant_and_unlisted_quotes_work() {
     let c = f.c();
     assert_eq!(c.assets().len(), 1);
     let name = Symbol::new(&f.e, "DEMO_000000000000000000000001024");
+    c.publish_price(&name, &SCALE);
     let asset = Asset::Other(name.clone());
     assert!(!c.assets().contains(&asset));
     assert_eq!(c.lastprice(&asset).unwrap().price, SCALE);
@@ -1016,6 +1157,7 @@ fn excess_collateral_is_capped_and_total_clawback_records_full_loss() {
     token::StellarAssetClient::new(&f.e, &f.token).clawback(&f.id, &(400 * SCALE));
     c.mark_default(&f.id);
     c.set_buyer(&f.buyer, &true);
+    f.e.ledger().with_mut(|l| l.timestamp += 60);
     c.liquidate(&f.id, &f.buyer, &SCALE);
     let v = c.get_loan(&f.id);
     assert_eq!(v.value, 0);
@@ -1045,7 +1187,7 @@ fn pledge_is_atomic_and_only_terminal_empty_loans_can_release() {
     let f = Fixture::new();
     let r = rendaval_bond_rules::BondRulesClient::new(&f.e, &f.rules);
     // Failure in payout must roll back the mark as well as the loan.
-    token::Client::new(&f.e, &f.token).transfer(&f.lender, &f.buyer, &(1000 * SCALE));
+    token::Client::new(&f.e, &f.usdc).transfer(&f.lender, &f.buyer, &(1000 * SCALE));
     assert!(f
         .c()
         .try_open(
@@ -1113,7 +1255,11 @@ fn opening_requires_rules_admin_and_correct_book_binding() {
     f.e.register_at(
         &f.rules,
         rendaval_bond_rules::BondRules,
-        (f.issuer.clone(), Address::generate(&f.e)),
+        (
+            f.issuer.clone(),
+            Address::generate(&f.e),
+            f.operator.clone(),
+        ),
     );
     assert_eq!(
         f.c().try_open(
@@ -1139,4 +1285,321 @@ fn liquidated_collateral_stays_protected_until_empty() {
     token::Client::new(&f.e, &f.token).transfer(&f.id, &f.buyer, &(200 * SCALE));
     f.e.mock_auths(&[]);
     f.c().release_pledge(&f.id);
+}
+
+// Regression ports of the auditor's audit_* scenarios. Distinct SACs and G parties.
+#[test]
+fn audit_borrower_blocks_liquidation_with_surplus() {
+    let f = Fixture::new();
+    f.default(5_500_000);
+    let c = f.c();
+    c.set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 500 * SCALE);
+    let sac = token::StellarAssetClient::new(&f.e, &f.usdc);
+    sac.set_authorized(&f.borrower, &false);
+    c.liquidate(&f.id, &f.buyer, &5_500_000);
+    let l = c.get_loan(&f.id).loan;
+    assert_eq!(l.status, Status::Liquidated);
+    assert!(l.surplus > 0);
+    assert_eq!(c.claimable(&f.borrower), l.surplus);
+    assert_eq!(c.try_claim(&f.borrower), Err(Ok(Error::Payment)));
+    assert_eq!(c.claimable(&f.borrower), l.surplus);
+    sac.set_authorized(&f.borrower, &true);
+    c.claim(&f.borrower);
+    c.claim(&f.borrower);
+    assert_eq!(c.claimable(&f.borrower), 0);
+    assert_eq!(f.balance(&f.borrower), 100 * SCALE + l.surplus);
+}
+#[test]
+fn audit_lender_blocks_repay_then_buys() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    f.mint(&f.borrower, c.get_loan(&f.id).loan.interest);
+    let sac = token::StellarAssetClient::new(&f.e, &f.usdc);
+    sac.set_authorized(&f.lender, &false);
+    c.repay(&f.id);
+    c.repay(&f.id);
+    assert_eq!(c.get_loan(&f.id).loan.status, Status::Repaid);
+    assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::State)));
+    assert_eq!(c.claimable(&f.lender), c.get_loan(&f.id).debt);
+    assert_eq!(c.try_claim(&f.lender), Err(Ok(Error::Payment)));
+    sac.set_authorized(&f.lender, &true);
+    c.claim(&f.lender);
+    assert_eq!(c.claimable(&f.lender), 0);
+}
+#[test]
+fn audit_price_crash_default_liquidate_same_ledger() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    assert_eq!(
+        c.try_publish_price(&f.series, &7_500_000),
+        Err(Ok(Error::PriceRate))
+    );
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
+    c.publish_price(&f.series, &7_500_000);
+    assert_eq!(
+        c.try_publish_price(&f.series, &5_625_000),
+        Err(Ok(Error::PriceRate))
+    );
+    f.e.ledger().with_mut(|l| l.timestamp += 30);
+    c.publish_price(&f.series, &5_625_000);
+    c.mark_default(&f.id);
+    let at = c.get_loan(&f.id).loan.defaulted_at;
+    c.mark_default(&f.id);
+    assert_eq!(c.get_loan(&f.id).loan.defaulted_at, at);
+    c.set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 200 * SCALE);
+    f.e.ledger().with_mut(|l| l.timestamp = at + 59);
+    assert_eq!(
+        c.try_liquidate(&f.id, &f.buyer, &5_625_000),
+        Err(Ok(Error::Cure))
+    );
+    f.e.ledger().with_mut(|l| l.timestamp = at + 60);
+    c.liquidate(&f.id, &f.buyer, &5_625_000);
+}
+#[test]
+fn audit_price_stuck_at_tiny() {
+    let f = Fixture::new();
+    let c = f.c();
+    let name = Symbol::new(&f.e, "TINY");
+    c.register_series(&name, &f.token);
+    c.publish_price(&name, &3);
+    for p in [2, 1, 2, 3, 4] {
+        f.e.ledger().with_mut(|l| l.timestamp += 30);
+        c.publish_price(&name, &p);
+    }
+    assert_eq!(c.lastprice(&Asset::Other(name)).unwrap().price, 4);
+}
+#[test]
+fn audit_dust_blocks_release() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    assert_eq!(c.try_accept_collateral(&f.id), Err(Ok(Error::State)));
+    f.mint(&f.borrower, c.get_loan(&f.id).loan.interest);
+    c.repay(&f.id);
+    token::Client::new(&f.e, &f.token).transfer(&f.id, &f.buyer, &(200 * SCALE));
+    token::Client::new(&f.e, &f.token).transfer(&f.buyer, &f.id, &1);
+    f.e.mock_auths(&[]);
+    assert!(c.try_accept_collateral(&f.id).is_err());
+    f.e.mock_all_auths();
+    c.accept_collateral(&f.id);
+    assert_eq!(f.e.auths()[0].0, f.borrower);
+    assert!(!rendaval_bond_rules::BondRulesClient::new(&f.e, &f.rules).pledged(&f.token, &f.id));
+}
+#[test]
+fn audit_dust_loan_defaultable_at_open() {
+    let f = Fixture::new();
+    assert_eq!(
+        f.c()
+            .try_open(&f.id, &f.series, &f.borrower, &f.lender, &2, &1),
+        Err(Ok(Error::Invalid))
+    );
+}
+#[test]
+fn audit_open_without_borrower_auth_and_liquidate_unauthorized_bond_buyer() {
+    let mut f = Fixture::new();
+    f.lender = Address::generate(&f.e);
+    f.borrower = Address::generate(&f.e);
+    f.mint(&f.lender, 1000 * SCALE);
+    let c = f.c();
+    f.e.mock_auths(&[]);
+    let args: soroban_sdk::Vec<soroban_sdk::Val> = (
+        f.id.clone(),
+        f.series.clone(),
+        f.borrower.clone(),
+        f.lender.clone(),
+        200 * SCALE,
+        100 * SCALE,
+    )
+        .into_val(&f.e);
+    assert!(c
+        .mock_auths(&[
+            MockAuth {
+                address: &f.operator,
+                invoke: &MockAuthInvoke {
+                    contract: &f.book,
+                    fn_name: "open",
+                    args: args.clone(),
+                    sub_invokes: &[]
+                }
+            },
+            MockAuth {
+                address: &f.lender,
+                invoke: &MockAuthInvoke {
+                    contract: &f.book,
+                    fn_name: "open",
+                    args,
+                    sub_invokes: &[MockAuthInvoke {
+                        contract: &f.usdc,
+                        fn_name: "transfer",
+                        args: (f.lender.clone(), f.borrower.clone(), 100 * SCALE).into_val(&f.e),
+                        sub_invokes: &[]
+                    }]
+                }
+            }
+        ])
+        .try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        )
+        .is_err());
+    f.e.mock_all_auths();
+    f.default(5_500_000);
+    c.set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 200 * SCALE);
+    token::StellarAssetClient::new(&f.e, &f.token).set_authorized(&f.buyer, &false);
+    assert_eq!(
+        c.try_liquidate(&f.id, &f.buyer, &5_500_000),
+        Err(Ok(Error::Buyer))
+    );
+}
+#[test]
+fn audit_error_code_aliasing() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    assert_eq!(c.try_repay(&f.id), Err(Ok(Error::Payment)));
+    let other = Address::generate(&f.e);
+    f.mint(&other, 4000 * SCALE);
+    assert_eq!(
+        c.try_open(
+            &other,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(4000 * SCALE),
+            &(2000 * SCALE)
+        ),
+        Err(Ok(Error::Payment))
+    );
+    f.publish(&f.id, 5_500_000);
+    c.mark_default(&f.id);
+    c.set_buyer(&f.buyer, &true);
+    f.e.ledger().with_mut(|l| l.timestamp += 60);
+    assert_eq!(
+        c.try_liquidate(&f.id, &f.buyer, &5_500_000),
+        Err(Ok(Error::Payment))
+    );
+}
+#[test]
+fn unpublished_grace_and_stale_margin() {
+    let f = Fixture::new();
+    let c = f.c();
+    let name = Symbol::new(&f.e, "UNPRICED");
+    c.register_series(&name, &f.token);
+    assert_eq!(c.lastprice(&Asset::Other(name.clone())), None);
+    assert_eq!(
+        c.try_open(
+            &f.id,
+            &name,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        ),
+        Err(Ok(Error::Unpublished))
+    );
+    f.open();
+    let due = c.get_loan(&f.id).loan.due;
+    f.e.ledger().with_mut(|l| l.timestamp = due + 30);
+    c.publish_price(&f.series, &SCALE);
+    assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::Healthy)));
+    f.e.ledger().with_mut(|l| l.timestamp += 1);
+    c.mark_default(&f.id);
+    f.mint(&f.borrower, c.get_loan(&f.id).loan.interest);
+    c.repay(&f.id);
+    let g = Fixture::new();
+    g.open();
+    g.publish(&g.id, 6_500_000);
+    g.c().flag_margin(&g.id);
+    g.e.ledger().with_mut(|l| l.timestamp += 30);
+    g.c().publish_price(&g.series, &8_000_000);
+    g.e.ledger().with_mut(|l| l.timestamp += 86401);
+    assert_eq!(g.c().get_loan(&g.id).loan.status, Status::Margin);
+}
+
+#[test]
+fn credits_accumulate_and_only_owner_can_claim() {
+    let f = Fixture::new();
+    let c = f.c();
+    f.open();
+    let second = Address::generate(&f.e);
+    f.mint(&second, 200 * SCALE);
+    c.open(
+        &second,
+        &f.series,
+        &f.borrower,
+        &f.lender,
+        &(200 * SCALE),
+        &(100 * SCALE),
+    );
+    let debt = c.get_loan(&f.id).debt;
+    f.mint(&f.borrower, 2 * c.get_loan(&f.id).loan.interest);
+    let sac = token::StellarAssetClient::new(&f.e, &f.usdc);
+    sac.set_authorized(&f.lender, &false);
+    c.repay(&f.id);
+    c.repay(&second);
+    assert_eq!(c.claimable(&f.lender), 2 * debt);
+    assert_eq!(token::Client::new(&f.e, &f.usdc).balance(&f.book), 2 * debt);
+    f.e.mock_auths(&[]);
+    assert!(c.try_claim(&f.lender).is_err());
+    assert_eq!(c.claimable(&f.lender), 2 * debt);
+    f.e.mock_all_auths();
+    sac.set_authorized(&f.lender, &true);
+    c.claim(&f.lender);
+    assert_eq!(token::Client::new(&f.e, &f.usdc).balance(&f.book), 0);
+}
+#[test]
+fn minimum_principal_and_positive_time_parameters() {
+    let f = Fixture::new();
+    let c = f.c();
+    assert_eq!(
+        c.try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(2 * SCALE),
+            &(SCALE - 1)
+        ),
+        Err(Ok(Error::Invalid))
+    );
+    c.open(
+        &f.id,
+        &f.series,
+        &f.borrower,
+        &f.lender,
+        &(2 * SCALE),
+        &SCALE,
+    );
+    assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::Healthy)));
+    for (interval, grace, cure) in [(0, 30, 60), (30, 0, 60), (30, 30, 0)] {
+        f.e.as_contract(&f.book, || {
+            assert_eq!(
+                LoanBook::__constructor(
+                    f.e.clone(),
+                    f.operator.clone(),
+                    f.issuer.clone(),
+                    f.usdc.clone(),
+                    f.rules.clone(),
+                    7000,
+                    8500,
+                    2500,
+                    86400,
+                    500,
+                    interval,
+                    grace,
+                    cure
+                ),
+                Err(Error::Invalid)
+            )
+        });
+    }
 }

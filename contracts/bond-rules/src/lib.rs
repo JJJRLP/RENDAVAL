@@ -8,11 +8,13 @@ const TTL: u32 = 120 * 17280;
 pub struct Config {
     pub issuer: Address,
     pub book: Address,
+    pub operator: Address,
 }
 #[contracttype]
 #[derive(Clone)]
 enum Key {
     Config,
+    Live,
     Pledge(Address, Address),
 }
 #[contracterror]
@@ -22,6 +24,7 @@ pub enum Error {
     Pledged = 101,
     Nonempty = 102,
     Invalid = 103,
+    Overflow = 104,
 }
 #[contractevent(topics = ["init"])]
 pub struct Initialized {
@@ -43,6 +46,11 @@ pub struct AuthorizationChanged {
     pub holder: Address,
     pub authorized: bool,
 }
+#[contractevent(topics = ["book"])]
+pub struct BookChanged {
+    pub previous: Address,
+    pub book: Address,
+}
 #[contract]
 pub struct BondRules;
 fn config(e: &Env) -> Config {
@@ -51,11 +59,20 @@ fn config(e: &Env) -> Config {
 }
 #[contractimpl]
 impl BondRules {
-    pub fn __constructor(e: Env, issuer: Address, book: Address) -> Result<(), Error> {
+    pub fn __constructor(
+        e: Env,
+        issuer: Address,
+        book: Address,
+        operator: Address,
+    ) -> Result<(), Error> {
         if book.to_string().to_bytes().get(0) != Some(b'C') {
             return Err(Error::Invalid);
         }
-        let c = Config { issuer, book };
+        let c = Config {
+            issuer,
+            book,
+            operator,
+        };
         e.storage().instance().set(&Key::Config, &c);
         e.storage().instance().extend_ttl(TTL / 2, TTL);
         Initialized { config: c }.publish(&e);
@@ -63,6 +80,29 @@ impl BondRules {
     }
     pub fn get_config(e: Env) -> Config {
         config(&e)
+    }
+    pub fn live_pledges(e: Env) -> u64 {
+        config(&e);
+        e.storage().instance().get(&Key::Live).unwrap_or(0)
+    }
+    pub fn replace_book(e: Env, book: Address) -> Result<(), Error> {
+        let mut c = config(&e);
+        c.issuer.require_auth();
+        c.operator.require_auth();
+        if book.to_string().to_bytes().get(0) != Some(b'C') {
+            return Err(Error::Invalid);
+        }
+        if Self::live_pledges(e.clone()) != 0 {
+            return Err(Error::Pledged);
+        }
+        if c.book == book {
+            return Ok(());
+        }
+        let previous = c.book;
+        c.book = book.clone();
+        e.storage().instance().set(&Key::Config, &c);
+        BookChanged { previous, book }.publish(&e);
+        Ok(())
     }
     pub fn pledged(e: Env, token: Address, holder: Address) -> bool {
         config(&e);
@@ -72,7 +112,7 @@ impl BondRules {
         }
         e.storage().persistent().get(&k).unwrap_or(false)
     }
-    // Only the immutable book may create/remove marks. No account can sign as it.
+    // Only the current book may create/remove marks. No account can sign as it.
     pub fn protect(e: Env, token: Address, holder: Address) -> Result<(), Error> {
         config(&e).book.require_auth();
         if holder.to_string().to_bytes().get(0) != Some(b'C') {
@@ -81,6 +121,10 @@ impl BondRules {
         if Self::pledged(e.clone(), token.clone(), holder.clone()) {
             return Ok(());
         }
+        let count = Self::live_pledges(e.clone())
+            .checked_add(1)
+            .ok_or(Error::Overflow)?;
+        e.storage().instance().set(&Key::Live, &count);
         let k = Key::Pledge(token.clone(), holder.clone());
         e.storage().persistent().set(&k, &true);
         e.storage().persistent().extend_ttl(&k, TTL / 2, TTL);
@@ -97,9 +141,10 @@ impl BondRules {
         if !Self::pledged(e.clone(), token.clone(), holder.clone()) {
             return Ok(());
         }
-        if token::Client::new(&e, &token).balance(&holder) != 0 {
-            return Err(Error::Nonempty);
-        }
+        let count = Self::live_pledges(e.clone())
+            .checked_sub(1)
+            .ok_or(Error::Overflow)?;
+        e.storage().instance().set(&Key::Live, &count);
         e.storage()
             .persistent()
             .remove(&Key::Pledge(token.clone(), holder.clone()));
@@ -149,7 +194,7 @@ mod test {
         asset.issuer().set_flag(IssuerFlags::RevocableFlag);
         let token = asset.address();
         let book = Address::generate(&e);
-        let rules = e.register(BondRules, (issuer, book));
+        let rules = e.register(BondRules, (issuer, book, Address::generate(&e)));
         token::StellarAssetClient::new(&e, &token).set_admin(&rules);
         let r = BondRulesClient::new(&e, &rules);
         let holder = Address::generate(&e);
@@ -190,7 +235,10 @@ mod account_test {
         let holder = other.issuer().address();
         let sac = token::StellarAssetClient::new(&e, &asset.address());
         sac.trust(&holder);
-        let rules = e.register(BondRules, (issuer, Address::generate(&e)));
+        let rules = e.register(
+            BondRules,
+            (issuer, Address::generate(&e), Address::generate(&e)),
+        );
         sac.set_admin(&rules);
         let r = BondRulesClient::new(&e, &rules);
         assert!(!sac.authorized(&holder));
@@ -218,7 +266,10 @@ mod surface_test {
         let asset = e.register_stellar_asset_contract_v2(issuer.clone());
         let sac = token::StellarAssetClient::new(&e, &asset.address());
         sac.mint(&holder, &100);
-        let rules = e.register(BondRules, (issuer.clone(), Address::generate(&e)));
+        let rules = e.register(
+            BondRules,
+            (issuer.clone(), Address::generate(&e), Address::generate(&e)),
+        );
         sac.set_admin(&rules);
         for name in [
             "transfer",
@@ -280,7 +331,7 @@ mod indirect_call_test {
         asset
             .issuer()
             .set_flag(soroban_sdk::testutils::IssuerFlags::RevocableFlag);
-        let rules = e.register(BondRules, (issuer.clone(), book));
+        let rules = e.register(BondRules, (issuer.clone(), book, Address::generate(&e)));
         let sac = token::StellarAssetClient::new(&e, &asset.address());
         sac.set_admin(&rules);
         let r = BondRulesClient::new(&e, &rules);
@@ -298,5 +349,83 @@ mod indirect_call_test {
         assert!(r.try_set_authorized(&hostile, &victim, &false).is_err());
         assert!(sac.authorized(&victim));
         assert!(r.pledged(&asset.address(), &victim));
+    }
+}
+
+#[cfg(test)]
+mod replacement_tests {
+    use super::*;
+    use soroban_sdk::{
+        testutils::{Address as _, MockAuth, MockAuthInvoke},
+        IntoVal,
+    };
+    #[test]
+    fn replacement_requires_both_signers_and_zero_marks() {
+        let e = Env::default();
+        e.mock_all_auths();
+        let issuer = Address::generate(&e);
+        let operator = Address::generate(&e);
+        let old = Address::generate(&e);
+        let next = Address::generate(&e);
+        let id = e.register(BondRules, (issuer.clone(), old.clone(), operator.clone()));
+        let c = BondRulesClient::new(&e, &id);
+        let token = Address::generate(&e);
+        let holder = Address::generate(&e);
+        c.protect(&token, &holder);
+        c.protect(&token, &holder);
+        assert_eq!(c.live_pledges(), 1);
+        assert_eq!(c.try_replace_book(&next), Err(Ok(Error::Pledged)));
+        c.release(&token, &holder);
+        c.release(&token, &holder);
+        assert_eq!(c.live_pledges(), 0);
+        e.mock_auths(&[]);
+        for signer in [&issuer, &operator] {
+            assert!(c
+                .mock_auths(&[MockAuth {
+                    address: signer,
+                    invoke: &MockAuthInvoke {
+                        contract: &id,
+                        fn_name: "replace_book",
+                        args: (next.clone(),).into_val(&e),
+                        sub_invokes: &[]
+                    }
+                }])
+                .try_replace_book(&next)
+                .is_err());
+        }
+        c.mock_auths(&[
+            MockAuth {
+                address: &issuer,
+                invoke: &MockAuthInvoke {
+                    contract: &id,
+                    fn_name: "replace_book",
+                    args: (next.clone(),).into_val(&e),
+                    sub_invokes: &[],
+                },
+            },
+            MockAuth {
+                address: &operator,
+                invoke: &MockAuthInvoke {
+                    contract: &id,
+                    fn_name: "replace_book",
+                    args: (next.clone(),).into_val(&e),
+                    sub_invokes: &[],
+                },
+            },
+        ])
+        .replace_book(&next);
+        assert_eq!(c.get_config().book, next);
+        assert!(c
+            .mock_auths(&[MockAuth {
+                address: &old,
+                invoke: &MockAuthInvoke {
+                    contract: &id,
+                    fn_name: "protect",
+                    args: (token.clone(), holder.clone()).into_val(&e),
+                    sub_invokes: &[]
+                }
+            }])
+            .try_protect(&token, &holder)
+            .is_err());
     }
 }

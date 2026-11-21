@@ -10,6 +10,7 @@ use soroban_sdk::{
 pub struct RulesConfig {
     pub issuer: Address,
     pub book: Address,
+    pub operator: Address,
 }
 #[soroban_sdk::contractclient(name = "RulesClient")]
 pub trait RulesInterface {
@@ -22,6 +23,7 @@ pub trait RulesInterface {
 pub const SCALE: i128 = 10_000_000;
 pub const MAX_LISTED_SERIES: u32 = 64;
 const TERM: u64 = 30 * 86400;
+pub const MIN_PRINCIPAL: i128 = SCALE;
 // 120 days at five seconds per ledger. Persistent entries can be restored, never recreated.
 const TTL: u32 = 120 * 17280;
 
@@ -44,6 +46,10 @@ pub enum Error {
     CollateralRead = 13,
     Rules = 14,
     Nonempty = 15,
+    Payment = 16,
+    PriceRate = 17,
+    Cure = 18,
+    Unpublished = 19,
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -57,6 +63,9 @@ pub enum Status {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
+    pub price_interval: u32,
+    pub grace_period: u64,
+    pub cure_period: u64,
     pub rules: Address,
     pub operator: Address,
     pub max_step_bps: u32,
@@ -71,6 +80,7 @@ pub struct Config {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Series {
     pub token: Address,
+    pub changed_at: u64,
     pub quote: PriceData,
 }
 #[contracttype]
@@ -83,6 +93,8 @@ pub struct Collateral {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Loan {
+    pub defaulted_at: u64,
+    pub recipient: Address,
     pub collateral: Collateral,
     pub asset: Symbol,
     pub price_time: u64,
@@ -116,6 +128,7 @@ enum Key {
     Series(Symbol),
     Loan(Address),
     Buyer(Address),
+    Credit(Address),
 }
 #[contractevent(topics = ["init"])]
 pub struct Initialized {
@@ -178,6 +191,18 @@ pub struct Liquidated {
     pub buyer: Address,
     pub loan: Loan,
 }
+#[contractevent(topics = ["credit"])]
+pub struct Credited {
+    #[topic]
+    pub recipient: Address,
+    pub amount: i128,
+}
+#[contractevent(topics = ["claim"])]
+pub struct Claimed {
+    #[topic]
+    pub recipient: Address,
+    pub amount: i128,
+}
 // SEP-40 wire types; no external feed is consulted.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -192,6 +217,9 @@ pub struct PriceData {
     pub timestamp: u64,
 }
 fn fresh(e: &Env, l: &Loan, c: &Config) -> Result<(), Error> {
+    if l.price == 0 {
+        return Err(Error::Unpublished);
+    }
     if e.ledger()
         .timestamp()
         .checked_sub(l.price_time)
@@ -237,7 +265,10 @@ fn loan(e: &Env, id: &Address) -> Result<Loan, Error> {
         l.price = p.price;
         l.price_time = p.timestamp;
         // Reconcile this loan only, never walk the holders of a series.
-        if l.status == Status::Margin && !above(&l, config(e).margin_bps)? {
+        if l.status == Status::Margin
+            && fresh(e, &l, &config(e)).is_ok()
+            && !above(&l, config(e).margin_bps)?
+        {
             l.status = Status::Active;
             save(e, id, &l);
             MarginChanged {
@@ -306,6 +337,33 @@ fn live(l: &Loan) -> Result<(), Error> {
         Err(Error::State)
     }
 }
+// Incoming payment failures are book errors; recipient failures become durable credits.
+fn pay(e: &Env, c: &Config, from: &Address, to: &Address, amount: i128) -> Result<(), Error> {
+    if amount == 0 {
+        return Ok(());
+    }
+    match token::Client::new(e, &c.usdc).try_transfer(from, to, &amount) {
+        Ok(Ok(())) => Ok(()),
+        _ => Err(Error::Payment),
+    }
+}
+fn credit(e: &Env, c: &Config, to: &Address, amount: i128) -> Result<(), Error> {
+    if amount == 0 {
+        return Ok(());
+    }
+    if pay(e, c, &e.current_contract_address(), to, amount).is_err() {
+        let k = Key::Credit(to.clone());
+        let old: i128 = e.storage().persistent().get(&k).unwrap_or(0);
+        e.storage().persistent().set(&k, &add(old, amount)?);
+        bump(e, &k);
+        Credited {
+            recipient: to.clone(),
+            amount,
+        }
+        .publish(e);
+    }
+    Ok(())
+}
 #[contractimpl]
 impl LoanBook {
     // Constructor makes deployment and initialization atomic: no initializer front-running.
@@ -320,8 +378,14 @@ impl LoanBook {
         max_step_bps: u32,
         max_price_age: u64,
         discount_bps: u32,
+        price_interval: u32,
+        grace_period: u64,
+        cure_period: u64,
     ) -> Result<(), Error> {
         if rules.to_string().to_bytes().get(0) != Some(b'C')
+            || price_interval == 0
+            || grace_period == 0
+            || cure_period == 0
             || max_step_bps == 0
             || max_step_bps > 10000
             || max_price_age == 0
@@ -333,6 +397,9 @@ impl LoanBook {
             return Err(Error::Invalid);
         }
         let c = Config {
+            price_interval,
+            grace_period,
+            cure_period,
             rules,
             operator,
             max_step_bps,
@@ -358,8 +425,8 @@ impl LoanBook {
         7
     }
     // Publications use ledger seconds, with no promise of periodic updates.
-    pub fn resolution(_e: Env) -> u32 {
-        1
+    pub fn resolution(e: Env) -> u32 {
+        config(&e).price_interval
     }
     pub fn lastprice(e: Env, asset: Asset) -> Option<PriceData> {
         config(&e);
@@ -367,7 +434,7 @@ impl LoanBook {
             Asset::Other(name) => name,
             _ => return None,
         };
-        quote(&e, &name).ok()
+        quote(&e, &name).ok().filter(|p| p.price > 0)
     }
 
     // Retention is one record per asset, including after closing the loan.
@@ -375,7 +442,7 @@ impl LoanBook {
         Self::lastprice(e, asset).filter(|p| p.timestamp == timestamp)
     }
     pub fn prices(e: Env, asset: Asset, records: u32) -> Option<Vec<PriceData>> {
-        if records != 1 {
+        if records == 0 {
             return None;
         }
         let p = Self::lastprice(e.clone(), asset)?;
@@ -419,12 +486,13 @@ impl LoanBook {
         let c = config(&e);
         c.operator.require_auth();
         lender.require_auth();
+        borrower.require_auth();
         if e.storage().persistent().has(&Key::Loan(id.clone())) {
             return Err(Error::Exists);
         }
         if id.to_string().to_bytes().get(0) != Some(b'C')
             || face <= 0
-            || principal <= 0
+            || principal < MIN_PRINCIPAL
             || borrower == lender
             || principal > face / 2
         {
@@ -442,6 +510,8 @@ impl LoanBook {
             return Err(Error::Collateral);
         }
         let l = Loan {
+            defaulted_at: 0,
+            recipient: borrower.clone(),
             collateral,
             asset: series,
             price_time: p.timestamp,
@@ -479,7 +549,7 @@ impl LoanBook {
         }
         save(&e, &id, &l);
         rules.protect(&registered.token, &id);
-        token::Client::new(&e, &c.usdc).transfer(&l.lender, &l.borrower, &principal);
+        pay(&e, &c, &l.lender, &l.borrower, principal)?;
         Opened { id, loan: l }.publish(&e);
         Ok(())
     }
@@ -508,6 +578,44 @@ impl LoanBook {
         rules.release(&token, &id);
         Ok(())
     }
+    // The entitled recipient may acknowledge delivery or abandon residual dust.
+    // Live debt can never be unprotected through this path.
+    pub fn accept_collateral(e: Env, id: Address) -> Result<(), Error> {
+        let c = config(&e);
+        let l: Loan = e
+            .storage()
+            .persistent()
+            .get(&Key::Loan(id.clone()))
+            .ok_or(Error::Missing)?;
+        if !closed(&l) {
+            return Err(Error::State);
+        }
+        l.recipient.require_auth();
+        RulesClient::new(&e, &c.rules).release(&series(&e, &l.asset)?.token, &id);
+        Ok(())
+    }
+    pub fn claimable(e: Env, recipient: Address) -> i128 {
+        config(&e);
+        let k = Key::Credit(recipient);
+        if e.storage().persistent().has(&k) {
+            bump(&e, &k);
+        }
+        e.storage().persistent().get(&k).unwrap_or(0)
+    }
+    pub fn claim(e: Env, recipient: Address) -> Result<(), Error> {
+        let c = config(&e);
+        recipient.require_auth();
+        let amount = Self::claimable(e.clone(), recipient.clone());
+        if amount == 0 {
+            return Ok(());
+        }
+        e.storage()
+            .persistent()
+            .remove(&Key::Credit(recipient.clone()));
+        pay(&e, &c, &e.current_contract_address(), &recipient, amount)?;
+        Claimed { recipient, amount }.publish(&e);
+        Ok(())
+    }
     // Registration never loads the catalogue; names and token bindings are permanent.
     pub fn register_series(e: Env, series: Symbol, token: Address) -> Result<(), Error> {
         config(&e).issuer.require_auth();
@@ -523,9 +631,10 @@ impl LoanBook {
             &k,
             &Series {
                 token: token.clone(),
+                changed_at: 0,
                 quote: PriceData {
-                    price: SCALE,
-                    timestamp,
+                    price: 0,
+                    timestamp: 0,
                 },
             },
         );
@@ -572,7 +681,7 @@ impl LoanBook {
             .ok_or(Error::Overflow)?
             .checked_abs()
             .ok_or(Error::Overflow)?;
-        if mul(delta, 10000)? > mul(old.price, c.max_step_bps as i128)? {
+        if old.price > 0 && delta > (mul(old.price, c.max_step_bps as i128)? / 10000).max(1) {
             return Err(Error::PriceStep);
         }
         let timestamp = e.ledger().timestamp();
@@ -580,6 +689,17 @@ impl LoanBook {
             return Ok(());
         }
         let mut registered = self::series(&e, &series)?;
+        if old.price != price {
+            if old.price > 0
+                && timestamp
+                    .checked_sub(registered.changed_at)
+                    .ok_or(Error::PriceRate)?
+                    < c.price_interval as u64
+            {
+                return Err(Error::PriceRate);
+            }
+            registered.changed_at = timestamp;
+        }
         registered.quote = PriceData { price, timestamp };
         e.storage()
             .persistent()
@@ -618,7 +738,9 @@ impl LoanBook {
             return Ok(());
         }
         live(&l)?;
-        if !impaired(&l) && e.ledger().timestamp() <= l.due {
+        if !impaired(&l)
+            && e.ledger().timestamp() <= l.due.checked_add(c.grace_period).ok_or(Error::Overflow)?
+        {
             if !l.collateral.known {
                 return Err(Error::CollateralRead);
             }
@@ -627,6 +749,7 @@ impl LoanBook {
                 return Err(Error::Healthy);
             }
         }
+        l.defaulted_at = e.ledger().timestamp();
         l.status = Status::Defaulted;
         save(&e, &id, &l);
         Defaulted { id, loan: l }.publish(&e);
@@ -644,7 +767,14 @@ impl LoanBook {
         }
         l.status = Status::Repaid;
         save(&e, &id, &l);
-        token::Client::new(&e, &c.usdc).transfer(&l.borrower, &l.lender, &debt(&l)?);
+        pay(
+            &e,
+            &c,
+            &l.borrower,
+            &e.current_contract_address(),
+            debt(&l)?,
+        )?;
+        credit(&e, &c, &l.lender, debt(&l)?)?;
         Repaid {
             id,
             amount: debt(&l)?,
@@ -668,6 +798,20 @@ impl LoanBook {
         if !Self::is_buyer(e.clone(), buyer.clone()) {
             return Err(Error::Buyer);
         }
+        if e.ledger().timestamp()
+            < l.defaulted_at
+                .checked_add(c.cure_period)
+                .ok_or(Error::Overflow)?
+        {
+            return Err(Error::Cure);
+        }
+        let bond = series(&e, &l.asset)?.token;
+        if !matches!(
+            token::StellarAssetClient::new(&e, &bond).try_authorized(&buyer),
+            Ok(Ok(true))
+        ) {
+            return Err(Error::Buyer);
+        }
         if expected_price != l.price {
             return Err(Error::PriceChanged);
         }
@@ -684,15 +828,12 @@ impl LoanBook {
         l.loss = debt.checked_sub(paid).ok_or(Error::Overflow)?;
         l.surplus = proceeds.checked_sub(paid).ok_or(Error::Overflow)?;
         l.proceeds = proceeds;
+        l.recipient = buyer.clone();
         l.status = Status::Liquidated;
         save(&e, &id, &l);
-        let t = token::Client::new(&e, &c.usdc);
-        if paid > 0 {
-            t.transfer(&buyer, &l.lender, &paid);
-        }
-        if l.surplus > 0 {
-            t.transfer(&buyer, &l.borrower, &l.surplus);
-        }
+        pay(&e, &c, &buyer, &e.current_contract_address(), proceeds)?;
+        credit(&e, &c, &l.lender, paid)?;
+        credit(&e, &c, &l.borrower, l.surplus)?;
         Liquidated { id, buyer, loan: l }.publish(&e);
         Ok(())
     }

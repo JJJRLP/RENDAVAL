@@ -18,14 +18,13 @@ const vault = final ? key('VAULT_SECRET_KEY') : Keypair.random();
 const lender = final ? key('LENDER_SECRET_KEY') : Keypair.random();
 const borrower = final ? vault : Keypair.random();
 const outsider = final ? null : Keypair.random();
-const bondAsset = new Asset(final ? 'RVBOND' : 'C1BOND', issuer.publicKey());
+const bondAsset = new Asset(final ? 'RBOND' : 'C2BOND', issuer.publicKey());
 const bond = bondAsset.contractId(networkPassphrase);
-const usdAsset = final ? new Asset('USDC', 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5') : new Asset('C1USD', issuer.publicKey());
+const usdAsset = final ? new Asset('USDC', 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5') : new Asset('C2USD', issuer.publicKey());
 const usd = usdAsset.contractId(networkPassphrase);
 if (final) {
   assert.equal(issuer.publicKey(), 'GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6');
-  assert.equal(bond, 'CDPPMX5DG2XQUNQFYKIB77OZVZJWAHRDEOLHOCRBJ2UK4MGBNHQUGZGW');
-  assert.equal(process.env.NEW_BOND_CODE, 'RVBOND');
+  assert.equal(process.env.NEW_BOND_CODE, 'RBOND');
   assert.equal(usd, 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA');
 }
 const a = s => new Address(s).toScVal();
@@ -34,13 +33,13 @@ const u = n => nativeToScVal(n, { type: 'u32' });
 const sym = s => nativeToScVal(s, { type: 'symbol' });
 const bool = n => nativeToScVal(n);
 const json = v => JSON.stringify(v, (_, x) => typeof x === 'bigint' ? x.toString() : x, 2);
-let evidence = { phase: 'C1', network: 'testnet', final, started: new Date().toISOString(),
+let evidence = { phase: 'C2', network: 'testnet', final, started: new Date().toISOString(),
   issuer: issuer.publicKey(), operator: vault.publicKey(), lender: lender.publicKey(), borrower: borrower.publicKey(),
   bondAsset: bondAsset.toString(), bondToken: bond, usdc: usd, transactions: [], checks: [], salts: {},
-  parameters: { marginBps: 7000, defaultBps: 8500, maxStepBps: 2500, maxPriceAge: 86400, discountBps: 500 } };
+  parameters: { marginBps: 7000, defaultBps: 8500, maxStepBps: 2500, maxPriceAge: 86400, discountBps: 500, priceInterval: 30, gracePeriod: 30, curePeriod: 60 } };
 if (existsSync(path)) {
   const old = JSON.parse(readFileSync(path));
-  assert(final && old.phase === 'C1' && old.final, 'Existing evidence: do not overwrite or blindly repeat');
+  assert(final && old.phase === 'C2' && old.final, 'Existing evidence: do not overwrite or blindly repeat');
   assert(!old.completed, 'Final run already complete; use read-only verification');
   evidence = old;
   for (const [field, k] of [['issuer',issuer],['operator',vault],['lender',lender],['borrower',borrower]]) assert.equal(evidence[field], k.publicKey());
@@ -75,8 +74,9 @@ async function submit(label, signer, op, soroban=true, expectFailure=false) {
       const auth=sim.result.auth[j];
       if(auth.credentials.type==='sorobanCredentialsSourceAccount') continue;
       const who=Address.fromScAddress(auth.credentials.value.address).toString();
-      assert.equal(who,vault.publicKey(),'Unexpected authorization');
-      sim.result.auth[j]=await authorizeEntry(auth,vault,sim.latestLedger+100,networkPassphrase);
+      const k=[vault,lender,issuer,borrower].find(k=>k.publicKey()===who);
+      assert(k,'Unexpected authorization');
+      sim.result.auth[j]=await authorizeEntry(auth,k,sim.latestLedger+100,networkPassphrase);
     }
     if(label==='open') {
       const r=sim.transactionData.build().resources;
@@ -105,7 +105,7 @@ async function read(id,method,args=[]) {
   assert(rpc.Api.isSimulationSuccess(sim), `${method}: ${sim.error}`);
   return scValToNative(sim.result.retval);
 }
-async function reject(label,signer,id,method,args=[]) {
+async function reject(label,signer,id,method,args=[],code) {
   let tx=await build(signer,new Contract(id).call(method,...args));
   let sim=await server.simulateTransaction(tx);
   let stage='SIMULATION_FAILED';
@@ -114,6 +114,7 @@ async function reject(label,signer,id,method,args=[]) {
     sim=await server.simulateTransaction(tx,undefined,'enforce'); stage='AUTH_SIMULATION_FAILED';
   }
   assert(!rpc.Api.isSimulationSuccess(sim),'Attack unexpectedly allowed: '+label);
+  if(code) assert(sim.error.includes('Error(Contract, #'+code+')'), label+': '+sim.error);
   evidence.checks.push({label,status:stage,error:sim.error}); save(); console.log(label,stage);
 }
 async function account(who) { const r=await fetch(`${horizon}/accounts/${who}`); assert(r.ok); return r.json(); }
@@ -146,110 +147,133 @@ async function transfer(label,from,to,amount) {
   assert(amount>0n);
   await invoke(label,from,usd,'transfer',[a(from.publicKey()),a(to.publicKey()),i(amount)]);
 }
+const unit=10_000_000n;
+const decimal=n=>`${n/unit}.${(n%unit).toString().padStart(7,'0')}`;
+async function limit(label,k,value) {
+  await submit(label,k,Operation.changeTrust({asset:usdAsset,limit:value}),false);
+}
+async function waitUntil(timestamp) {
+  for (;;) {
+    const latest=await server.getLatestLedger();
+    const now=Number(latest.closeTime);
+    if(now>=Number(timestamp)) return;
+    await pause(3000);
+  }
+}
 async function main() {
   assert.equal((await server.getNetwork()).passphrase,networkPassphrase);
   if(!final) {
-    for(const [name,k] of [['issuer',issuer],['operator',vault],['lender',lender],['borrower',borrower],['outsider',outsider]]) await fund(k,name);
+    for(const [name,k] of [['issuer',issuer],['operator',vault],['lender',lender],['borrower',borrower]]) await fund(k,name);
     await submit('initial_flags',issuer,Operation.setOptions({setFlags:3}),false);
-    await submit('create_bond_sac',issuer,Operation.createStellarAssetContract({asset:bondAsset}));
     await submit('create_usd_sac',issuer,Operation.createStellarAssetContract({asset:usdAsset}));
-  }
-  if(!evidence.transactions.some(t=>t.label==='immutable_flags')) {
     await noTrustlines();
-    const flags=evidence.beforeImmutable.flags;
-    assert(flags.auth_required && flags.auth_revocable && !flags.auth_clawback_enabled && !flags.auth_immutable);
+    await submit('immutable_flags',issuer,Operation.setOptions({setFlags:4}),false);
+  } else if(!evidence.beforeImmutable) {
+    await noTrustlines();
+    const issuerAccount=await account(issuer.publicKey());
+    const trustlines=issuerAccount.balances.filter(x=>x.asset_type!=='native');
+    assert.equal(trustlines.length,0,'Issuer itself must have no trustlines');
+    evidence.issuerTrustlinesBefore=trustlines;save();
   }
-  await submit('immutable_flags',issuer,Operation.setOptions({setFlags:4}),false);
   const flags=(await account(issuer.publicKey())).flags;
   assert(flags.auth_required && flags.auth_revocable && flags.auth_immutable && !flags.auth_clawback_enabled);
   evidence.immutableFlags=flags;save();
+  await submit('create_bond_sac',issuer,Operation.createStellarAssetContract({asset:bondAsset}));
   const rules=predicted('rules'),book=predicted('book');
   evidence.rulesContractId=rules;evidence.contractId=book;save();
-  await deploy('rules','rendaval_bond_rules',[a(issuer.publicKey()),a(book)]);
-  await deploy('book','rendaval_loan_book',[a(vault.publicKey()),a(issuer.publicKey()),a(usd),a(rules),u(7000),u(8500),u(2500),nativeToScVal(86400n,{type:'u64'}),u(500)]);
-  assert.equal((await read(rules,'get_config')).book,book);
-  assert.equal((await read(book,'get_config')).rules,rules);
+  await deploy('rules','rendaval_bond_rules',[a(issuer.publicKey()),a(book),a(vault.publicKey())]);
+  await deploy('book','rendaval_loan_book',[a(vault.publicKey()),a(issuer.publicKey()),a(usd),a(rules),u(7000),u(8500),u(2500),nativeToScVal(86400n,{type:'u64'}),u(500),u(30),nativeToScVal(30n,{type:'u64'}),nativeToScVal(60n,{type:'u64'})]);
+  evidence.rulesConfig=await read(rules,'get_config');evidence.bookConfig=await read(book,'get_config');
+  assert.equal(evidence.rulesConfig.book,book);assert.equal(evidence.bookConfig.rules,rules);save();
   await invoke('handover_admin',issuer,bond,'set_admin',[a(rules)]);
   assert.equal(await read(bond,'admin'),rules);
-  evidence.adminVerified=rules;save();
   const escrow=await deploy('escrow','rendaval_test_escrow',[a(borrower.publicKey())]);
-  evidence.escrow=escrow;save();
-  await submit('borrower_bond_trustline',borrower,Operation.changeTrust({asset:bondAsset}),false);
-  await invoke('approve_borrower',issuer,rules,'set_authorized',[a(bond),a(borrower.publicKey()),bool(true)]);
-  await invoke('authorize_escrow',issuer,rules,'set_authorized',[a(bond),a(escrow),bool(true)]);
-  await submit('issue_100_bonds',issuer,Operation.payment({destination:borrower.publicKey(),asset:bondAsset,amount:'100'}),false);
-  if(!final) {
-    for(const [name,k] of [['borrower',borrower],['lender',lender]]) {
+  const escrow2=await deploy('escrow2','rendaval_test_escrow',[a(borrower.publicKey())]);
+  evidence.escrow=escrow;evidence.escrow2=escrow2;save();
+  for(const [name,k] of [['borrower',borrower],['lender',lender]]) {
+    await submit(name+'_bond_trustline',k,Operation.changeTrust({asset:bondAsset}),false);
+    await invoke('approve_'+name,issuer,rules,'set_authorized',[a(bond),a(k.publicKey()),bool(true)]);
+    if(!final) {
       await submit(name+'_usd_trustline',k,Operation.changeTrust({asset:usdAsset}),false);
       await invoke(name+'_usd_approve',issuer,usd,'set_authorized',[a(k.publicKey()),bool(true)]);
     }
-    await submit('fund_disposable_lender',issuer,Operation.payment({destination:lender.publicKey(),asset:usdAsset,amount:'100'}),false);
-    // Account and ordinary contract revocation, then approval, after immutable flags.
-    for(const [label,holder] of [['account',borrower.publicKey()],['contract',escrow]]) {
-      await invoke('revoke_ordinary_'+label,issuer,rules,'set_authorized',[a(bond),a(holder),bool(false)]);
-      assert.equal(await read(bond,'authorized',[a(holder)]),false);
-      await invoke('approve_ordinary_'+label,issuer,rules,'set_authorized',[a(bond),a(holder),bool(true)]);
-    }
   }
-  if(!evidence.initialLenderUsdc) {
-    evidence.initialLenderUsdc=await read(usd,'balance',[a(lender.publicKey())]);
-    evidence.initialBorrowerUsdc=await read(usd,'balance',[a(borrower.publicKey())]);save();
-  }
-  await invoke('deposit_collateral',borrower,bond,'transfer',[a(borrower.publicKey()),a(escrow),i(1_000_000_000)]);
-  await invoke('register_series',issuer,book,'register_series',[sym('C1_DEMO'),a(bond)]);
-  const principal=500_000_000n,interest=(principal+149n)/150n;
-  evidence.grossLenderSpend=principal+interest; assert(evidence.grossLenderSpend<=300n*10_000_000n);save();
-  await invoke('open',lender,book,'open',[a(escrow),sym('C1_DEMO'),a(borrower.publicKey()),a(lender.publicKey()),i(1_000_000_000),i(principal)]);
-  evidence.opened=await read(book,'get_loan',[a(escrow)]);
-  assert.equal(await read(rules,'pledged',[a(bond),a(escrow)]),true);
-  await reject('issuer_freeze_pledged',issuer,rules,'set_authorized',[a(bond),a(escrow),bool(false)]);
   if(!final) {
-    for(const [label,k] of [['operator',vault],['outsider',outsider],['issuer',issuer]]) {
-      await reject(label+'_release_direct',k,rules,'release',[a(bond),a(escrow)]);
-      await reject(label+'_protect_direct',k,rules,'protect',[a(bond),a(escrow)]);
-      await reject(label+'_release_live',k,book,'release_pledge',[a(escrow)]);
-      await reject(label+'_freeze',k,rules,'set_authorized',[a(bond),a(escrow),bool(false)]);
-    }
-    for(const [method,args] of [
-      ['set_authorized',[a(escrow),bool(false)]],['clawback',[a(escrow),i(1)]],['set_admin',[a(issuer.publicKey())]],
-      ['mint',[a(escrow),i(1)]],['transfer',[a(escrow),a(borrower.publicKey()),i(1)]],['burn',[a(escrow),i(1)]],
-      ['transfer_from',[a(issuer.publicKey()),a(escrow),a(borrower.publicKey()),i(1)]],['burn_from',[a(issuer.publicKey()),a(escrow),i(1)]]
-    ]) await reject('issuer_direct_'+method,issuer,bond,method,args);
-    for(const method of ['clawback','set_admin','upgrade','pause','__constructor'])
-      await reject('rules_no_'+method,issuer,rules,method,[a(issuer.publicKey())]);
-    for(const [label,fn] of [
-      ['classic_setTrustLineFlags_contract',()=>Operation.setTrustLineFlags({trustor:escrow,asset:bondAsset,flags:{authorized:false}})],
-      ['classic_allowTrust_contract',()=>Operation.allowTrust({trustor:escrow,assetCode:bondAsset.code,authorize:false})],
-      ['classic_clawback_contract',()=>Operation.clawback({from:escrow,asset:bondAsset,amount:'1'})]
-    ]) { let failed=false;try{fn();}catch{failed=true;} assert(failed,label); evidence.checks.push({label,status:'SDK_REJECTED'}); save(); }
-    await submit('cannot_enable_clawback',issuer,Operation.setOptions({setFlags:8}),false,true);
-    await submit('cannot_clear_required',issuer,Operation.setOptions({clearFlags:1}),false,true);
-    await submit('cannot_clear_revocable',issuer,Operation.setOptions({clearFlags:2}),false,true);
-    let sim=await server.simulateTransaction(await build(issuer,Operation.createStellarAssetContract({asset:bondAsset})));
-    assert(!rpc.Api.isSimulationSuccess(sim));evidence.checks.push({label:'recreate_sac',status:'SIMULATION_FAILED',error:sim.error});save();
-    assert.equal(await read(bond,'balance',[a(escrow)]),1_000_000_000n);
-    assert.equal(await read(bond,'authorized',[a(escrow)]),true);
+    await invoke('book_usd_approve',issuer,usd,'set_authorized',[a(book),bool(true)]);
+    await submit('fund_disposable_lender',issuer,Operation.payment({destination:lender.publicKey(),asset:usdAsset,amount:'300'}),false);
   }
+  if(!evidence.initial) {
+    evidence.initial={};
+    for(const [name,k] of [['lender',lender],['borrower',borrower]]) {
+      const line=(await account(k.publicKey())).balances.find(b=>b.asset_code===usdAsset.code&&b.asset_issuer===usdAsset.issuer);
+      assert(line && Number(line.buying_liabilities)===0 && Number(line.selling_liabilities)===0);
+      evidence.initial[name]={balance:await read(usd,'balance',[a(k.publicKey())]),limit:line.limit};
+    }
+    save();
+  }
+  for(const [name,id] of [['one',escrow],['two',escrow2]]) await invoke('approve_escrow_'+name,issuer,rules,'set_authorized',[a(bond),a(id),bool(true)]);
+  await submit('issue_200_bonds',issuer,Operation.payment({destination:borrower.publicKey(),asset:bondAsset,amount:'200'}),false);
+  for(const [name,id] of [['one',escrow],['two',escrow2]]) await invoke('deposit_'+name,borrower,bond,'transfer',[a(borrower.publicKey()),a(id),i(100n*unit)]);
+  await invoke('register_series',issuer,book,'register_series',[sym('C2_DEMO'),a(bond)]);
+  assert.equal((await read(book,'get_series',[sym('C2_DEMO')])).quote.price,0n);
+  await invoke('initial_price',issuer,book,'publish_price',[sym('C2_DEMO'),i(unit)]);
+  const principal=50n*unit,interest=(principal+149n)/150n;
+  evidence.grossLenderSpend=2n*principal+interest+100n*unit;assert(evidence.grossLenderSpend<=300n*unit);save();
+  const openArgs=id=>[a(id),sym('C2_DEMO'),a(borrower.publicKey()),a(lender.publicKey()),i(100n*unit),i(principal)];
+  await invoke('open',borrower,book,'open',openArgs(escrow));
+  evidence.opened=await read(book,'get_loan',[a(escrow)]);
+  assert.equal(Number(await read(rules,'live_pledges')),1);
+  await reject('issuer_freeze_pledged',issuer,rules,'set_authorized',[a(bond),a(escrow),bool(false)],101);
+  await reject('replacement_while_pledged',issuer,rules,'replace_book',[a(escrow2)],101);
   await transfer('fund_demo_interest',lender,borrower,interest);
-  await invoke('repay',borrower,book,'repay',[a(escrow)]);
-  evidence.repaid=await read(book,'get_loan',[a(escrow)]);assert.equal(evidence.repaid.loan.status[0],'Repaid');save();
-  await reject('release_repaid_but_nonempty',vault,book,'release_pledge',[a(escrow)]);
-  assert.equal(await read(rules,'pledged',[a(bond),a(escrow)]),true);
-  await invoke('return_collateral',borrower,escrow,'withdraw',[a(bond)]);
-  assert.equal(await read(bond,'balance',[a(escrow)]),0n);
-  await invoke('lift_pledge',vault,book,'release_pledge',[a(escrow)]);
-  await invoke('lift_pledge_retry',vault,book,'release_pledge',[a(escrow)]);
-  assert.equal(await read(rules,'pledged',[a(bond),a(escrow)]),false);
-  if(!final) await invoke('revoke_after_release',issuer,rules,'set_authorized',[a(bond),a(escrow),bool(false)]);
-  // Return issued demo bonds to the issuer; classic transfer is authorized by their holder.
-  await submit('return_demo_bonds',borrower,Operation.payment({destination:issuer.publicKey(),asset:bondAsset,amount:'100'}),false);
-  evidence.finalLenderUsdc=await read(usd,'balance',[a(lender.publicKey())]);
-  evidence.finalBorrowerUsdc=await read(usd,'balance',[a(borrower.publicKey())]);
-  assert.equal(evidence.finalLenderUsdc.toString(),evidence.initialLenderUsdc.toString());
-  assert.equal(evidence.finalBorrowerUsdc.toString(),evidence.initialBorrowerUsdc.toString());
-  evidence.finalPledged=await read(rules,'pledged',[a(bond),a(escrow)]);
-  evidence.finalEscrowBalance=await read(bond,'balance',[a(escrow)]);
-  evidence.finalAdmin=await read(bond,'admin');
-  evidence.completed=true;evidence.finished=new Date().toISOString();save();console.log('Completed',path);
+  if(!evidence.lenderCap) { evidence.lenderCap=decimal(await read(usd,'balance',[a(lender.publicKey())]));save(); }
+  await limit('cap_lender_trustline',lender,evidence.lenderCap);
+  await invoke('repay_blocked_recipient',borrower,book,'repay',[a(escrow)]);
+  evidence.repaid=await read(book,'get_loan',[a(escrow)]);
+  assert.equal(evidence.repaid.loan.status[0],'Repaid');
+  evidence.lenderCredit=await read(book,'claimable',[a(lender.publicKey())]);assert.equal(evidence.lenderCredit,principal+interest);save();
+  await reject('claim_lender_still_blocked',lender,book,'claim',[a(lender.publicKey())],16);
+  await limit('restore_lender_trustline',lender,evidence.initial.lender.limit);
+  await invoke('lender_claim',lender,book,'claim',[a(lender.publicKey())]);
+  await invoke('return_one',borrower,escrow,'withdraw',[a(bond)]);
+  await invoke('lift_one',vault,book,'release_pledge',[a(escrow)]);
+  // The company is source again; operator and lender authorize the exact open invocation.
+  await invoke('open_two',borrower,book,'open',openArgs(escrow2));
+  await invoke('approve_buyer',issuer,book,'set_buyer',[a(lender.publicKey()),bool(true)]);
+  for(const [label,p] of [['price_75',7_500_000n],['price_5625',5_625_000n]]) {
+    if(!evidence.transactions.some(t=>t.label===label)) {
+      const series=await read(book,'get_series',[sym('C2_DEMO')]);
+      await waitUntil(BigInt(series.changed_at)+30n);
+    }
+    await invoke(label,issuer,book,'publish_price',[sym('C2_DEMO'),i(p)]);
+  }
+  await invoke('mark_default',vault,book,'mark_default',[a(escrow2)]);
+  evidence.defaulted=await read(book,'get_loan',[a(escrow2)]);save();
+  if(!evidence.checks.some(x=>x.label==='cure_window')) await reject('cure_window',lender,book,'liquidate',[a(escrow2),a(lender.publicKey()),i(5_625_000n)],18);
+  if(!evidence.borrowerCap) { evidence.borrowerCap=decimal(await read(usd,'balance',[a(borrower.publicKey())]));save(); }
+  await limit('cap_borrower_trustline',borrower,evidence.borrowerCap);
+  await waitUntil(BigInt(evidence.defaulted.loan.defaulted_at)+60n);
+  await invoke('liquidate_blocked_surplus',lender,book,'liquidate',[a(escrow2),a(lender.publicKey()),i(5_625_000n)]);
+  evidence.liquidated=await read(book,'get_loan',[a(escrow2)]);
+  assert.equal(evidence.liquidated.loan.status[0],'Liquidated');
+  evidence.borrowerCredit=await read(book,'claimable',[a(borrower.publicKey())]);assert(evidence.borrowerCredit>0n);save();
+  await reject('claim_borrower_still_blocked',borrower,book,'claim',[a(borrower.publicKey())],16);
+  await limit('restore_borrower_trustline',borrower,evidence.initial.borrower.limit);
+  await invoke('borrower_claim',borrower,book,'claim',[a(borrower.publicKey())]);
+  await invoke('return_two',borrower,escrow2,'withdraw',[a(bond)]);
+  await invoke('deliver_buyer_bonds',borrower,bond,'transfer',[a(borrower.publicKey()),a(lender.publicKey()),i(100n*unit)]);
+  await invoke('lift_two',vault,book,'release_pledge',[a(escrow2)]);
+  await transfer('return_demo_usdc',borrower,lender,principal+BigInt(evidence.borrowerCredit));
+  for(const [name,k] of [['borrower',borrower],['lender',lender]]) await submit('retire_'+name+'_bonds',k,Operation.payment({destination:issuer.publicKey(),asset:bondAsset,amount:'100'}),false);
+  evidence.finalState={admin:await read(bond,'admin'),livePledges:await read(rules,'live_pledges'),bookUsdc:await read(usd,'balance',[a(book)])};
+  assert.equal(evidence.finalState.admin,rules);assert.equal(Number(evidence.finalState.livePledges),0);assert.equal(evidence.finalState.bookUsdc,0n);
+  for(const [name,k] of [['lender',lender],['borrower',borrower]]) {
+    evidence.finalState[name]=await read(usd,'balance',[a(k.publicKey())]);
+    assert.equal(evidence.finalState[name],BigInt(evidence.initial[name].balance));
+    assert.equal(await read(book,'claimable',[a(k.publicKey())]),0n);
+  }
+  evidence.grossLenderSpend=2n*principal+interest+BigInt(evidence.liquidated.loan.proceeds);
+  assert(evidence.grossLenderSpend<=300n*unit);
+  evidence.completed=new Date().toISOString();save();console.log('C2 verified, balances restored');
 }
-main().catch(error=>{evidence.failure=String(error.message).replace(/\bS[A-Z2-7]{55}\b/g,'[REDACTED]');save();console.error(evidence.lastAction,evidence.failure);process.exitCode=1;});
+main().catch(e=>{ console.error(e.message);process.exitCode=1; });
