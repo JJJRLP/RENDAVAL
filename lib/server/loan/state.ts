@@ -25,7 +25,7 @@ export async function escrowsFor(wallet: string) {
   const vault = vaultKey().publicKey();
   for (const e of owned) {
     if (e.signer !== vault || e.trustline?.address !== VBOND.issuer || e.trustline.symbol !== 'VBOND' || e.roles.approver !== lenderKey().publicKey() || e.roles.receiver !== wallet || ![vault, wallet].includes(e.roles.serviceProvider) || e.roles.releaseSigner !== vault || e.roles.disputeResolver !== vault || !Number.isFinite(e.balance) || !Number.isFinite(e.amount) || e.amount < 100 || e.amount > 1000)
-      throw new ApiError(409, 'Su garantía necesita revisión del equipo de Vault antes de continuar.');
+      throw new ApiError(409, 'Su garantía necesita revisión del equipo de Rendaval antes de continuar.');
   }
   return [...new Map(owned.map(e => [e.contractId, e])).values()].sort((a, b) => (b.createdAt?._seconds ?? Number(b.engagementId.split(':')[1]) ?? 0) - (a.createdAt?._seconds ?? Number(a.engagementId.split(':')[1]) ?? 0));
 }
@@ -34,7 +34,7 @@ export async function escrowFor(wallet: string, contractId: string) {
   const escrow = (await escrowsFor(wallet)).find(e => e.contractId === contractId);
   if (!escrow) throw new ApiError(403, 'Este préstamo no corresponde a su empresa.');
   // A disputed or resolved escrow is out of the ordinary flow; it must not block the company's other loans.
-  if (escrow.flags?.disputed || escrow.flags?.resolved) throw new ApiError(409, 'Este préstamo está en revisión del equipo de Vault y no admite operaciones.');
+  if (escrow.flags?.disputed || escrow.flags?.resolved) throw new ApiError(409, 'Este préstamo está en revisión del equipo de Rendaval y no admite operaciones.');
   return escrow;
 }
 export async function state(wallet: string): Promise<LoanState> {
@@ -55,7 +55,7 @@ export async function state(wallet: string): Promise<LoanState> {
       escrow: { contractId: escrow.contractId, description: escrow.description, url: explorer('contract', escrow.contractId) }, transactions };
   });
   const pending = views.filter(v => v.stage === 'escrow_created' || v.stage === 'collateral_locked');
-  if (pending.length > 1) throw new ApiError(409, 'Hay más de una garantía en preparación. Contacte al equipo de Vault.');
+  if (pending.length > 1) throw new ApiError(409, 'Hay más de una garantía en preparación. Contacte al equipo de Rendaval.');
   const loans = views.filter(v => !pending.includes(v));
   const empty: LoanView = { bond: null, stage: bonds > 0 ? 'bond_registered' : 'none', terms: terms(bonds), locked: 0, escrow: null, repayment: null, transactions: [] };
   const setup = pending[0] ?? (bonds > 0 ? empty : null);

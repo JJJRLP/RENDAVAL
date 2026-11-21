@@ -23,8 +23,9 @@ const items = [
   {
     question: "¿Qué ocurre en caso de incumplimiento?",
     answer: [
-      "Si el préstamo y el interés no se reembolsan en la fecha acordada, la garantía puede ejecutarse: los RWA se venden para cubrir la deuda. Es posible perder una parte o la totalidad de los activos depositados.",
-      "Si tras cubrir la deuda queda un remanente, se devuelve a la empresa. Si el valor de los RWA disminuye durante la vigencia del préstamo, puede requerirse garantía adicional o una reducción del saldo antes del vencimiento.",
+      "Si el préstamo y el interés no se reembolsan en la fecha acordada, la garantía puede ejecutarse: los RWA se liquidan o se rescatan con un comprador autorizado por el emisor para cubrir la deuda. Es posible perder una parte o la totalidad de los activos depositados.",
+      "Si tras cubrir la deuda queda un remanente, se devuelve a la empresa. Un oráculo actualiza el precio de la garantía: si su valor disminuye, puede requerirse garantía adicional o una reducción del saldo antes del vencimiento.",
+      "Hoy no existe una póliza de seguro que cubra estos préstamos.",
     ],
   },
   {

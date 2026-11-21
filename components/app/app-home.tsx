@@ -67,7 +67,7 @@ export function AppHome() {
         <ol className="on-dark bg-ink p-8 text-white md:col-span-2 md:p-10">
           {STEPS.map((step, index) => (
             <li key={step.name} className="flex gap-4 border-t border-white/20 py-4 first:border-t-0 first:pt-0 last:pb-0">
-              <span className="text-sm font-semibold text-teal-bright">0{index + 1}</span>
+              <span className="text-sm font-semibold text-blue-bright">0{index + 1}</span>
               <span>
                 <span className="block font-semibold">{step.name}</span>
                 <span className="mt-1 block text-sm leading-6 text-white/75">{step.body}</span>
@@ -112,7 +112,7 @@ export function AppHome() {
         <div className="mt-6 border border-line bg-white p-8">
           <h2 className="font-serif text-2xl font-semibold">Su cuenta aún no está lista</h2>
           <p role="status" className="mt-3 leading-7 text-ink/70">
-            Cierre sesión e ingrese nuevamente. Si el problema continúa, escriba al equipo de Vault.
+            Cierre sesión e ingrese nuevamente. Si el problema continúa, escriba al equipo de Rendaval.
           </p>
         </div>
       )}

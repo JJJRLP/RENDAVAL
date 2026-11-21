@@ -11,7 +11,7 @@ Instale las dependencias con `npm install`. Copie `.env.example` a `.env.local` 
 - `POLLAR_SECRET_KEY`: clave secreta `sec_testnet_` para validar el token de acceso en cada ruta del servidor. Nunca se expone al navegador.
 - `DIDIT_API_KEY`: clave sandbox `sk_test_` de Didit; las claves de producción se rechazan.
 - `DIDIT_KYB_WORKFLOW_ID`: identificador del workflow de verificación de empresas. Configure la cobertura de Bolivia en la consola; enviamos `expected_details.registry_country: "BO"`.
-- `VAULT_SECRET_KEY`: clave secreta Stellar de la cuenta de plataforma Vault, financiada en testnet para comisiones y reservas de entradas de datos.
+- `VAULT_SECRET_KEY`: clave secreta Stellar de la cuenta de plataforma Rendaval, financiada en testnet para comisiones y reservas de entradas de datos.
 
 Los préstamos requieren `LENDER_SECRET_KEY`, `BOND_ISSUER_SECRET_KEY` y `TRUSTLESS_WORK_API_KEY` solo en el servidor. Configure las mismas variables en Vercel; no se usa base de datos ni almacenamiento en disco.
 
@@ -21,7 +21,7 @@ En Pollar, habilite correo y Google, billeteras clásicas con creación inmediat
 
 La landing permanece en `/`. La ruta `/app` contiene el acceso, los saldos y la verificación de empresa. El flujo de préstamo incluye registro, garantía, desembolso, reembolso y devolución de bonos.
 
-El servidor verifica el token de Pollar y usa exclusivamente la dirección devuelta por ese servicio. Una sesión de Didit debe corresponder a esa dirección y al workflow configurado. Al aprobarse, Vault firma en Stellar testnet una entrada `manageData` con nombre `kyb:<dirección de empresa>` y valor igual al identificador de sesión. Las consultas posteriores leen esa constancia pública; no incluye documentos ni datos de la empresa. Cada nueva entrada requiere reserva de XLM. La constancia no almacena fecha.
+El servidor verifica el token de Pollar y usa exclusivamente la dirección devuelta por ese servicio. Una sesión de Didit debe corresponder a esa dirección y al workflow configurado. Al aprobarse, Rendaval firma en Stellar testnet una entrada `manageData` con nombre `kyb:<dirección de empresa>` y valor igual al identificador de sesión. Las consultas posteriores leen esa constancia pública; no incluye documentos ni datos de la empresa. Cada nueva entrada requiere reserva de XLM. La constancia no almacena fecha.
 
 El navegador conserva únicamente el identificador y enlace de la sesión pendiente por cuenta. Al volver de la verificación, consulta automáticamente hasta cinco veces con esperas de 2, 4, 8 y 16 segundos. Después ofrece una comprobación manual. Si se borra el almacenamiento antes de aprobar, será necesario iniciar otra sesión. La aprobación de prueba solo funciona con configuración sandbox y requiere autenticación y pertenencia de la sesión.
 
@@ -46,9 +46,9 @@ decimales con `usdcAmount`; el pago y la oferta usan los mismos importes.
 
 Cada ruta `/api/loan/*` autentica el token de Pollar y exige una empresa
 verificada. Se usan Horizon y Trustless Work de testnet, sin base de datos,
-disco persistente ni configuración adicional para Vercel. Vault es el
+disco persistente ni configuración adicional para Vercel. Rendaval es el
 `serviceProvider`; la empresa es `receiver` y firma el depósito y, más tarde,
-un solo pago de reembolso. El prestamista aprueba y Vault libera la garantía.
+un solo pago de reembolso. El prestamista aprueba y Rendaval libera la garantía.
 La búsqueda acepta únicamente el identificador `vault-loan-<wallet>` histórico
 o `vault-loan-<wallet>:<timestamp>`, con los roles y el activo esperados.
 Los préstamos antiguos conservan sus condiciones y roles originales; el cambio
@@ -104,7 +104,7 @@ Depósito, desembolso, ayuda de interés, reembolso y liquidación requieren
 `contractId` en el cuerpo JSON. El servidor vuelve a buscarlo entre los contratos
 propios de la empresa, comprobando engagement, roles y activo. Un contrato ajeno
 se rechaza con 403; una referencia ausente con 409. Los roles históricos de
-serviceProvider (empresa o Vault) se admiten sin modificar el contrato.
+serviceProvider (empresa o Rendaval) se admiten sin modificar el contrato.
 
 El diario usa una generación por empresa (cantidad de contratos ya registrados),
 por lo que una aceptación posterior no reutiliza el XDR de una anterior. Los

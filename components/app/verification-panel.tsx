@@ -15,14 +15,14 @@ export function VerificationPanel({ address, onLoanState }: { address: string; o
   return <>
     <VerificationStages verified={verified} pending={!!pending} />
     <section className="on-dark mt-4 bg-ink p-6 text-white md:p-10" aria-labelledby="next-step-title">
-      <p className="text-xs font-semibold uppercase tracking-widest text-teal-bright">Su próximo paso</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-blue-bright">Su próximo paso</p>
       <div aria-live="polite" aria-atomic="true">
         <h2 id="next-step-title" className="mt-4 font-serif text-3xl font-semibold">{title}</h2>
         <p className="mt-3 max-w-xl leading-7 text-white/75">{message}</p>
-        {busy && pending && <p className="mt-4 text-sm text-teal-bright">Esto puede tardar unos segundos.</p>}
+        {busy && pending && <p className="mt-4 text-sm text-blue-bright">Esto puede tardar unos segundos.</p>}
       </div>
       <div className="mt-6 flex flex-col items-start gap-2">
-        {error && <p role="alert" className="mb-2 max-w-xl border-l-2 border-teal-bright pl-4 leading-7">{error}</p>}
+        {error && <p role="alert" className="mb-2 max-w-xl border-l-2 border-blue-bright pl-4 leading-7">{error}</p>}
         <button disabled={busy} onClick={pending && !rejected ? refresh : () => void start(false)} className="btn-primary w-full disabled:cursor-wait disabled:opacity-60 sm:w-auto">
           {starting ? 'Preparando verificación…' : busy ? 'Un momento…' : pending && !rejected ? 'Volver a comprobar' : rejected ? 'Iniciar nueva verificación' : error ? 'Reintentar' : 'Comenzar verificación'}
         </button>

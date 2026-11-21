@@ -1,12 +1,12 @@
 /*
- * Pollar's windows (login, signature prompts) in Vault's look: ink and warm paper,
- * teal for the primary action, square corners, serif titles. Pollar reads these
+ * Pollar's windows (login, signature prompts) in Rendaval's look: ink and warm paper,
+ * blue for the primary action, square corners, serif titles. Pollar reads these
  * variables from its own root elements, so they are set there and not on :root.
  */
 .pollar-modal-card,
 .pollar-wallet-wrapper,
 .pollar-wallet-login-btn {
-  --pollar-accent: var(--teal);
+  --pollar-accent: var(--blue);
   --pollar-btn-primary-fg: var(--white);
   --pollar-bg: var(--white);
   --pollar-text: var(--ink);

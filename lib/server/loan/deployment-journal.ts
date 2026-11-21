@@ -16,7 +16,7 @@ export async function deploymentJournal(wallet: string, prepare: () => Promise<s
       const chunks = Array.from({ length: count }, (_, i) => Buffer.from(account.data_attr[key + i] ?? '', 'base64'));
       const saved = Buffer.concat(chunks).toString();
       const deployment = TransactionBuilder.fromXDR(saved, networkPassphrase);
-      if (!(deployment instanceof Transaction)) throw new ApiError(502, 'No pudimos recuperar su garantía. Contacte al equipo de Vault.');
+      if (!(deployment instanceof Transaction)) throw new ApiError(502, 'No pudimos recuperar su garantía. Contacte al equipo de Rendaval.');
       const source = await server.loadAccount(deployment.source);
       const ledger = await server.ledgers().order('desc').limit(1).call();
       const receipt = await fetch(`https://horizon-testnet.stellar.org/transactions/${Buffer.from(deployment.hash()).toString('hex')}`, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
@@ -31,7 +31,7 @@ export async function deploymentJournal(wallet: string, prepare: () => Promise<s
       }
     }
     const signed = await prepare(), bytes = Buffer.from(signed), chunks = Math.ceil(bytes.length / 64);
-    if (chunks > 94) throw new ApiError(502, 'No pudimos preparar su garantía. Contacte al equipo de Vault.');
+    if (chunks > 94) throw new ApiError(502, 'No pudimos preparar su garantía. Contacte al equipo de Rendaval.');
     const builder = new TransactionBuilder(account, { fee: '10000', networkPassphrase });
     for (let i = 0; i < chunks; i++) builder.addOperation(Operation.manageData({ name: key + i, value: bytes.subarray(i * 64, (i + 1) * 64) }));
     const tx = builder.addOperation(Operation.manageData({ name: key + 'count', value: String(chunks) })).setTimeout(60).build(); tx.sign(signer);

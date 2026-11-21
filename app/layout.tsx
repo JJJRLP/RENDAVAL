@@ -15,7 +15,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Vault · Liquidez en dólares sobre RWA",
+  title: "Rendaval · Liquidez en dólares sobre RWA",
   description:
     "Constituya sus RWA (activos del mundo real tokenizados) en garantía y disponga de USDC sin vender la posición. Los activos continúan devengando intereses. Prototipo en testnet de Stellar.",
 };

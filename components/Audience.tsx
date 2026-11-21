@@ -68,7 +68,7 @@ export function Audience() {
               >
                 <p
                   className={`text-xs font-semibold tracking-[0.16em] uppercase ${
-                    card.dark ? "text-teal-bright" : "text-teal"
+                    card.dark ? "text-blue-bright" : "text-blue"
                   }`}
                 >
                   {card.label}

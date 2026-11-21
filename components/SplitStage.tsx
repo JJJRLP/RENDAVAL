@@ -15,9 +15,9 @@ type SplitStageProps = {
   /** Which marble bust to show. */
   statue: StatueName;
   /**
-   * "dark": white text on black, teal block.
+   * "dark": white text on black, blue block.
    * "light": black text on white, black block.
-   * "deep": white text on deep teal, black block.
+   * "deep": white text on deep blue, black block.
    */
   tone: "dark" | "light" | "deep";
   /** Horizontal position of the block's left edge, as a share of the stage. */

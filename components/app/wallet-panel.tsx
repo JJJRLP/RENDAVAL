@@ -38,7 +38,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
           type="button"
           onClick={refresh}
           disabled={busy}
-          className="min-h-11 cursor-pointer text-sm font-semibold text-teal underline underline-offset-4 disabled:cursor-wait disabled:opacity-50"
+          className="min-h-11 cursor-pointer text-sm font-semibold text-blue underline underline-offset-4 disabled:cursor-wait disabled:opacity-50"
         >
           {busy ? "Actualizando…" : "Actualizar"}
         </button>
@@ -49,7 +49,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
           <div key={tile.unit} className="min-w-0 border border-line bg-offwhite p-6">
             <p className="text-sm text-ink/70">{tile.label}</p>
             <p className="mt-3 break-words font-serif text-4xl font-semibold">
-              {loan && busy ? formatNumber(tile.unit === "USDC" ? loan.usdc : loan.bonds, 2) : amount(tile.balance)} <span className="font-sans text-base font-semibold text-teal">{tile.unit}</span>
+              {loan && busy ? formatNumber(tile.unit === "USDC" ? loan.usdc : loan.bonds, 2) : amount(tile.balance)} <span className="font-sans text-base font-semibold text-blue">{tile.unit}</span>
             </p>
           </div>
         ))}
@@ -57,7 +57,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
           <div className="min-w-0 border border-line bg-offwhite p-6">
             <p className="text-sm text-ink/70">Bonos en garantía</p>
             <p className="mt-3 break-words font-serif text-4xl font-semibold">
-              {formatNumber(loan.locked, 2)} <span className="font-sans text-base font-semibold text-teal">USD</span>
+              {formatNumber(loan.locked, 2)} <span className="font-sans text-base font-semibold text-blue">USD</span>
             </p>
           </div>
         )}
@@ -78,7 +78,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
             type="button"
             onClick={refresh}
             disabled={busy}
-            className="mt-2 min-h-11 cursor-pointer text-sm font-semibold text-teal underline underline-offset-4 disabled:opacity-50"
+            className="mt-2 min-h-11 cursor-pointer text-sm font-semibold text-blue underline underline-offset-4 disabled:opacity-50"
           >
             Reintentar
           </button>
@@ -92,11 +92,11 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
             <dt className="font-semibold text-ink">Dirección en Stellar (red de prueba)</dt>
             <dd className="mt-1 break-all font-mono select-all">{address}</dd>
             <dd className="mt-1 flex flex-wrap items-center gap-x-4">
-              <button type="button" className="min-h-11 cursor-pointer text-teal underline underline-offset-4" onClick={() => void copyAddress()}>
+              <button type="button" className="min-h-11 cursor-pointer text-blue underline underline-offset-4" onClick={() => void copyAddress()}>
                 Copiar dirección
               </button>
               <a
-                className="inline-flex min-h-11 items-center text-teal underline underline-offset-4"
+                className="inline-flex min-h-11 items-center text-blue underline underline-offset-4"
                 href={`https://stellar.expert/explorer/testnet/account/${address}`}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -14,7 +14,7 @@ export async function disburse(wallet: string, contractId: string) {
     const account = await server.loadAccount(signer.publicKey());
     if (account.data_attr[escrow.contractId]) return { reused: true, amount };
     const balance = account.balances.find(b => 'asset_code' in b && b.asset_code === 'USDC' && b.asset_issuer === dollarAsset().getIssuer());
-    if (!balance || Number(balance.balance) < Number(amount)) throw new ApiError(503, 'Los fondos de prueba disponibles no alcanzan para este desembolso. Su garantía está protegida; contacte al equipo de Vault y vuelva a intentar más tarde.');
+    if (!balance || Number(balance.balance) < Number(amount)) throw new ApiError(503, 'Los fondos de prueba disponibles no alcanzan para este desembolso. Su garantía está protegida; contacte al equipo de Rendaval y vuelva a intentar más tarde.');
     const tx = new TransactionBuilder(account, { fee: '10000', networkPassphrase })
       .addOperation(Operation.payment({ destination: wallet, asset: dollarAsset(), amount }))
       .addOperation(Operation.manageData({ name: escrow.contractId, value: amount })).setTimeout(60).build();

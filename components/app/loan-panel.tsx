@@ -17,7 +17,7 @@ function Checklist({ steps, current, done }: { steps: string[]; current: number;
   return (
     <ol aria-live="polite" className="mt-6 grid gap-2 text-sm sm:grid-cols-4">
       {steps.map((label, i) => (
-        <li key={label} aria-current={i === current && !done ? 'step' : undefined} className={`border-t-2 pt-2 ${i <= current || done ? 'border-teal-bright text-white' : 'border-white/20 text-white/45'}`}>
+        <li key={label} aria-current={i === current && !done ? 'step' : undefined} className={`border-t-2 pt-2 ${i <= current || done ? 'border-blue-bright text-white' : 'border-white/20 text-white/45'}`}>
           <span aria-hidden="true">{i < current || done ? '✓ ' : i === current ? '→ ' : ''}</span>
           {label}
         </li>
@@ -44,7 +44,7 @@ function Hero({ label, value, unit, note }: { label: string; value: string; unit
     <div>
       <p className="text-sm text-white/70">{label}</p>
       <p className="mt-2 break-words font-serif text-5xl font-semibold sm:text-6xl">
-        {value} <span className="font-sans text-lg text-teal-bright">{unit}</span>
+        {value} <span className="font-sans text-lg text-blue-bright">{unit}</span>
       </p>
       <p className="mt-4 max-w-md text-sm leading-7 text-white/75">{note}</p>
     </div>
@@ -70,7 +70,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
       {/* The bar describes the set-up in progress; each finished set-up shows its own status in the list. */}
       {!idle && <VerificationStages verified pending={false} stage={state?.setup?.stage} />}
       <section className={`on-dark ${idle ? "mt-10" : "mt-4"} bg-ink p-6 text-white md:p-10`} aria-labelledby="next-step-title" aria-busy={loan.busy}>
-        <p className="text-xs font-semibold uppercase tracking-widest text-teal-bright">{eyebrow}</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-blue-bright">{eyebrow}</p>
         <h2 id="next-step-title" className="mt-4 font-serif text-3xl font-semibold">{title}</h2>
         {loan.bond && typeof loan.bond.issuer === 'string' && stage !== 'none' && (
           <p className="mt-2 text-sm text-white/65">
@@ -78,7 +78,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
           </p>
         )}
         {loan.error && !loan.operationId && (
-          <p role="alert" className="mt-5 border-l-2 border-teal-bright pl-4 leading-7">
+          <p role="alert" className="mt-5 border-l-2 border-blue-bright pl-4 leading-7">
             {loan.error}
           </p>
         )}
@@ -177,11 +177,11 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
             const days = Math.ceil((Date.parse(item.terms.dueDate) - now) / 86400000);
             return <article key={id} className="min-w-0 p-6 md:p-8" aria-busy={running && loan.busy}>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_17rem] lg:items-center">
-                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-3 text-sm text-teal"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
+                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-3 text-sm text-blue"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
                 <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
                 <div className="text-sm">
                   {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>
-                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Vault lo está revisando' : 'La garantía pasó al prestamista'}</p></>
+                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Rendaval lo está revisando' : 'La garantía pasó al prestamista'}</p></>
                     : <><p className="text-ink/65">Devolvió {usdc(item.repayment?.amount ?? item.terms.total)}</p>{item.repayment && <p className="font-semibold">Pagado el {day(item.repayment.at)}</p>}</>}
                 </div>
                 <div>{!closed && !frozen && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>

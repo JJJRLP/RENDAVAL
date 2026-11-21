@@ -1,4 +1,4 @@
-# Vault
+# Rendaval
 
 Préstamos en dólares digitales (USDC) para empresas bolivianas, respaldados por sus bonos tokenizados. La empresa deja sus bonos en garantía en un escrow sobre Stellar, recibe USDC y recupera los bonos al devolver el préstamo. Los bonos siguen siendo suyos durante todo el plazo.
 
@@ -15,10 +15,10 @@ Préstamos en dólares digitales (USDC) para empresas bolivianas, respaldados po
 
 1. **Acceso.** Ingresa con correo o Google. Se crea su cuenta en Stellar sin instalar nada (Pollar).
 2. **Verificación.** Confirma la identidad legal de la empresa (Didit, flujo para Bolivia). La aprobación queda registrada en Stellar como constancia pública.
-3. **Registro del bono.** Declara su bono en bolivianos. Vault emite los bonos digitales equivalentes a su valor en dólares (paso simulado).
-4. **Oferta.** Vault fija las condiciones: 50 % del valor de la garantía, 8 % anual, 30 días. La empresa solo acepta.
+3. **Registro del bono.** Declara su bono en bolivianos. Rendaval emite los bonos digitales equivalentes a su valor en dólares (paso simulado).
+4. **Oferta.** Rendaval fija las condiciones: 50 % del valor de la garantía, 8 % anual, 30 días. La empresa solo acepta.
 5. **Garantía y desembolso.** La empresa firma el depósito de los bonos en un escrow (Trustless Work) y el prestamista envía los USDC.
-6. **Reembolso.** La empresa devuelve capital más interés con una firma; el prestamista aprueba y Vault libera la garantía.
+6. **Reembolso.** La empresa devuelve capital más interés con una firma; el prestamista aprueba y Rendaval libera la garantía.
 
 ## Arquitectura
 
@@ -34,12 +34,12 @@ Rutas del servidor (Next.js, /api/kyb/* y /api/loan/*)
 ```
 
 - **Sin base de datos.** Todo el estado se lee de la red y de los proveedores, así que el despliegue solo necesita variables de entorno:
-  - Empresa verificada: entrada de datos `kyb:<cuenta>` en la cuenta de Vault.
+  - Empresa verificada: entrada de datos `kyb:<cuenta>` en la cuenta de Rendaval.
   - Bono registrado: saldo del activo `VBOND` de la empresa (1 VBOND = 1 USD de garantía).
   - Préstamo: escrow de Trustless Work asociado a la empresa.
   - Desembolso: pago en USDC y marcador escritos en una misma transacción del prestamista, para que no pueda pagarse dos veces.
   - Reembolso: pago de la empresa al prestamista, identificado por un memo propio del préstamo.
-- **Quién firma qué.** La empresa firma en el navegador el depósito de la garantía y el pago del reembolso. Vault, el prestamista de demostración y el emisor del bono firman en el servidor con cuentas de prueba.
+- **Quién firma qué.** La empresa firma en el navegador el depósito de la garantía y el pago del reembolso. Rendaval, el prestamista de demostración y el emisor del bono firman en el servidor con cuentas de prueba.
 - **Autorización.** Cada ruta valida el token de Pollar y usa únicamente la cuenta que devuelve ese servicio, nunca una enviada por el navegador. Las rutas de préstamo exigen además una empresa verificada.
 
 Más detalle en [`docs/notas-tecnicas.md`](docs/notas-tecnicas.md).
@@ -74,7 +74,7 @@ Abra `http://localhost:3000/app`.
 | `DIDIT_API_KEY` | Servidor | Clave sandbox de Didit (`sk_test_…`). |
 | `DIDIT_KYB_WORKFLOW_ID` | Servidor | Flujo de verificación de empresas configurado en Didit. |
 | `TRUSTLESS_WORK_API_KEY` | Servidor | Clave de la API de Trustless Work (testnet). |
-| `VAULT_SECRET_KEY` | Servidor | Cuenta de Vault en testnet: crea los escrows, libera la garantía y registra las constancias. |
+| `VAULT_SECRET_KEY` | Servidor | Cuenta de Rendaval en testnet: crea los escrows, libera la garantía y registra las constancias. |
 | `LENDER_SECRET_KEY` | Servidor | Cuenta del prestamista de demostración, con USDC de prueba. |
 | `BOND_ISSUER_SECRET_KEY` | Servidor | Cuenta emisora de `VBOND`; debe corresponder a `NEXT_PUBLIC_VBOND_ISSUER`. |
 
@@ -84,7 +84,7 @@ La aplicación rechaza claves que no sean de prueba. Ninguna clave secreta llega
 
 - **Pollar** (dashboard): agregue el origen de la aplicación (`http://localhost:3000` y el dominio de producción) en *Developers → Websites*; habilite acceso con correo y Google; active el patrocinio de trustlines; agregue los activos USDC y VBOND; defina un saldo inicial de XLM para las cuentas nuevas (2 XLM alcanza para las comisiones del recorrido).
 - **Didit** (consola): cree un flujo de verificación de empresas y copie su identificador.
-- **Stellar testnet:** las cuentas de Vault, prestamista y emisor deben existir y tener XLM. Vault y el prestamista necesitan trustlines de USDC y VBOND. El contrato del activo `VBOND` debe estar desplegado una vez.
+- **Stellar testnet:** las cuentas de Rendaval, prestamista y emisor deben existir y tener XLM. Rendaval y el prestamista necesitan trustlines de USDC y VBOND. El contrato del activo `VBOND` debe estar desplegado una vez.
 
 ### Fondos de prueba del prestamista
 

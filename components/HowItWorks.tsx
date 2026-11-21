@@ -141,7 +141,7 @@ function FlowStage({ step, name, figures }: { step: number; name: string; figure
         </div>
 
         <div
-          className="flow-chip bg-teal text-white"
+          className="flow-chip bg-blue text-white"
           style={{ left: columnCenter(USDC_AT[step]), top: "5.25rem" }}
         >
           <span className="block text-[10px] font-semibold tracking-widest uppercase opacity-80">
@@ -153,14 +153,14 @@ function FlowStage({ step, name, figures }: { step: number; name: string; figure
         </div>
 
         <div
-          className="flow-chip border border-teal-bright text-white"
+          className="flow-chip border border-blue-bright text-white"
           style={{
             left: columnCenter(INTEREST_AT[step]),
             top: "9.5rem",
             opacity: step >= INTEREST_FROM ? 1 : 0,
           }}
         >
-          <span className="block text-[10px] font-semibold tracking-widest text-teal-bright uppercase">
+          <span className="block text-[10px] font-semibold tracking-widest text-blue-bright uppercase">
             Interés · USDC
           </span>
           <span className="block text-sm font-semibold sm:text-base">
@@ -266,7 +266,7 @@ export function HowItWorks() {
                 onChange={(event) => setInput(formatNumber(Number(event.target.value)))}
                 aria-label="Valor de los RWA en garantía, en USD"
                 aria-valuetext={`${formatNumber(sliderValue)} USD`}
-                className="mt-4 block w-full cursor-pointer accent-teal"
+                className="mt-4 block w-full cursor-pointer accent-blue"
               />
               <p id="collateral-help" className="mt-2 text-sm leading-6 text-ink/75">
                 {parsed.kind === "invalid" ? (
@@ -281,7 +281,7 @@ export function HowItWorks() {
               <dl className="grid gap-px bg-line sm:grid-cols-2">
                 <div className="bg-white p-6 md:p-8">
                   <dt className="text-sm text-ink/70">Préstamo máximo</dt>
-                  <dd className="mt-2 font-serif text-4xl font-semibold text-teal md:text-5xl">
+                  <dd className="mt-2 font-serif text-4xl font-semibold text-blue md:text-5xl">
                     {loan === null ? (
                       <span className="text-ink/60">—</span>
                     ) : (
@@ -294,7 +294,7 @@ export function HowItWorks() {
                 </div>
                 <div className="bg-white p-6 md:p-8">
                   <dt className="text-sm text-ink/70">Costo financiero estimado a un mes</dt>
-                  <dd className="mt-2 font-serif text-4xl font-semibold text-teal md:text-5xl">
+                  <dd className="mt-2 font-serif text-4xl font-semibold text-blue md:text-5xl">
                     {cost === null ? (
                       <span className="text-ink/60">—</span>
                     ) : (
@@ -338,14 +338,14 @@ export function HowItWorks() {
                       }}
                       className={`relative grid w-full cursor-pointer grid-cols-[2.5rem_1fr] gap-x-4 border-l-2 px-5 py-5 text-left transition-colors duration-300 ${
                         active
-                          ? "border-teal bg-white"
+                          ? "border-blue bg-white"
                           : "border-line hover:border-ink/40 hover:bg-white/60"
                       }`}
                     >
                       <span
                         aria-hidden="true"
                         className={`pt-1 text-sm font-semibold transition-colors duration-300 ${
-                          active ? "text-teal" : "text-ink/50"
+                          active ? "text-blue" : "text-ink/50"
                         }`}
                       >
                         0{index + 1}
@@ -361,7 +361,7 @@ export function HowItWorks() {
                           key={index}
                           aria-hidden="true"
                           onAnimationEnd={() => setStep((index + 1) % steps.length)}
-                          className="step-timer absolute right-0 bottom-0 left-0 h-0.5 bg-teal"
+                          className="step-timer absolute right-0 bottom-0 left-0 h-0.5 bg-blue"
                         />
                       )}
                     </button>
