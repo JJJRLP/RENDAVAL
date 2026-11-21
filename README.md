@@ -107,11 +107,19 @@ Vercel utiliza las mismas variables; no hay configuración adicional ni base de 
 - `scripts/verify-kyb.ts`: Didit sandbox y constancia Stellar.
 - `scripts/fund-lender.ts`: recarga testnet del lender; no es parte de la prueba B1.
 - `scripts/c4-verify.mjs`: verificador de evidencia de contratos C4, solo lectura.
+- `scripts/verify-sep40-compat.ts`: lectura solo de testnet que consulta un precio de
+  Reflector y uno del libro Rendaval con el mismo lector SEP-40.
 
 Scripts TypeScript: `node --env-file=.env.local --conditions=react-server --import tsx
 scripts/<nombre>.ts`. Hashes y resultados en `scripts/evidence/`. Las pruebas omiten
 login y firma interactivos de Pollar; [notas técnicas](docs/notas-tecnicas.md) detallan
 las diferencias posibles. Los scripts anteriores de préstamos web fueron eliminados.
+
+El libro publica la interfaz de precios **SEP-40** (USD, siete decimales y resolución
+del contrato). El precio que afecta cada préstamo sigue siendo publicado por el emisor
+en el propio libro; la compatibilidad solo permite que lectores externos usen el mismo
+formato. Compruébelo sin claves ni efectos en cadena con
+`node --import tsx scripts/verify-sep40-compat.ts`.
 
 ## Límites de demostración
 
