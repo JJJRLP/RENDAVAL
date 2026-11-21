@@ -28,7 +28,7 @@ El diseño tiene un único mecanismo, y es el mismo que describen la landing y l
 2. **Ejecución.** Los bonos se transfieren a un comprador autorizado por el emisor, que paga en USDC. El prestamista puede ser ese comprador si el emisor lo autoriza.
 3. **Reparto.** Con ese pago se cubren capital e interés del prestamista; el remanente vuelve a la empresa. Si no alcanza, la diferencia es una pérdida del prestamista: no hay póliza de seguro.
 
-**Qué hace hoy el prototipo.** El préstamo en disputa se congela y la aplicación lo muestra «en revisión»; una garantía ya resuelta aparece como «ejecutada». El precio por oráculo, los avisos de margen y la venta al comprador autorizado no están implementados, y los porcentajes son de ejemplo.
+**Qué hace hoy el prototipo.** El préstamo en disputa se congela y la aplicación lo muestra «en revisión»; una garantía ya resuelta aparece como «ejecutada». Cada préstamo activo permite simular su precio en testnet (100 %, 80 %, 65 % o 50 % del valor inicial). Rendaval publica el precio por contrato en Stellar y la salud usa capital más interés sobre el valor actual: desde el 70 % abre un aviso de margen que pide devolver el préstamo; desde el 85 % avisa que la garantía puede ejecutarse. El oráculo de producción, el aporte de garantía adicional y la ejecución/venta al comprador autorizado quedan para una fase posterior. Los porcentajes son de ejemplo.
 
 ## Arquitectura
 

@@ -3,10 +3,11 @@ import { ApiError, vaultKey } from '../env';
 import { readAttestation } from '../attestation';
 import { assetBalance, readBalances } from '../../stellar/horizon';
 import { USDC, VBOND } from '../../stellar/assets';
-import { normalizeBond, terms, OPEN_LOAN_LIMIT, type LoanState, type LoanView, type Bond } from '../../loan/model';
+import { normalizeBond, terms, loanHealth, roundUsdc, OPEN_LOAN_LIMIT, type LoanState, type LoanView, type Bond } from '../../loan/model';
 import { cleanObservedJournals, journalAccount } from './deployment-journal';
 import { historyPages, loanHistory } from './history';
 import { explorer, lenderKey, server, tw } from './network';
+import { readPrice } from './collateral-price';
 export type Escrow = { contractId: string; signer: string; amount: number; balance: number; description: string; engagementId: string; roles: Record<string, string>; trustline: { address: string; symbol: string }; milestones: { status: string; approved: boolean }[]; createdAt?: { _seconds: number }; flags: { released: boolean; resolved: boolean; disputed: boolean } };
 export async function verified(wallet: string) {
   const entry = await readAttestation(wallet);
@@ -38,7 +39,7 @@ export async function escrowFor(wallet: string, contractId: string) {
   return escrow;
 }
 export async function state(wallet: string): Promise<LoanState> {
-  const [verification, balances, escrows, lender, pages, journal] = await Promise.all([verified(wallet), readBalances(wallet), escrowsFor(wallet), server.loadAccount(lenderKey().publicKey()), historyPages(wallet), journalAccount()]);
+  const [verification, balances, escrows, lender, pages, journal, vault] = await Promise.all([verified(wallet), readBalances(wallet), escrowsFor(wallet), server.loadAccount(lenderKey().publicKey()), historyPages(wallet), journalAccount(), server.loadAccount(vaultKey().publicKey())]);
   const bonds = Number(assetBalance(balances, VBOND)?.balance ?? 0), usdc = Number(assetBalance(balances, USDC)?.balance ?? 0);
   const paid = new Set(escrows.filter(e => lender.data_attr[e.contractId]).map(e => e.contractId));
   const [history] = await Promise.all([loanHistory(wallet, escrows, paid, pages), cleanObservedJournals(wallet, escrows.length, journal)]);
@@ -48,7 +49,9 @@ export async function state(wallet: string): Promise<LoanState> {
     const repayment = history.repayments.get(escrow.contractId);
     let bond: Bond | null = null;
     try { bond = normalizeBond(JSON.parse(escrow.description)); } catch { /* Historical description is plain text. */ }
-    return { bond, locked: escrow.flags.released || escrow.flags.resolved ? 0 : escrow.balance,
+    const price = readPrice(vault.data_attr, escrow.contractId);
+    const collateralValue = roundUsdc(escrow.amount * price);
+    return { price, collateralValue, health: loanHealth(terms(escrow.amount).total, collateralValue), bond, locked: escrow.flags.released || escrow.flags.resolved ? 0 : escrow.balance,
       repayment: repayment ? { ...repayment, releaseStatus: escrow.flags.released ? 'released' : 'pending' } : null,
       stage: escrow.flags.released ? 'closed' : escrow.flags.resolved ? 'liquidated' : escrow.flags.disputed ? 'disputed' : repayment ? 'repaid_release_pending' : paid.has(escrow.contractId) ? 'active' : escrow.balance >= escrow.amount ? 'collateral_locked' : 'escrow_created',
       terms: terms(escrow.amount, payment ? Date.parse(payment.at) : Date.now()),
@@ -57,7 +60,7 @@ export async function state(wallet: string): Promise<LoanState> {
   const pending = views.filter(v => v.stage === 'escrow_created' || v.stage === 'collateral_locked');
   if (pending.length > 1) throw new ApiError(409, 'Hay más de una garantía en preparación. Contacte al equipo de Rendaval.');
   const loans = views.filter(v => !pending.includes(v));
-  const empty: LoanView = { bond: null, stage: bonds > 0 ? 'bond_registered' : 'none', terms: terms(bonds), locked: 0, escrow: null, repayment: null, transactions: [] };
+  const empty: LoanView = { price: 1, collateralValue: bonds, health: loanHealth(terms(bonds).total, bonds), bond: null, stage: bonds > 0 ? 'bond_registered' : 'none', terms: terms(bonds), locked: 0, escrow: null, repayment: null, transactions: [] };
   const setup = pending[0] ?? (bonds > 0 ? empty : null);
   const openLoans = loans.filter(v => v.stage !== 'closed' && v.stage !== 'liquidated').length;
   const limitReached = openLoans >= OPEN_LOAN_LIMIT;
