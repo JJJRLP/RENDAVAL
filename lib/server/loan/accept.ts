@@ -26,7 +26,7 @@ export async function accept(wallet: string, input?: unknown) {
     if ((await escrowsFor(wallet)).length !== existing.length) throw new ApiError(409, 'Su garantía ya está creada. Vuelva a continuar.');
     const account = await server.loadAccount(signer.publicKey());
     const built = await tw<{ unsignedTransaction: string }>('/deployer/single-release', {
-      signer: signer.publicKey(), engagementId: `vault-loan-${wallet}:${Date.now()}`, title: 'Garantía de préstamo Vault', description,
+      signer: signer.publicKey(), engagementId: `vault-loan-${wallet}:${Date.now()}`, title: 'Garantía de préstamo Rendaval', description,
       roles: { serviceProvider: signer.publicKey(), receiver: wallet, approver: lenderKey().publicKey(), platformAddress: signer.publicKey(), releaseSigner: signer.publicKey(), disputeResolver: signer.publicKey() },
       amount: current.bonds, platformFee: 0, milestones: [{ description: 'Reembolso del préstamo confirmado' }], trustline: { address: bondAsset().getIssuer(), symbol: 'VBOND' },
     });

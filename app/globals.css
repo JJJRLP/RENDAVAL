@@ -2,16 +2,18 @@
 
 /*
  * Palette. Ink and warm paper carry the page; marble comes from the statues.
- * Teal: primary button, key numbers, links. Purple: "Trustless Work" tag only.
+ * Blue (#2232FB, the Rendaval logo square): primary button, key numbers, links
+ * and colour blocks. Blue-bright is its tint for text on ink and deep navy.
+ * Purple: "Trustless Work" tag only.
  */
 :root {
   --white: #ffffff;
   --offwhite: #f4f2ed;
   --ink: #0b0d12;
-  --deep: #073937;
-  --teal: #0a7a76;
-  --teal-hover: #086562;
-  --teal-bright: #5fcfc8;
+  --deep: #0b1240;
+  --blue: #2232fb;
+  --blue-hover: #1a27d9;
+  --blue-bright: #8c95ff;
   --purple: #5b3fd6;
   --line: #dcd9d1;
 
@@ -26,9 +28,9 @@
   --color-offwhite: var(--offwhite);
   --color-ink: var(--ink);
   --color-deep: var(--deep);
-  --color-teal: var(--teal);
-  --color-teal-hover: var(--teal-hover);
-  --color-teal-bright: var(--teal-bright);
+  --color-blue: var(--blue);
+  --color-blue-hover: var(--blue-hover);
+  --color-blue-bright: var(--blue-bright);
   --color-purple: var(--purple);
   --color-line: var(--line);
 
@@ -99,7 +101,7 @@ body {
   }
 
   .eyebrow-index {
-    color: var(--teal);
+    color: var(--blue);
   }
 
   .eyebrow-rule {
@@ -114,7 +116,7 @@ body {
   }
 
   .eyebrow-dark .eyebrow-index {
-    color: var(--teal-bright);
+    color: var(--blue-bright);
   }
 
   .btn-primary {
@@ -125,7 +127,7 @@ body {
     min-height: 48px;
     padding: 12px 24px;
     border-radius: 2px;
-    background: var(--teal);
+    background: var(--blue);
     color: var(--white);
     font-weight: 600;
     font-size: 1rem;
@@ -138,9 +140,9 @@ body {
   }
 
   .btn-primary:hover {
-    background: var(--teal-hover);
+    background: var(--blue-hover);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px -6px rgb(10 122 118 / 0.6);
+    box-shadow: 0 6px 16px -6px rgb(34 50 251 / 0.6);
   }
 
   .btn-primary:active {
@@ -191,8 +193,9 @@ body {
 
 .split-dark {
   --stage-fg: var(--white);
-  --stage-fg-on-block: var(--ink);
-  --stage-block: var(--teal);
+  /* Ink on the logo blue is 2.7:1, below AA, so the title stays white. */
+  --stage-fg-on-block: var(--white);
+  --stage-block: var(--blue);
 }
 
 .split-light {

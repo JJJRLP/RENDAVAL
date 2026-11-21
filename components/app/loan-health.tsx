@@ -1,7 +1,7 @@
 import { formatNumber } from '@/lib/format';
 import { HEALTH_LIMIT, HEALTH_WARNING, loanHealth } from '@/lib/loan/model';
 
-/** How much of the collateral's value the debt uses, against Vault's example thresholds. */
+/** How much of the collateral's value the debt uses, against Rendaval's example thresholds. */
 export function LoanHealth({ debt, collateral }: { debt: number; collateral: number }) {
   const { ratio, level } = loanHealth(debt, collateral);
   const percent = Math.min(100, Math.round(ratio * 100));
@@ -12,7 +12,7 @@ export function LoanHealth({ debt, collateral }: { debt: number; collateral: num
       <p className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span>
           <span className="text-ink/65">Salud del préstamo: </span>
-          <span className={`font-semibold ${level === 'ok' ? 'text-teal' : ''}`}>
+          <span className={`font-semibold ${level === 'ok' ? 'text-blue' : ''}`}>
             <span aria-hidden="true">{mark} </span>
             {label}
           </span>
@@ -22,7 +22,7 @@ export function LoanHealth({ debt, collateral }: { debt: number; collateral: num
         </span>
       </p>
       <div className="relative mt-3 h-2 bg-offwhite" role="img" aria-label={`El préstamo usa el ${percent} % del valor de la garantía. Aviso a partir del ${HEALTH_WARNING * 100} %, límite en ${HEALTH_LIMIT * 100} %.`}>
-        <div className={`h-full ${level === 'ok' ? 'bg-teal' : 'bg-ink'}`} style={{ width: `${percent}%` }} />
+        <div className={`h-full ${level === 'ok' ? 'bg-blue' : 'bg-ink'}`} style={{ width: `${percent}%` }} />
         <span className="absolute top-[-3px] h-[14px] w-px bg-ink/50" style={{ left: `${HEALTH_WARNING * 100}%` }} />
         <span className="absolute top-[-3px] h-[14px] w-px bg-ink" style={{ left: `${HEALTH_LIMIT * 100}%` }} />
       </div>

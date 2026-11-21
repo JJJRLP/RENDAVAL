@@ -9,7 +9,7 @@ function Icon({ children }: { children: ReactNode }) {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="h-6 w-6 shrink-0 text-teal-bright"
+      className="h-6 w-6 shrink-0 text-blue-bright"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"
@@ -32,7 +32,7 @@ const PARTNERS = [
 const points = [
   {
     title: "Garantía en escrow",
-    body: "Ni Vault ni el prestamista pueden disponer de los RWA.",
+    body: "Ni Rendaval ni el prestamista pueden disponer de los RWA.",
     icon: (
       <Icon>
         <rect x="4" y="10" width="16" height="11" rx="1" />
@@ -41,8 +41,8 @@ const points = [
     ),
   },
   {
-    title: "Emisores regulados",
-    body: "Solo se admiten RWA de emisores sujetos a regulación.",
+    title: "Acceso con permisos",
+    body: "El emisor del RWA autoriza al contrato y a cada billetera que opera.",
     icon: (
       <Icon>
         <path d="M3 9l9-5 9 5M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 21h18M3 18h18" />
@@ -51,7 +51,7 @@ const points = [
   },
   {
     title: "Empresas verificadas",
-    body: "No se admiten cuentas anónimas ni personas naturales.",
+    body: "Cada empresa pasa una verificación KYB. No se admiten cuentas anónimas ni personas naturales.",
     icon: (
       <Icon>
         <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" />

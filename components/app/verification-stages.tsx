@@ -20,8 +20,8 @@ export function VerificationStages({ verified, pending, stage }: { verified: boo
                 ? 'En curso'
                 : 'Ahora';
         return (
-          <li key={name} aria-current={current ? 'step' : undefined} className={`border-t-2 pt-3 ${done || current ? 'border-teal' : 'border-line'}`}>
-            <p className={`text-xs font-semibold uppercase tracking-widest ${done || current ? 'text-teal' : 'text-ink/50'}`}>
+          <li key={name} aria-current={current ? 'step' : undefined} className={`border-t-2 pt-3 ${done || current ? 'border-blue' : 'border-line'}`}>
+            <p className={`text-xs font-semibold uppercase tracking-widest ${done || current ? 'text-blue' : 'text-ink/50'}`}>
               0{index + 1} <span aria-hidden="true">{done ? '✓' : ''}</span> {status}
             </p>
             <p className={`mt-1 font-serif text-lg font-semibold ${done || current ? '' : 'text-ink/50'}`}>{name}</p>

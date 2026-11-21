@@ -158,7 +158,7 @@ export function Closing() {
               </h3>
               <p className="mt-4 leading-7 text-ink/80">
                 Los datos de {values.company.trim()} son válidos. Agradecemos su
-                interés en Vault.
+                interés en Rendaval.
               </p>
               <p className="mt-4 text-sm leading-6 text-ink/80">
                 Esta página es un prototipo: sus datos no se han enviado ni

@@ -27,7 +27,7 @@ export function useWallet(address: string, revision?: unknown) {
         setBalances(current);
         for (const asset of TRUST_ASSETS) {
           if (!active()) return;
-          if (!isClassicAddress(asset.issuer)) throw new Error("Los bonos de prueba no están configurados. Contacte al equipo de Vault.");
+          if (!isClassicAddress(asset.issuer)) throw new Error("Los bonos de prueba no están configurados. Contacte al equipo de Rendaval.");
           if (assetBalance(current, asset)) {
             confirmedTrustline(address, asset);
             continue;

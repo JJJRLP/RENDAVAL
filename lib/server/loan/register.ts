@@ -13,7 +13,7 @@ export function validateBond(input: unknown): Bond {
 }
 export async function register(wallet: string, input: unknown) {
   const bond = validateBond(input), signer = Keypair.fromSecret(required('BOND_ISSUER_SECRET_KEY'));
-  if (signer.publicKey() !== bondAsset().getIssuer()) throw new ApiError(503, 'El registro no está disponible. Contacte al equipo de Vault.');
+  if (signer.publicKey() !== bondAsset().getIssuer()) throw new ApiError(503, 'El registro no está disponible. Contacte al equipo de Rendaval.');
   // Load sequence BEFORE checking eligibility: concurrent registrations cannot both commit.
   const account = await server.loadAccount(signer.publicKey());
   const current = await state(wallet);

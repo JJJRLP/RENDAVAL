@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { Logo } from "./Logo";
 import { SplitStage } from "./SplitStage";
 
 /** Order in which each part of the diagram draws itself. */
@@ -83,7 +84,7 @@ export function Hero() {
     >
       <div className="guides mx-auto max-w-content px-6 md:px-10">
         <div className="hero-bar flex items-center justify-between border-b border-white/20 py-6">
-          <span className="font-serif text-2xl font-semibold tracking-tight">Vault</span>
+          <Logo tone="white" className="h-12 md:h-14" priority />
           <span className="text-sm text-white/70">Prototipo en testnet</span>
         </div>
 
@@ -103,7 +104,7 @@ export function Hero() {
               la vigencia del préstamo.
             </p>
             <a href="/app" className="btn-primary mt-10">
-              Ingresar a Vault
+              Ingresar a Rendaval
               <span aria-hidden="true" className="btn-arrow">
                 →
               </span>
