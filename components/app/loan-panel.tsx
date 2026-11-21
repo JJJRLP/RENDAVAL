@@ -2,7 +2,7 @@
 import { useState, type ReactNode } from 'react';
 import { EXAMPLE_ANNUAL_RATE, formatNumber } from '@/lib/format';
 import { countryFor } from '@/lib/countries';
-import { bondValue, LIMIT_MESSAGE, type LoanState } from '@/lib/loan/model';
+import { bondValue, DEMO_PRICES, LIMIT_MESSAGE, type LoanState } from '@/lib/loan/model';
 import { useLoan } from './use-loan';
 import { BondForm } from './bond-form';
 import { VerificationStages } from './verification-stages';
@@ -178,16 +178,24 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
             const days = Math.ceil((Date.parse(item.terms.dueDate) - now) / 86400000);
             return <article key={id} className="min-w-0 p-6 md:p-8" aria-busy={running && loan.busy}>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_17rem] lg:items-center">
-                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-1 text-sm text-ink/65">Garantía: {bondValue(item.bond, item.terms.collateral, countryFor(state.verification.country)?.currency).replace(' (referencia de demostración)', '')}</p><p className="mt-3 text-sm text-blue"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
+                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-1 text-sm text-ink/65">Garantía: {bondValue(item.bond, item.terms.collateral, countryFor(state.verification.country)?.currency).replace(' (referencia de demostración)', '')}</p>{item.price !== 1 && <p className="mt-1 text-sm text-ink">Valor actual: USD {formatNumber(item.collateralValue, 2)} · {formatNumber(item.price * 100, 0)} % del inicial</p>}<p className="mt-3 text-sm text-blue"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? item.health.level === 'warning' ? 'Aviso de margen abierto' : item.health.level === 'risk' ? 'En riesgo · garantía ejecutable' : 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
                 <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
                 <div className="text-sm">
                   {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>
-                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Rendaval lo está revisando' : 'La garantía pasó al prestamista'}</p></>
+                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Rendaval lo está revisando' : 'La garantía se ejecutó para cubrir la deuda'}</p></>
                     : <><p className="text-ink/65">Devolvió {usdc(item.repayment?.amount ?? item.terms.total)}</p>{item.repayment && <p className="font-semibold">Pagado el {day(item.repayment.at)}</p>}</>}
                 </div>
                 <div>{!closed && !frozen && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>
               </div>
-              {active && !running && <LoanHealth debt={item.terms.total} collateral={item.terms.collateral} />}
+              {active && <div aria-live="polite"><LoanHealth debt={item.terms.total} collateral={item.collateralValue} health={item.health} /></div>}
+              {active && <details className="mt-3 text-sm text-ink/65">
+                <summary className="min-h-11 cursor-pointer py-3">Simular precio del bono · versión de prueba</summary>
+                <p className="max-w-xl text-xs leading-5">Cambie el precio solo de este préstamo. Es una simulación guardada en la red de pruebas; en producción lo publicaría el emisor del bono.</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" aria-label="Precio respecto al valor inicial">
+                  {DEMO_PRICES.map(price => <button key={price} type="button" aria-pressed={item.price === price} disabled={loan.busy || item.price === price} onClick={() => void loan.setPrice(id, price)} className={`min-h-11 cursor-pointer border px-3 py-2 text-xs disabled:cursor-default ${item.price === price ? 'border-blue bg-offwhite text-blue' : 'border-line text-ink disabled:opacity-60'}`}>{price === 1 ? '100 % · original' : `${formatNumber(price * 100, 0)} %`}</button>)}
+                </div>
+                {running && loan.busy && <p role="status" className="mt-2 text-xs">Confirmando en la red de pruebas…</p>}
+              </details>}
               {running && loan.repayStep >= 0 && (loan.busy || closed) && <div className="on-dark mt-5 bg-ink px-5 pb-5 text-white"><Checklist steps={REPAY_STEPS} current={loan.repayStep} done={closed} /></div>}
               {running && loan.error && <p role="alert" className="mt-4 border-l-2 border-ink bg-offwhite p-4 text-sm leading-6">{loan.error}</p>}
               <details className="mt-4 border-t border-line pt-2 text-sm text-ink/65"><summary className="min-h-11 cursor-pointer py-3">Ver detalle técnico</summary><ul><li><a className="inline-block py-2 underline" href={item.escrow!.url} target="_blank" rel="noreferrer">Contrato de garantía ↗</a></li>{[...item.transactions, ...(item.repayment ? [{ ...item.repayment, label: 'Reembolso' }] : [])].map(tx => <li key={tx.hash}><a className="inline-block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">{tx.label} ↗</a></li>)}</ul>{running && loan.providerMessage && <p className="break-words">{loan.providerMessage}</p>}</details>

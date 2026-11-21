@@ -13,7 +13,7 @@ export function terms(collateral: number, start = Date.now()) {
   const custodyFee = roundUsdc(collateral * CUSTODY_FEE);
   return { collateral, loan, interest, total: roundUsdc(loan + interest), custodyFee, bondsBack: roundUsdc(collateral - custodyFee), dueDate: new Date(start + 30 * 86400000).toISOString() };
 }
-export type LoanView = { bond: Bond | null; stage: Stage; locked: number; terms: ReturnType<typeof terms>; escrow: { contractId: string; description: string; url: string } | null; repayment: { amount: number; at: string; hash: string; url: string; releaseStatus: 'pending' | 'released' } | null; transactions: { hash: string; url: string; at: string; label: string }[] };
+export type LoanView = { price: number; collateralValue: number; health: ReturnType<typeof loanHealth>; bond: Bond | null; stage: Stage; locked: number; terms: ReturnType<typeof terms>; escrow: { contractId: string; description: string; url: string } | null; repayment: { amount: number; at: string; hash: string; url: string; releaseStatus: 'pending' | 'released' } | null; transactions: { hash: string; url: string; at: string; label: string }[] };
 export const OPEN_LOAN_LIMIT = 3;
 export const LIMIT_MESSAGE = 'Esta versión de prueba admite hasta 3 préstamos abiertos por empresa. Consulte sus préstamos abajo; los bonos pendientes de devolución también cuentan.';
 export type LoanState = { setup: LoanView | null; loans: LoanView[]; canRegister: boolean; openLoans: number; limitReached: boolean; wallet: string; verification: { country: CountryCode; status: 'verified'; receiptUrl: string }; stage: Stage; bonds: number; usdc: number; locked: number; terms: ReturnType<typeof terms>; escrow: { contractId: string; description: string; url: string } | null; repayment: { amount: number; at: string; hash: string; url: string; releaseStatus: 'pending' | 'released' } | null; transactions: { hash: string; url: string; at: string; label: string }[] };
@@ -21,6 +21,7 @@ export type LoanState = { setup: LoanView | null; loans: LoanView[]; canRegister
 export const exampleBonds: Bond[] = [exampleBond, { issuer: 'Manufacturas Luna de Sal S.A. (ficticia)', series: 'MLS-2026-B', nominal: 2088, currency: 'BOB', coupon: 7, maturity: '2029-06-30' }, { issuer: 'Tejidos Nube del Valle S.A. (ficticia)', series: 'TNV-2026-C', nominal: 1392, currency: 'BOB', coupon: 8, maturity: '2029-12-15' }];
 
 /** Example risk thresholds (debt as a share of collateral value). Not an offer. */
+export const DEMO_PRICES: readonly number[] = [1, 0.8, 0.65, 0.5];
 export const HEALTH_WARNING = 0.7;
 export const HEALTH_LIMIT = 0.85;
 export function loanHealth(debt: number, collateral: number) {

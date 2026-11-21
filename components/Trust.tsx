@@ -32,7 +32,7 @@ const PARTNERS = [
 const points = [
   {
     title: "Garantía en escrow",
-    body: "Ni Rendaval ni el prestamista pueden disponer de los RWA.",
+    body: "Los RWA solo salen del escrow por reembolso o por ejecución tras un incumplimiento.",
     icon: (
       <Icon>
         <rect x="4" y="10" width="16" height="11" rx="1" />

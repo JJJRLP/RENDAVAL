@@ -161,3 +161,50 @@ node --conditions=react-server --import tsx scripts/check-country-compatibility.
 Cubren las ocho opciones, monedas locales y USD, extremos y rechazos de límites,
 bonos históricos de USD 1.000 ya vencidos, constancias antiguas y nuevas, la omisión
 de `expected_details` para `OTHER` y el rechazo de sesiones de otra cuenta.
+
+
+## Precio de garantía y aviso de margen — fase 1
+
+`POST /api/loan/price` usa el mismo manejador autenticado de Pollar y la constancia
+KYB que las demás operaciones. El helper vuelve a comprobar engagement, roles,
+activo y pertenencia con `escrowFor`; rechaza garantías sin desembolso, pagadas,
+liberadas, disputadas o resueltas. La dirección del cuerpo nunca se usa.
+
+Rendaval firma en testnet una entrada `price:<contractId>` en su cuenta
+`VAULT_SECRET_KEY`: el nombre ocupa 62 bytes y conserva el identificador completo,
+sin colisiones ni cambios a los identificadores existentes. El valor UTF-8 es
+`1:<fracción decimal>` (por ejemplo `1:0.65`); el primer campo versiona el formato.
+La ausencia significa 1. Volver a 1 elimina la entrada y libera su reserva y cupo.
+El lector admite fracciones positivas hasta 1 con siete decimales; el control y
+la ruta de simulación solo permiten 1, 0.8, 0.65 y 0.5. Una entrada malformada
+produce un error de lectura, sin ocultar el riesgo con un precio predeterminado.
+
+El estado carga la cuenta de Rendaval una vez en paralelo con las demás cuentas,
+no por préstamo. Cada `LoanView` incluye `price`, `collateralValue` (valor nominal
+por precio, redondeado a siete decimales) y `health` (ratio y nivel). La deuda
+conserva el capital más interés acordados. Los niveles son saludable por debajo
+de 0.7, aviso desde 0.7 y riesgo desde 0.85. El control está plegado después de la
+salud y del botón de devolución. No ejecuta ni aporta garantía.
+
+Comprobación sin red, incluidas pertenencia, roles históricos, etapas, ruta
+autenticada, aislamiento de precios y eliminación idempotente:
+
+```sh
+node --conditions=react-server --import tsx scripts/check-loan-health.ts
+```
+
+Las escrituras reintentan conflictos de secuencia de Rendaval y vuelven a validar
+la etapa. Como en los otros flujos basados en Horizon y Trustless Work, la lectura
+de etapa y la escritura clásica no son atómicas entre cuentas/contratos; una
+operación de devolución concurrente puede finalizar entre ambas. El precio no
+modifica las condiciones ni inicia una ejecución automática.
+
+Verificación real de esta fase: mediante los helpers, sobre el préstamo activo
+`CDBEZE6372NOLV442UYXHFU4LLTM35IBH3UFEL4OWVXJRESYN35I6YLG`, Horizon confirmó
+0.8 / saludable, 0.65 / aviso y 0.5 / riesgo; el estado conservó los precios de
+los otros préstamos de la empresa. Otra empresa verificada recibió 403. Se
+restauró el precio a 1 y se comprobó la ausencia de la entrada (transacción
+`c229e7505438ffab019b9f69cf4784acc23739e800555e4baf8d6332b6f8c3ca`). No se
+crearon préstamos ni se movieron USDC. No se probó el login interactivo de Pollar
+ni la interfaz en un navegador real; la autorización de la ruta se comprobó con
+fixtures offline y el helper con proveedores reales.

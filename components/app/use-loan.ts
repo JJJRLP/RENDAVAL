@@ -100,5 +100,10 @@ export function useLoan(address: string, onState: (state: LoanState) => void) {
     if (current?.stage === 'repaid_release_pending') await release(contractId);
     else if (current?.stage === 'closed') setRepayStep(3);
   }, contractId);
-  return { state, bond, busy, error, step, repayStep, providerMessage, operationId, repay, settle: (contractId: string) => run(() => release(contractId), contractId), register, proceed, retry: () => run(async () => { await refresh(); }) };
+  const setPrice = (contractId: string, price: number) => run(async () => {
+    setRepayStep(-1);
+    await api('price', { contractId, price });
+    await refresh();
+  }, contractId);
+  return { setPrice, state, bond, busy, error, step, repayStep, providerMessage, operationId, repay, settle: (contractId: string) => run(() => release(contractId), contractId), register, proceed, retry: () => run(async () => { await refresh(); }) };
 }
