@@ -1,5 +1,5 @@
 import 'server-only';
-import { countryFor, DEFAULT_COUNTRY, type CountryCode } from '../countries';
+import { countryFor, DEFAULT_COUNTRY, LEGACY_COUNTRY, type CountryCode } from '../countries';
 import { ApiError, diditEnv } from './env';
 export function sessionId(value: unknown): string {
   if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(value)) throw new ApiError(400, 'La referencia de verificación no es válida. Inicie una nueva verificación.');
@@ -28,7 +28,7 @@ export async function decision(wallet: string, id: string) {
   if (data.vendor_data !== wallet || data.session_id !== id || data.session_kind !== 'business' || data.workflow_id !== diditEnv().workflow)
     throw new ApiError(403, 'Esta verificación no corresponde a su empresa. Inicie una nueva.');
   if (typeof data.status !== 'string') throw new ApiError(502, 'No recibimos el estado de su verificación. Reintente.');
-  const country = data.metadata?.country ?? data.expected_details?.registry_country ?? DEFAULT_COUNTRY;
+  const country = data.metadata?.country ?? data.expected_details?.registry_country ?? LEGACY_COUNTRY;
   if (!countryFor(country)) throw new ApiError(502, 'El país de la verificación no es válido. Inicie una nueva.');
   return { status: data.status as string, country: country as CountryCode };
 }

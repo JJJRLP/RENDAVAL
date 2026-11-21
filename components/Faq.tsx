@@ -9,7 +9,7 @@ const items = [
   {
     question: "¿En qué países opera?",
     answer: [
-      "Rendaval está diseñado para empresas de cualquier país. Bolivia es nuestro primer mercado y aparece preseleccionada al comenzar.",
+      "Rendaval está diseñado para empresas de cualquier país. México es nuestro primer mercado, seguido de Brasil, y aparece preseleccionado al comenzar.",
       "Seleccione el país de su empresa al verificarla y declare su bono en moneda local o en USD. Si su país no figura en la lista, elija «Otro país» para usar USD. Esta versión utiliza fondos de prueba y tipos de cambio de demostración; la verificación documental depende de la cobertura del proveedor.",
     ],
   },

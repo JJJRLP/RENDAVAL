@@ -4,7 +4,7 @@
 
 ## Nombre y resumen
 
-**Rendaval: crédito USDC con bonos tokenizados y reglas del emisor.** Empresas de cualquier país —con Bolivia como primer mercado— obtienen USDC contra bonos tokenizados sin venderlos. Ante incumplimiento, la venta permanece dentro de las reglas del emisor y el pago/entrega son atómicos.
+**Rendaval: crédito USDC con bonos tokenizados y reglas del emisor.** Empresas de cualquier país —con México y Brasil como primeros mercados— obtienen USDC contra bonos tokenizados sin venderlos. Ante incumplimiento, la venta permanece dentro de las reglas del emisor y el pago/entrega son atómicos.
 
 ## Problema
 
