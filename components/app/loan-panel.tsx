@@ -182,7 +182,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
                 <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
                 <div className="text-sm">
                   {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>
-                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Rendaval lo está revisando' : 'La garantía pasó al prestamista'}</p></>
+                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Rendaval lo está revisando' : 'La garantía se ejecutó para cubrir la deuda'}</p></>
                     : <><p className="text-ink/65">Devolvió {usdc(item.repayment?.amount ?? item.terms.total)}</p>{item.repayment && <p className="font-semibold">Pagado el {day(item.repayment.at)}</p>}</>}
                 </div>
                 <div>{!closed && !frozen && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>

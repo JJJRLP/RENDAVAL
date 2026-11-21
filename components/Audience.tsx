@@ -11,7 +11,7 @@ const cards = [
       "Los activos continúan devengando intereses mientras permanecen en garantía.",
       "Al reembolsar el capital y el interés, recupera sus RWA.",
     ],
-    risk: "En caso de incumplimiento, la garantía puede ejecutarse para cubrir la deuda.",
+    risk: "En caso de incumplimiento, la garantía se vende a un comprador autorizado por el emisor para cubrir la deuda; el remanente se le devuelve.",
     dark: true,
   },
   {
@@ -23,7 +23,7 @@ const cards = [
       "El préstamo no supera una fracción del valor de la garantía: 50 % en el ejemplo.",
       "Solo se presta a empresas verificadas.",
     ],
-    risk: "El rendimiento no está garantizado. Si el valor de los RWA disminuye, la garantía puede no cubrir la totalidad del préstamo.",
+    risk: "El rendimiento no está garantizado. Si la venta de la garantía no cubre la deuda, la diferencia es una pérdida del prestamista; no hay póliza de seguro.",
     dark: false,
   },
 ];

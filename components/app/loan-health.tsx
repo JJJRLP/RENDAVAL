@@ -32,6 +32,9 @@ export function LoanHealth({ debt, collateral }: { debt: number; collateral: num
         <span>Límite {HEALTH_LIMIT * 100} %</span>
         <span>100 %</span>
       </p>
+      <p className="mt-2 text-xs leading-5 text-ink/55">
+        Desde el {HEALTH_WARNING * 100} % se le pedirá añadir garantía o reducir el saldo. Sobre el {HEALTH_LIMIT * 100} %, o si no paga al vencimiento, la garantía puede ejecutarse. Porcentajes de ejemplo.
+      </p>
     </div>
   );
 }

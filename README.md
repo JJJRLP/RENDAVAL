@@ -20,6 +20,16 @@ Préstamos en dólares digitales (USDC) para empresas de cualquier país, con Bo
 5. **Garantía y desembolso.** La empresa firma el depósito de los bonos en un escrow (Trustless Work) y el prestamista envía los USDC.
 6. **Reembolso.** La empresa devuelve capital más interés con una firma; el prestamista aprueba y Rendaval libera la garantía.
 
+## Incumplimiento
+
+El diseño tiene un único mecanismo, y es el mismo que describen la landing y la aplicación:
+
+1. **Cuándo.** La empresa no paga capital e interés al vencimiento, o la deuda supera el 85 % del valor de la garantía y no la repone. Desde el 70 % se le pide añadir garantía o reducir el saldo.
+2. **Ejecución.** Los bonos se transfieren a un comprador autorizado por el emisor, que paga en USDC. El prestamista puede ser ese comprador si el emisor lo autoriza.
+3. **Reparto.** Con ese pago se cubren capital e interés del prestamista; el remanente vuelve a la empresa. Si no alcanza, la diferencia es una pérdida del prestamista: no hay póliza de seguro.
+
+**Qué hace hoy el prototipo.** El préstamo en disputa se congela y la aplicación lo muestra «en revisión»; una garantía ya resuelta aparece como «ejecutada». El precio por oráculo, los avisos de margen y la venta al comprador autorizado no están implementados, y los porcentajes son de ejemplo.
+
 ## Arquitectura
 
 ```

@@ -30,9 +30,10 @@ const items = [
   {
     question: "¿Qué ocurre en caso de incumplimiento?",
     answer: [
-      "Si el préstamo y el interés no se reembolsan en la fecha acordada, la garantía puede ejecutarse: los RWA se liquidan o se rescatan con un comprador autorizado por el emisor para cubrir la deuda. Es posible perder una parte o la totalidad de los activos depositados.",
-      "Si tras cubrir la deuda queda un remanente, se devuelve a la empresa. Un oráculo actualiza el precio de la garantía: si su valor disminuye, puede requerirse garantía adicional o una reducción del saldo antes del vencimiento.",
-      "Hoy no existe una póliza de seguro que cubra estos préstamos.",
+      "Hay incumplimiento si el préstamo y el interés no se reembolsan en la fecha acordada, o si la deuda supera el 85 % del valor de la garantía y la empresa no la repone. Antes de ese límite, desde el 70 %, se le pide añadir garantía o reducir el saldo.",
+      "En ese caso la garantía se ejecuta de una sola forma: los RWA se transfieren a un comprador autorizado por el emisor, que paga en USDC. El prestamista puede ser ese comprador si el emisor lo autoriza. Con ese pago se cubren el capital y el interés del prestamista, y el remanente se devuelve a la empresa. Es posible perder una parte o la totalidad de los activos depositados.",
+      "Si la venta no alcanza para cubrir la deuda, la diferencia es una pérdida del prestamista: hoy no existe una póliza de seguro que cubra estos préstamos.",
+      "En el prototipo este proceso todavía no es automático: el préstamo se congela y lo revisa el equipo de Rendaval. La actualización del precio por oráculo, los avisos de margen y la venta al comprador autorizado están diseñados, no implementados. Los porcentajes son de ejemplo.",
     ],
   },
   {
