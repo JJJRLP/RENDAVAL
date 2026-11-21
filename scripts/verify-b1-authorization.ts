@@ -2,18 +2,30 @@
 // Chain ownership/KYB reads and transaction construction remain real testnet calls.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { Keypair, Networks, Operation, Transaction, TransactionBuilder, xdr } from '@stellar/stellar-sdk';
 import { handle, type Action } from '../lib/server/loan/route';
 import { server } from '../lib/server/loan/network';
 import { attest } from '../lib/server/attestation';
 import { a, balance, BOND, BOOK, i, inner, raw, validateSigned } from '../lib/server/loan/chain';
-import { get } from '../lib/server/loan/store';
-const evidence = JSON.parse(readFileSync('scripts/evidence/b1-testnet.json', 'utf8'));
-const owner = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-b1-company-v1').digest());
-const attacker = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-b1-other-v1').digest());
+import { observeTransactions } from '../lib/server/loan/audit';
+import { get, update } from '../lib/server/loan/store';
+import { indexKey } from '../lib/server/loan/records';
+import type { Index } from '../lib/server/loan/types';
+const evidence = JSON.parse(readFileSync('scripts/evidence/c4-server.json', 'utf8'));
+const owner = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-company-v2').digest());
+const attacker = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-other-v1').digest());
 const id = evidence.steps['repaid-accept'].contractId, bondId = evidence.steps['repaid-declare'].id;
 const results: { test: string; status: number | string }[] = [];
+const transactions: { label: string; hash: string }[] = existsSync('scripts/evidence/c4-authorization.json') ? JSON.parse(readFileSync('scripts/evidence/c4-authorization.json', 'utf8')).transactions ?? [] : [];
+function save(completed = false) {
+  writeFileSync('scripts/evidence/c4-authorization.json', JSON.stringify({ testedAt: new Date().toISOString(), mode: 'real chain; Pollar HTTP fixture only', completed, owner: owner.publicKey(), other: attacker.publicKey(), results, transactions }, null, 2) + '\n');
+}
+function record(label: string, hash: string) {
+  if (!transactions.some(t => t.hash === hash)) transactions.push({ label, hash });
+  save();
+}
+observeTransactions(record);
 const originalFetch = globalThis.fetch;
 let actor = attacker.publicKey();
 globalThis.fetch = async (input, init) => {
@@ -28,9 +40,10 @@ async function route(action: Action, body: Record<string, unknown>, auth = true)
 }
 async function main() {
   try { await server.loadAccount(attacker.publicKey()); } catch {
-    const response = await originalFetch(`https://friendbot.stellar.org/?addr=${attacker.publicKey()}`); assert(response.ok);
+    const response = await originalFetch(`https://friendbot.stellar.org/?addr=${attacker.publicKey()}`); assert(response.ok); const funded = await response.json(); record('attacker-friendbot', funded.hash ?? funded.transaction_hash);
   }
-  await attest(attacker.publicKey(), 'b1-auth-negative');
+  const attestation = await attest(attacker.publicKey(), 'c4-auth-negative');
+  if ('txHash' in attestation) record('attacker-attestation', attestation.txHash);
   const targeted: Action[] = ['approve', 'accept', 'fund', 'price', 'default', 'liquidate', 'deposit/build', 'deposit/submit', 'open/build', 'open/submit', 'repay/topup', 'repay/build', 'repay/submit'];
   const all: Action[] = ['state', 'register', ...targeted, 'claim/build', 'claim/submit'];
   for (const action of all) {
@@ -43,6 +56,21 @@ async function main() {
   const ownState = await route('state', { wallet: owner.publicKey() }); assert.equal(ownState.status, 200, await ownState.clone().text());
   const ownStateBody = await ownState.json(); assert.equal(ownStateBody.wallet, attacker.publicKey()); assert.equal(ownStateBody.allLoans.length, 0); assert.equal(ownStateBody.bondRecords.length, 0);
   results.push({ test: 'state only lists Pollar wallet, ignores requested owner', status: 200 });
+  // Even an operator-written incorrect index cannot grant ownership of a loan.
+  actor = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-poisoned-index-test').digest()).publicKey();
+  try { await server.loadAccount(actor); } catch {
+    const response = await originalFetch(`https://friendbot.stellar.org/?addr=${actor}`); assert(response.ok);
+    const funded = await response.json(); record('poisoned-index-friendbot', funded.hash ?? funded.transaction_hash);
+  }
+  const poisonedAttestation = await attest(actor, 'c4-poisoned-index');
+  if ('txHash' in poisonedAttestation) record('poisoned-index-attestation', poisonedAttestation.txHash);
+  await update<Index>(indexKey(actor), old => old ?? ({ bonds: [], loans: [{ ref: 'poisoned-index-test', bondId, id }] }));
+  const poisoned = await route('fund', { contractId: id });
+  assert.equal(poisoned.status, 403, await poisoned.clone().text());
+  results.push({ test: 'incorrect registry index still checked against book borrower', status: poisoned.status });
+  const poisonedState = await route('state', {});
+  assert.equal(poisonedState.status, 403, await poisonedState.clone().text());
+  results.push({ test: 'state rejects a foreign loan even if indexed for the caller', status: poisonedState.status });
   actor = Keypair.random().publicKey();
   for (const action of all) {
     const r = await route(action, { contractId: id, bondId }); assert.equal(r.status, 403, action); results.push({ test: action + ': unverified', status: r.status });
@@ -97,7 +125,7 @@ async function main() {
     results.push({ test: action + ': successful transaction replay after closure', status: replay.status });
   }
   assert.equal(await balance(BOND, owner.publicKey()), before);
-  writeFileSync('scripts/evidence/b1-authorization.json', JSON.stringify({ testedAt: new Date().toISOString(), mode: 'real chain; Pollar HTTP fixture only', owner: owner.publicKey(), other: attacker.publicKey(), results }, null, 2) + '\n');
+  save(true);
   console.log(`${results.length} authorization checks passed`);
 }
 main().catch(error => { console.error(error instanceof Error ? error.stack : 'Failed'); process.exitCode = 1; }).finally(() => { globalThis.fetch = originalFetch; });

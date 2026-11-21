@@ -1,0 +1,91 @@
+running 2 tests
+test test::auth_cas_atomic_slots_and_ttl ... ok
+registry_existing=1000: InvocationResources { instructions: 112313, mem_bytes: 16177, disk_read_entries: 0, memory_read_entries: 6, write_entries: 3, disk_read_bytes: 0, write_bytes: 520, contract_events_size_bytes: 0, persistent_rent_ledger_bytes: 928972800, persistent_entry_rent_bumps: 2, temporary_rent_ledger_bytes: 454463928, temporary_entry_rent_bumps: 1 }
+test test::entry_cost_does_not_grow_with_registry_or_company_history has been running for over 60 seconds
+registry_existing=10000: InvocationResources { instructions: 112605, mem_bytes: 16177, disk_read_entries: 0, memory_read_entries: 6, write_entries: 3, disk_read_bytes: 0, write_bytes: 520, contract_events_size_bytes: 0, persistent_rent_ledger_bytes: 928972800, persistent_entry_rent_bumps: 2, temporary_rent_ledger_bytes: 454463928, temporary_entry_rent_bumps: 1 }
+test test::entry_cost_does_not_grow_with_registry_or_company_history ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 94.93s
+running 5 tests
+test test::issuer_controls_ordinary_contracts_and_retries_emit_nothing ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+running 61 tests
+test test::audit_dust_loan_defaultable_at_open ... ok
+test test::a2_rejects_immediate_default_thresholds_and_collapsed_authorities ... ok
+test test::a2_publisher_and_buyer_approval_are_separate_roles ... ok
+test test::a2_rules_must_agree_on_both_authorities ... ok
+test test::audit_price_stuck_at_tiny ... ok
+test test::audit_lender_blocks_repay_then_buys ... ok
+test test::a3_real_wasm_factory_full_cycle_and_uneven_fee ... ok
+test test::a3_overdue_floor_cannot_be_walked_down_after_due ... ok
+test test::a3_unknown_ids_return_missing_and_terminal_cancel_cannot_emit ... ok
+test test::audit_borrower_blocks_liquidation_with_surplus ... ok
+test test::c3_exact_deposit_and_cancel_authorization_trees ... ok
+test test::audit_open_without_borrower_auth_and_liquidate_unauthorized_bond_buyer ... ok
+test test::a3_stranger_stroop_cannot_block_open_and_excess_belongs_to_lender ... ok
+test test::a2_credit_conservation_across_settlement_retry_and_claim ... ok
+test test::audit_error_code_aliasing ... ok
+test test::c3_cancel_by_either_owner_early_and_late_release_refunded_to_lender ... ok
+test test::audit_price_crash_default_liquidate_same_ledger ... ok
+test test::a2_default_price_is_a_floor_even_after_further_price_cuts ... ok
+test test::c3_active_vault_has_no_exit_and_other_loans_cannot_spend_it ... ok
+test test::c3_series_derives_real_sac_and_rejects_proxy_address_bytes ... ok
+test test::c3_release_before_bonds_waits_and_can_be_refunded ... ok
+test test::c3_vault_terms_prevent_borrower_substitution_and_fake_receivers ... ok
+test test::c3_late_usdc_after_repay_is_lenders_and_refund_survives_blocked_recipient ... ok
+test test::a3_unobserved_price_walk_cannot_sell_at_dust ... ok
+test test::disbursement_atomic_and_unique ... ok
+test test::closed_loans_keep_snapshot_and_do_not_renew_rent ... ok
+test test::c3_writeoff_ends_pledges_without_price_buyer_or_lender_authorization ... ok
+test test::c3_replacement_blocks_old_book_but_old_credits_remain_claimable ... ok
+test test::authorization_and_isolated_prices ... ok
+test test::c3_no_funding_wrong_amount_and_split_resolution_cannot_open ... ok
+test test::c3_open_exact_auth_and_no_account_payout_authorization ... ok
+test test::excess_collateral_is_capped_and_artificial_total_loss_is_recorded ... ok
+test test::a3_liquidator_only_receives_paid_pledge_excess_returns_even_if_borrower_blocked ... ok
+test test::cure_is_full_atomic_and_retry_safe ... ok
+test test::credits_accumulate_and_only_owner_can_claim ... ok
+test test::events_and_retries ... ok
+test test::c3_liquidation_delivers_atomically_and_terminal_dust_never_repledges ... ok
+test test::opening_requires_rules_admin_and_correct_book_binding ... ok
+test test::healthy_and_overdue ... ok
+test test::operator_required_even_with_lender_signature ... ok
+test test::minimum_principal_and_positive_time_parameters ... ok
+test test::opening_requires_real_authorized_collateral ... ok
+test test::frozen_collateral_defaults_but_cannot_be_sold_until_authorized ... ok
+test test::constructor_guard_boundaries ... ok
+test test::sep40_reads_and_retention ... ok
+test test::revoked_borrower_can_repay_and_bonds_go_to_delivery_without_blocking_replacement ... ok
+test test::repayment_and_failure_rollback ... ok
+test test::freshness_refresh_and_overdue_liquidation ... ok
+test test::ttl_and_buyer_revocation ... ok
+test test::step_boundaries_and_demo_path ... ok
+test test::validates_amounts_and_cap ... ok
+test test::shortfall_changes_health_and_defaults_without_price_or_auth ... ok
+series_existing=128: InvocationResources { instructions: 107715, mem_bytes: 20190, disk_read_entries: 0, memory_read_entries: 5, write_entries: 2, disk_read_bytes: 0, write_bytes: 392, contract_events_size_bytes: 208, persistent_rent_ledger_bytes: 663552000, persistent_entry_rent_bumps: 1, temporary_rent_ledger_bytes: 149306328, temporary_entry_rent_bumps: 1 }
+test test::lender_can_be_buyer_and_margin_can_be_repaid ... ok
+test test::terminal_default_and_quote_protection ... ok
+test test::unpublished_grace_and_stale_margin ... ok
+test test::liquidation_surplus_shortfall_and_atomicity ... ok
+test test::thresholds_exact_and_recovery ... ok
+test test::series_capacity_and_shared_price ... ok
+test test::a3_permissionless_maintenance_keeps_every_live_entry_through_writeoff ... ok
+series_existing=1024: InvocationResources { instructions: 107715, mem_bytes: 20190, disk_read_entries: 0, memory_read_entries: 5, write_entries: 2, disk_read_bytes: 0, write_bytes: 392, contract_events_size_bytes: 208, persistent_rent_ledger_bytes: 663552000, persistent_entry_rent_bumps: 1, temporary_rent_ledger_bytes: 149306328, temporary_entry_rent_bumps: 1 }
+test test::series_registration_cost_is_constant_and_unlisted_quotes_work ... ok
+existing=100: InvocationResources { instructions: 2255555, mem_bytes: 288741, disk_read_entries: 3, memory_read_entries: 22, write_entries: 10, disk_read_bytes: 0, write_bytes: 2800, contract_events_size_bytes: 1592, persistent_rent_ledger_bytes: 4211851680, persistent_entry_rent_bumps: 5, temporary_rent_ledger_bytes: 464508576, temporary_entry_rent_bumps: 3 }
+test test::opening_cost_is_independent_of_ten_thousand_existing_loans has been running for over 60 seconds
+existing=1000: InvocationResources { instructions: 2253251, mem_bytes: 288741, disk_read_entries: 3, memory_read_entries: 22, write_entries: 10, disk_read_bytes: 0, write_bytes: 2800, contract_events_size_bytes: 1592, persistent_rent_ledger_bytes: 4211851680, persistent_entry_rent_bumps: 5, temporary_rent_ledger_bytes: 464508576, temporary_entry_rent_bumps: 3 }
+existing=10000: InvocationResources { instructions: 2255219, mem_bytes: 288741, disk_read_entries: 3, memory_read_entries: 22, write_entries: 10, disk_read_bytes: 0, write_bytes: 2800, contract_events_size_bytes: 1592, persistent_rent_ledger_bytes: 4211851680, persistent_entry_rent_bumps: 5, temporary_rent_ledger_bytes: 464508576, temporary_entry_rent_bumps: 3 }
+test test::opening_cost_is_independent_of_ten_thousand_existing_loans ... ok
+test result: ok. 61 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1649.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

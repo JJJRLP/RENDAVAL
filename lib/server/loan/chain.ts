@@ -4,7 +4,7 @@ import { ApiError, required, vaultKey } from '../env';
 import { lenderKey, server, tw } from './network';
 import { observed } from './audit';
 import { get, update } from './store';
-export const BOOK = 'CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA';
+export const BOOK = 'CB6VYHQXCB3EKR4Q43LNDH7Y6GZXURIUBTOCHBWPCNSACANPHKSMSSKN';
 export const RULES = 'CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC';
 export const BOND = 'CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3';
 export const USD = 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
@@ -160,5 +160,5 @@ export async function verifyCode(id: string, expectedHash: string) {
   const executable = entry.val.contractData.val.instance.executable;
   if (executable.type !== 'contractExecutableWasm' || Buffer.from(executable.wasmHash.value).toString('hex') !== expectedHash) throw new ApiError(409, 'Código de contrato inesperado.');
 }
-export const VAULT_HASH = 'd3d13acaaa58c0e1f3e8becf7ef2238ed87fd481cb0020c20e54164915f61395';
-export const BOOK_HASH = '1d7df137f8076dd584eb193231ecb7c219ca58e741f2b68a6e0bc56799210626';
+export const VAULT_HASH = '22abc2f4e3215a3f45adf0921937846a29cef8e89221f8a96859165e260718b6';
+export const BOOK_HASH = '896e0b028ef293b4a0bc59a1ad668af87376ec227275d93559cf79b23fb5dc84';

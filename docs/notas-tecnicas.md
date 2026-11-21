@@ -1,4 +1,4 @@
-# Servidor B1 — contratos finales C3b
+# Servidor B1 — contratos C4
 
 Solo Stellar testnet. Sin base de datos, nuevas variables ni dependencias. Se
 conservan las constancias KYB existentes. [INTERFAZ](../contracts/INTERFAZ.md)
@@ -15,20 +15,24 @@ incluyen). Didit y sus rutas mantienen su implementación.
 
 ## Persistencia sin base de datos
 
-`store.ts` escribe documentos JSON comprimidos en entradas `manageData` de
-Stellar, fragmentadas en valores de hasta 64 bytes. Un contador y todos los
-fragmentos nuevos se escriben en una sola transacción clásica. El número de
-secuencia de la cuenta serializa actualizaciones concurrentes. Las lecturas
-usan nombres deterministas y el endpoint `/accounts/<account>/data/<key>`:
-no enumeran préstamos ajenos ni dependen de eventos RPC.
+`store.ts` escribe JSON comprimido en nuestro contrato `app-registry`. Cada clave
+se deriva de SHA-256(cuenta de namespace + clave lógica); el operador es el único
+escritor. `put` exige versión esperada (compare-and-swap) y escribe documento y
+hasta 16 slots atómicamente. Todos pueden leer y renovar TTL. No hay base de datos,
+lista global ni límite de 1.000 entradas clásicas. Máximo 16 KiB comprimidos por valor.
 
-La cuenta Rendaval guarda un índice por empresa, ligado al **libro C3b**, con
-ids de bonos y reservas/ids de bóvedas. Una reserva se escribe ANTES de crear la
-bóveda. Salt determinista y outbox permiten recuperar una creación interrumpida.
-El índice solo contiene préstamos nuevos; nunca se incorporan escrows históricos.
-La reserva cuenta para el límite de tres préstamos pendientes/vivos. Un mismo
-bono no garantiza dos préstamos vivos. Los estados terminales permiten reutilizar
-los bonos devueltos. El saldo real siempre lo comprueban SAC y libro.
+El índice por empresa está ligado al **libro C4**. Su cabecera solo guarda dos
+contadores; cada bono y cada reserva/préstamo ocupa un slot independiente. Añadir
+una declaración o actualizar una reserva modifica un número constante de entradas
+independientemente del historial. Las lecturas de una empresa recorren sus slots,
+en lotes de 16; el contrato permite paginación, aunque state devuelve aún la lista
+completa de esa empresa. No recorre otras empresas. El CAS de la cabecera evita
+mezclar versiones o perder reservas concurrentes. El máximo de tres préstamos vivos
+se conserva, al igual que la reserva previa a create_vault y el salt determinista.
+
+Una entrada incorrecta no da acceso a fondos ni datos de otro préstamo: ownLoan
+verifica siempre `get_vault(id).borrower`, también en state. El registro es un índice
+público escrito por el operador; la autoridad de la deuda y la propiedad es el libro.
 
 Declaración y aprobación son diferentes. `register` recibe metadatos del bono y
 SHA-256 hexadecimal de su certificado de bloqueo. **El navegador calcula el hash;
@@ -39,21 +43,26 @@ aparece `under_review` hasta completar la aprobación explícita de demostració
 Los documentos reales no se guardan en Stellar. Esta demostración no verifica
 que un certificado corresponda a un depositario auténtico.
 
-Las claves públicas de documentos se transforman en nombres `b1:<sha256-prefix>:`.
-Los valores se leen con su contador; una escritura interrumpida no produce JSON
-parcial. Las entradas consumen reservas XLM, permanecen en las cuentas y no están
-sujetas a retención RPC. El tamaño de cada documento atómico está limitado a 98
-fragmentos comprimidos: un historial de empresa muy grande requiere paginar el
-índice antes de producción. El servidor no interpreta un índice/contrato ilegible
-como inexistencia de deuda. La autoridad sigue siendo el contrato.
+Las antiguas entradas `b1:*` se retiraron de las cuentas operador y emisor; las
+constancias KYB quedaron intactas. Cantidades, hashes de limpieza y capacidad restante
+en [C4-REPORT](../contracts/C4-REPORT.md) y su evidencia. Antes de lanzamiento real
+hay que migrar también las constancias a almacenamiento sin el límite clásico o a
+un servicio durable apropiado, diseñar retención de datos públicos y programar
+mantenimiento/restauración de TTL. El registro no transforma datos públicos en privados.
+
+`keep_alive(key, slots)` mantiene una cabecera y hasta 16 slots; `book.keep_alive(id)`
+mantiene el préstamo y todas sus custodias/prendas. GET/simulaciones no pagan ni
+persisten renovación. Los errores de archivo requieren restaurar, no crear un registro
+vacío que olvide deuda. Los documentos operativos por préstamo tienen límite de 16 KiB;
+los historiales de actividad extensos deberán paginarse además del índice ya dividido.
 
 ## Transacciones y recuperación
 
 `chain.once` mantiene un outbox durable por operación. Guarda el XDR firmado
 público, hash implícito y retorno simulado ANTES de enviarlo; nunca claves privadas.
-Usa Rendaval como cuenta de diario excepto para transacciones cuyo origen es
-Rendaval, donde usa el emisor, evitando consumir la secuencia de la transacción
-preparada. La escritura atómica elige un único sobre entre solicitudes paralelas.
+Usa el registro para ambos namespaces; la transacción de escritura usa Rendaval
+excepto si Rendaval es origen del pago preparado, cuando usa el emisor como origen
+y autorización Soroban del operador. Así no consume la secuencia del pago preparado. La escritura atómica elige un único sobre entre solicitudes paralelas.
 No se crea un pago nuevo por un timeout: se reenvían los mismos bytes y se consulta
 el hash. Tras éxito se conserva recibo y retorno. Horizon confirma hashes fuera de
 la retención RPC; si no entrega metadata Soroban, el retorno simulado guardado solo
@@ -90,7 +99,7 @@ El ledger impide que dos sobres con la misma secuencia gasten dos veces.
    platformFee cero, un hito. Verifica roles/activo/importes devueltos por API.
    Lender fondea; operador completa hito; lender aprueba; operador libera.
    Toda mutación TW se construye y envía por API, jamás por llamada directa al contrato.
-   Los balances reales se consultan por SAC; bruto en TW y neto exacto en bóveda.
+   Los balances reales se consultan por SAC; bruto en TW y al menos el neto en bóveda. El exceso pertenece al lender.
 7. `open/build` y `open/submit`: segunda firma de empresa, más autorizaciones de
    operador y lender. El libro abre y entrega USDC atómicamente. Release TW por sí
    solo nunca aparece como deuda abierta. Plazo empieza en open.
@@ -102,11 +111,15 @@ El ledger impide que dos sobres con la misma secuencia gasten dos veces.
    TW. `repay/build`/`submit` cobran deuda y devuelven bonos en la misma transacción.
 10. `default`: marca si contrato lo permite. `liquidate`: devuelve espera hasta cura,
     prepara lender como comprador/tenedor autorizado y ejecuta venta atómica.
-    El precio esperado es max(actual, precio fijado al default). Recuperación,
+    El precio esperado es max(actual, piso conservador calculado por el libro). Recuperación,
     pérdida y excedente son los del libro, no cálculos de historial de pagos.
 11. `claim/build`/`submit`: la empresa reclama exclusivamente su crédito del libro.
     Un excedente entregado directamente no genera crédito pendiente; claim cero
     también es válido. `deliveryBalance` permite detectar bonos en custodia fallback.
+
+El piso se describe en README/INTERFAZ: demorar mark_default no permite reducirlo.
+Puede superar el primer precio de default. El comprador recibe solo la prenda;
+exceso RBOND vuelve a la empresa, con fallback a delivery si es necesario.
 
 Importes de contrato usan BigInt y se serializan como cadenas enteras con siete
 decimales. Fee=floor(P*30/10000), neto=P-fee, interés=ceil(P/150), deuda=P+interés.
@@ -168,7 +181,7 @@ node --env-file=.env.local --conditions=react-server --import tsx scripts/verify
 El primer script importa `dispatch` y los mismos servicios del servidor. Usa una
 empresa Friendbot derivada solo en memoria, recuperable con las claves existentes,
 Didit sandbox real y dos bonos de USD 100. No despliega contratos. Conserva pasos y
-hashes públicos en `scripts/evidence/b1-testnet.json`, nunca secretos ni XDR firmado
+hashes públicos en `scripts/evidence/c4-server.json`, nunca secretos ni XDR firmado
 en evidencia. Reejecutar una corrida completa no repite desembolsos. La segunda
 prueba llama `handle` con una respuesta HTTP Pollar fixture: no modifica producción
 ni añade bypass. Usa cadena real para KYB, pertenencia y preparación de firma.
@@ -182,12 +195,25 @@ prueba automática no demuestra login humano ni esa firma del SDK.
 No se simulan fechas futuras del ledger. Se espera la cura real de 60 segundos;
 no se esperan los 30 días de plazo ni 180 de write_off. Contratos archivados por
 TTL producen error explícito y requieren restauración, no se recrean deudas.
+Enviar keep_alive periódicamente evita ese archivo; una simulación no basta.
 Cancelación/refund extraordinario y retiro manual de delivery se describen en
 INTERFAZ pero todavía no tienen rutas B1. No hay UI de liquidadores externos;
 `mark_default` sigue siendo permissionless en cadena y liquidate admite cualquier
 comprador autorizado a nivel de contrato, sin cambiar el servidor de esta demo.
 
-## Resultado verificado B1 — 21 de noviembre de 2026
+## Resultado vigente C4
+
+68 pruebas Rust y 65 verificaciones de autorización aprobadas. Ambos recorridos
+reales usan el libro y registro C4; ids, hashes, transferencias y límites en
+[C4-REPORT](../contracts/C4-REPORT.md). Gasto bruto global: 208,2215724 USDC,
+incluidos probe y prueba intermedia. Se retiraron 746 entradas clásicas b1,
+conservando 19 KYB; Rendaval admite 977 subentradas adicionales bajo el límite actual.
+El índice incorrecto de prueba no permite fund ni state sobre otra empresa.
+
+## Resultado histórico B1 — antes del reemplazo C4
+
+Los siguientes importes pertenecen al libro anterior. Resultados vigentes, piso
+nuevo, ids y hashes están en [C4-REPORT](../contracts/C4-REPORT.md).
 
 - Dos préstamos reales de 50 USDC, cada uno con 100 RBOND. TW entregó 49,85 USDC
   por préstamo y cobró 0,15: comisión total **0,30 USDC**.

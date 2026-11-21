@@ -1,4 +1,7 @@
-# C3b — resultado final
+# C3b — resultado final (histórico)
+
+Despliegue sustituido por [C4](C4-REPORT.md). Los ids, semántica y resultados
+de este documento describen C3b, no el servidor vigente.
 
 21 de noviembre de 2026. **Implementado y desplegado en testnet**, con los tres
 recorridos reales de RBOND y Trustless Work completados. No se cambió el contrato

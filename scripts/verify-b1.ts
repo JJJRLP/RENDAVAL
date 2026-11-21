@@ -11,8 +11,11 @@ import { server, bondAsset, dollarAsset } from '../lib/server/loan/network';
 import { a, balance, BOND, BOOK, decimal, read, rpcServer, UNIT, USD } from '../lib/server/loan/chain';
 import { json } from '../lib/server/loan/store';
 import { observeTransactions } from '../lib/server/loan/audit';
-const file = 'scripts/evidence/b1-testnet.json';
-const company = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-b1-company-v1').digest());
+const file = 'scripts/evidence/c4-server.json';
+const prior = JSON.parse(readFileSync('scripts/evidence/archive/c4/first-book-server.json', 'utf8'));
+const priorSpend = Object.values(prior.budget as Record<string, string>).reduce((n, v) => n + BigInt(v), 10000001n); // includes uneven TW probe
+
+const company = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-company-v2').digest());
 const wallet = company.publicKey();
 type Evidence = { wallet: string; transactions: { label: string; hash: string }[]; steps: Record<string, unknown>; completed?: string; grossLenderSpend: string; budget?: Record<string, string> };
 const e: Evidence = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { wallet, transactions: [], steps: {}, grossLenderSpend: '0' };
@@ -44,7 +47,7 @@ async function spend<T>(label: string, amount: bigint, fn: () => Promise<T>) {
   e.budget ??= {};
   e.budget[label] ??= amount.toString();
   const gross = Object.values(e.budget).reduce((sum, value) => sum + BigInt(value), 0n);
-  assert(gross <= 400n * UNIT, 'Lender budget exceeded before submission');
+  assert(gross + priorSpend <= 400n * UNIT, 'Lender budget exceeded before submission');
   e.grossLenderSpend = decimal(gross); save();
   return fn();
 }
@@ -78,14 +81,14 @@ async function verifyAtomicTransfers() {
     assert.equal(await balance(USD, setup.contractId), 0n);
   }
   const repaid = e.steps['repaid-final'] as { loan: { lender: string } };
-  const sold = e.steps['liquidated-final'] as { loan: { lender: string } };
+  const sold = e.steps['liquidated-final'] as { loan: { lender: string; proceeds: string; surplus: string } };
   await inspect('repay', (e.steps.repay as { hash: string }).hash);
   await inspect('liquidate', (e.steps.execution as { hash: string }).hash);
   transfer('repay', USD, wallet, BOOK, '503333334');
   transfer('repay', USD, BOOK, repaid.loan.lender, '503333334');
   transfer('repay', BOND, (e.steps['repaid-accept'] as { contractId: string }).contractId, wallet, '1000000000');
-  transfer('liquidate', USD, sold.loan.lender, BOOK, '534375000');
-  transfer('liquidate', USD, BOOK, wallet, '31041666');
+  transfer('liquidate', USD, sold.loan.lender, BOOK, String(sold.loan.proceeds));
+  transfer('liquidate', USD, BOOK, wallet, String(sold.loan.surplus));
   transfer('liquidate', BOND, (e.steps['liquidated-accept'] as { contractId: string }).contractId, sold.loan.lender, '1000000000');
   const h = await server.transactions().transaction((e.steps.execution as { hash: string }).hash).call();
   assert(Date.parse(h.created_at) / 1000 >= (e.steps.default as { cureDeadline: number }).cureDeadline);
@@ -97,7 +100,7 @@ async function main() {
     const liquidated = e.steps['liquidated-final'] as { loan: { principal: string; proceeds: string } };
     const topup = e.steps.topup as { amount: string };
     const gross = BigInt(repaid.loan.principal) + BigInt(liquidated.loan.principal) + BigInt(Math.round(Number(topup.amount) * 1e7)) + BigInt(liquidated.loan.proceeds);
-    assert(gross <= 400n * UNIT); e.grossLenderSpend = decimal(gross);
+    assert(gross + priorSpend <= 400n * UNIT); e.grossLenderSpend = decimal(gross);
     await verifyAtomicTransfers();
     e.steps.finalState = await dispatch(wallet, 'state'); save();
     console.log('Already complete; refreshed final state. Gross lender spend:', e.grossLenderSpend); return;
@@ -117,7 +120,7 @@ async function main() {
     await simulate(wallet, session.sessionId); return status(wallet, session.sessionId, true);
   });
   for (const name of ['repaid', 'liquidated'] as const) {
-    const b = await step(name + '-declare', () => dispatch(wallet, 'register', { bond: { issuer: 'Empresa demo B1', series: name, nominal: 100, currency: 'USD', coupon: 7, maturity: '2028-12-31' }, certificateHash: createHash('sha256').update('Demo depository certificate B1 ' + name).digest('hex') })) as { id: string };
+    const b = await step(name + '-declare', () => dispatch(wallet, 'register', { bond: { issuer: 'Empresa demo C4', series: name, nominal: 100, currency: 'USD', coupon: 7, maturity: '2028-12-31' }, certificateHash: createHash('sha256').update('Demo depository certificate C4 ' + name).digest('hex') })) as { id: string };
     assert.equal((await dispatch(wallet, 'state') as { bondRecords: { id: string; status: string }[] }).bondRecords.find(x => x.id === b.id)?.status, e.steps[name + '-approve'] ? 'approved' : 'under_review');
     await step(name + '-approve', () => dispatch(wallet, 'approve', { bondId: b.id }));
     const v = await step(name + '-accept', () => dispatch(wallet, 'accept', { bondId: b.id })) as { contractId: string };
@@ -135,7 +138,8 @@ async function main() {
     } else {
       await step('default-price', () => move(id, 0.5625));
       await step('default', () => dispatch(wallet, 'default', { contractId: id }));
-      await spend('execution', 534375000n, () => step('execution', async () => {
+      const defaultView = await read<{ loan: { default_price: bigint; face: bigint } }>(BOOK, 'get_loan', [a(id)]);
+      await spend('execution', defaultView.loan.face * defaultView.loan.default_price / UNIT * 9500n / 10000n, () => step('execution', async () => {
         for (;;) {
           const r = await dispatch(wallet, 'liquidate', { contractId: id }) as { status: string };
           if (r.status === 'Liquidated') return r;

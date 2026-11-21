@@ -34,7 +34,7 @@ pub struct VaultConfig {
 pub trait VaultInterface {
     fn get_config(e: Env) -> VaultConfig;
     fn activate(e: Env, net: i128);
-    fn finish(e: Env, recipient: Address, fallback: bool);
+    fn finish(e: Env, recipient: Address, fallback: bool, pledged: i128);
     fn assign(e: Env, recipient: Address);
     fn cancel(e: Env, party: Address);
 }
@@ -53,7 +53,7 @@ fn finish(e: &Env, c: &Config, id: &Address, l: &Loan, fallback: bool) -> Result
     let token = series(e, &l.asset)?.token;
     // Delivery assignment and collateral movement are in the settlement transaction.
     VaultClient::new(e, &spec.delivery).assign(&if fallback { l.recipient.clone() } else { l.borrower.clone() });
-    VaultClient::new(e, id).finish(&l.recipient, &fallback);
+    VaultClient::new(e, id).finish(&l.recipient, &fallback, &l.face);
     let rules = RulesClient::new(e, &c.rules);
     rules.release(&token, id);
     rules.release(&token, &spec.delivery);
@@ -315,6 +315,7 @@ fn loan(e: &Env, id: &Address) -> Result<Loan, Error> {
     let mut l: Loan = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
     if !closed(&l) {
         bump(e, &k);
+        LoanBook::keep_alive(e.clone(), id.clone())?;
         let series = series(e, &l.asset)?;
         let p = series.quote;
         l.collateral = collateral(e, &series.token, id);
@@ -627,6 +628,7 @@ impl LoanBook {
         rules.protect(&registered.token, &id);
         rules.protect(&registered.token, &spec.delivery);
         if VaultClient::new(&e, &id).try_activate(&l.net_disbursement).is_err() { return Err(Error::Payment); }
+        Self::keep_alive(e.clone(), id.clone())?;
         Opened { id, loan: l }.publish(&e);
         Ok(())
     }
@@ -669,15 +671,37 @@ impl LoanBook {
         VaultCreated { id: id.clone(), spec: e.storage().persistent().get(&k).unwrap() }.publish(&e); Ok(id)
     }
     pub fn get_vault(e: Env, id: Address) -> Result<VaultSpec, Error> {
-        config(&e); let k = Key::Vault(id); bump(&e, &k);
-        e.storage().persistent().get(&k).ok_or(Error::Missing)
+        config(&e); let k = Key::Vault(id);
+        let spec = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
+        bump(&e, &k); Ok(spec)
     }
     pub fn cancel(e: Env, id: Address, party: Address) -> Result<(), Error> {
         party.require_auth();
         let spec = Self::get_vault(e.clone(), id.clone())?;
+        if e.storage().persistent().has(&Key::Loan(id.clone())) { return Err(Error::State); }
+        if party != spec.borrower && party != spec.lender { return Err(Error::Invalid); }
+        if VaultClient::new(&e, &id).get_config().state == VaultState::Closed {
+            // Also complete delivery assignment after a direct vault cancellation.
+            VaultClient::new(&e, &spec.delivery).assign(&spec.borrower);
+            return Ok(());
+        }
         VaultClient::new(&e, &id).cancel(&party);
         VaultClient::new(&e, &spec.delivery).assign(&spec.borrower);
         Cancelled { id }.publish(&e); Ok(())
+    }
+    // A real transaction renews all loan-owned entries. Simulations do not persist TTL.
+    pub fn keep_alive(e: Env, id: Address) -> Result<(), Error> {
+        let c = config(&e);
+        let spec = Self::get_vault(e.clone(), id.clone())?;
+        let token = series(&e, &spec.series)?.token;
+        VaultClient::new(&e, &id).get_config();
+        VaultClient::new(&e, &spec.delivery).get_config();
+        let rules = RulesClient::new(&e, &c.rules);
+        rules.pledged(&token, &id);
+        rules.pledged(&token, &spec.delivery);
+        let k = Key::Loan(id);
+        if e.storage().persistent().has(&k) { bump(&e, &k); }
+        Ok(())
     }
     // After six months in default, collateral in kind replaces an unavailable auction.
     // No fresh price or buyer approval; the protected delivery contract is already an approved holder.
@@ -857,7 +881,17 @@ impl LoanBook {
                 return Err(Error::Healthy);
             }
         }
-        l.default_price = l.price;
+        // Conservative upper bound on the first defaultable quote, independent
+        // of publication history or keeper timing. Integer value() floors first:
+        // value <= floor(debt*10000/default_bps), hence price < (value+1)*SCALE/face.
+        // Time/impairment can first trigger at any valid quote, so use par there.
+        l.default_price = if impaired(&l) || e.ledger().timestamp() > l.due.checked_add(c.grace_period).ok_or(Error::Overflow)? {
+            SCALE
+        } else {
+            let max_value = mul(debt(&l)?, 10000)? / c.default_bps as i128;
+            let bound = mul(add(max_value, 1)?, SCALE)?;
+            (add(bound, l.face - 1)? / l.face).min(SCALE)
+        };
         l.defaulted_at = e.ledger().timestamp();
         l.status = Status::Defaulted;
         save(&e, &id, &l);

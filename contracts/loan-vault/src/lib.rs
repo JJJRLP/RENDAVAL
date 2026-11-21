@@ -23,7 +23,7 @@ fn config(e: &Env) -> Config {
     e.storage().instance().extend_ttl(TTL / 2, TTL);
     e.storage().instance().get(&0u32).unwrap()
 }
-fn save(e: &Env, c: &Config) { e.storage().instance().set(&0u32, c); }
+fn save(e: &Env, c: &Config) { e.storage().instance().set(&0u32, c); e.storage().instance().extend_ttl(TTL / 2, TTL); }
 fn send(e: &Env, token: &Address, recipient: &Address) {
     let t = token::Client::new(e, token);
     let amount = t.balance(&e.current_contract_address());
@@ -47,8 +47,8 @@ impl LoanVault {
         let mut c = config(&e);
         c.book.require_auth();
         assert!(c.delivery.is_some() && c.state == State::Pending && net > 0);
-        // Exact net: an over/underfunded vault must be cancelled, not silently reconciled.
-        assert_eq!(token::Client::new(&e, &c.usdc).balance(&e.current_contract_address()), net);
+        // Donations cannot prevent opening. Excess remains refundable to the lender.
+        assert!(token::Client::new(&e, &c.usdc).balance(&e.current_contract_address()) >= net);
         c.state = State::Active; save(&e, &c);
         token::Client::new(&e, &c.usdc).transfer(&e.current_contract_address(), &c.borrower, &net);
     }
@@ -60,10 +60,11 @@ impl LoanVault {
         if c.state == State::Closed { assert_eq!(c.recipient, recipient); return; }
         c.recipient = recipient; c.state = State::Closed; save(&e, &c);
     }
-    pub fn finish(e: Env, recipient: Address, fallback: bool) {
+    pub fn finish(e: Env, recipient: Address, fallback: bool, pledged: i128) {
         let mut c = config(&e); c.book.require_auth();
         assert!(c.delivery.is_some() && c.state == State::Active);
-        c.recipient = recipient; c.state = State::Closed; save(&e, &c);
+        c.recipient = if fallback { recipient.clone() } else { c.borrower.clone() };
+        c.state = State::Closed; save(&e, &c);
         let t = token::Client::new(&e, &c.bond);
         let amount = t.balance(&e.current_contract_address());
         if amount > 0 {
@@ -71,7 +72,15 @@ impl LoanVault {
                 if t.try_transfer(&e.current_contract_address(), &c.recipient, &amount).is_err() {
                     t.transfer(&e.current_contract_address(), &c.delivery.unwrap(), &amount);
                 }
-            } else { t.transfer(&e.current_contract_address(), &c.recipient, &amount); }
+            } else {
+                assert!(pledged > 0);
+                let sold = amount.min(pledged);
+                t.transfer(&e.current_contract_address(), &recipient, &sold);
+                let excess = amount - sold;
+                if excess > 0 && t.try_transfer(&e.current_contract_address(), &c.borrower, &excess).is_err() {
+                    t.transfer(&e.current_contract_address(), &c.delivery.unwrap(), &excess);
+                }
+            }
         }
     }
     pub fn cancel(e: Env, party: Address) {

@@ -1,9 +1,9 @@
-# Interfaz C3b — guía para integrar la web
+# Interfaz C4 — guía para integrar la web
 
-Solo Stellar testnet. La web actual no implementa este flujo. El libro vigente es
-`CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA`.
+Solo Stellar testnet. El servidor B1 implementa este flujo; pantallas pendientes. El libro vigente es
+`CB6VYHQXCB3EKR4Q43LNDH7Y6GZXURIUBTOCHBWPCNSACANPHKSMSSKN`.
 Direcciones, parámetros, hashes y recorridos reproducibles:
-[la evidencia C3b](../scripts/evidence/c3-testnet.json).
+[la evidencia C4](../scripts/evidence/c4-testnet.json).
 No usar el ABI C2 con esta dirección.
 
 ## Activos, unidades y deuda
@@ -28,7 +28,7 @@ Un cambio de tarifa de TW exige revisar esta fórmula; no ajustar la deuda en si
 Capital mínimo 1 USDC; máximo 50 % del nominal y del valor de los bonos disponibles.
 Plazo: 30 días desde **open**, no desde deploy, fund o release de TW.
 El libro no consulta TW ni certifica el origen del USDC: las tres partes aceptan los
-importes y el código; solo el saldo exacto de esa bóveda habilita el desembolso.
+importes y el código; solo un saldo al menos igual al neto de esa bóveda habilita el desembolso.
 
 ## Preparar y abrir, paso por paso
 
@@ -65,7 +65,7 @@ importes y el código; solo el saldo exacto de esa bóveda habilita el desembols
    por `/change-milestone-status`: `milestoneIndex: '0'`, `newStatus: 'completed'`,
    `newEvidence`, `serviceProvider`. Prestamista firma `/approve-milestone` con
    `milestoneIndex: '0'` y `approver`. Operador firma `/release-funds` con `releaseSigner`.
-9. Tras confirmar release, consultar `USDC.balance(id)`: debe ser exactamente el neto.
+9. Tras confirmar release, consultar `USDC.balance(id)`: debe ser al menos el neto.
    Servidor prepara **una sola invocación propia** `book.open(id, series, borrower,
    lender, face, principal)`. Firman empresa, prestamista y operador: una autorización
    por dirección distinta. Si el operador coincide con otra parte, no duplicarla.
@@ -95,7 +95,7 @@ Después, cualquiera puede ejecutar por separado:
 
 | Llamada a bóveda | Destino fijo | Cuándo |
 | --- | --- | --- |
-| `collect_bonds()` | Empresa tras cancelar/pagar; comprador tras liquidar; prestamista tras write_off | Closed |
+| `collect_bonds()` | Empresa tras cancelar/pagar; empresa tras liquidar (exceso/tardío); prestamista tras write_off | Closed |
 | `refund_usdc()` | Prestamista original | Closed |
 
 No existe argumento para elegir receptor, token o importe. Si el receptor no puede
@@ -112,9 +112,8 @@ puede ser quien abre la disputa. No distribuir a la empresa en esta ruta. Cancel
 la bóveda no demuestra ni ordena un refund TW; mostrar ambos estados por separado.
 
 Sin fondeo/release, no hay saldo y no se abre. Release anterior a los bonos deja
-USDC esperando; release posterior a cancelación deja USDC reembolsable. Monto distinto,
-resolución parcial o sobrepago impiden open: cancelar y recuperar, sin compensaciones
-ocultas. Ofrecer el mismo escrow a otro préstamo no crea saldo en esa otra bóveda.
+USDC esperando; release posterior a cancelación deja USDC reembolsable. Un saldo inferior al neto impide open. El exceso no bloquea: se entrega el neto
+y el sobrante USDC pertenece al prestamista, reclamable tras cierre. Ofrecer el mismo escrow a otro préstamo no crea saldo en esa otra bóveda.
 No se usan `released`, `resolved`, eventos históricos ni balances de terceros para
 activar o cancelar una deuda.
 
@@ -141,6 +140,7 @@ consultar `get_vault` y `vault.get_config`: Pending o Closed; no existe aún `Lo
 | `write_off(id)` | Cualquiera; 180 días desde la primera marca de default. Sin cotización ni comprador. |
 | `claim(recipient)` | Dueño del crédito USDC; paga solo a su propia dirección. |
 | `claimable(recipient)` | Lectura de créditos pendientes en este libro. |
+| `keep_alive(id)` | Cualquiera; renueva todas las entradas y las dos custodias/prendas del préstamo, sin cambiar deuda. |
 | `release_pledge(id)` | Compatibilidad idempotente para terminales; el cierre ya retiró las marcas. |
 
 Repay cobra deuda y entrega bonos; si el prestamista no recibe USDC, crea crédito
@@ -150,10 +150,12 @@ sin esperar que reclame. `delivery.collect_bonds()` solo paga a ese beneficiario
 el SAC exige su autorización. Las reglas pueden revocar la custodia después del
 cierre: la protección de prenda no continúa sobre activos ya entregados en custodia.
 
-Liquidate cobra `floor(value * (10000-discount_bps) / 10000)` y transfiere todos los
-bonos presentes de la bóveda al comprador en la misma transacción; **no usa fallback**.
+Liquidate cobra `floor(value * (10000-discount_bps) / 10000)` y transfiere solo `min(face, balance)`
+bonos de la bóveda al comprador en la misma transacción; **el comprador no usa fallback**.
 Si no caben en su trustline, se revierten cobro, créditos, préstamo y prendas.
-Prestamista cobra primero hasta deuda; resto a empresa; faltante queda en loss.
+El exceso RBOND se devuelve a la empresa o a delivery asignada a ella si no puede
+recibir; el comprador nunca recibe ese exceso. Prestamista cobra primero hasta deuda;
+resto USDC a empresa; faltante queda en loss.
 Cada pago USDC fallido queda como crédito separado. Claim fallido conserva el crédito.
 
 Write_off entrega los bonos al prestamista si está autorizado; si no puede recibir,
@@ -179,8 +181,10 @@ Demo: 7000, 8500, 2500, 86400 s, 500, 30 s, 30 s, 60 s respectivamente.
 `publisher` empieza como emisor; `set_publisher(address)` exige emisor y operador.
 `publish_price(series, price)` exige publisher; `set_buyer(buyer, allowed)` exige
 emisor. Cada cambio respeta paso máximo y tiempo mínimo desde el último cambio;
-republicar igual renueva frescura sin reiniciar el intervalo. Cambios posteriores no
-reducen `default_price`, fijado al primer default. Publicar no recorre préstamos.
+republicar igual renueva frescura sin reiniciar el intervalo. `default_price` es un límite conservador que no puede reducirse demorando mark_default: para default por precio,
+`min(SCALE, ceil((floor(debt*10000/default_bps)+1)*SCALE/face))`; para mora o deterioro,
+SCALE. No baja con publicaciones posteriores. Puede superar la primera cotización
+de default; véase la explicación económica en README. Publicar no recorre préstamos.
 Margin se limpia al consultar/tocar con precio fresco si recuperó; Defaulted solo
 se cierra pagando, liquidando o agotando el plazo de write_off.
 
@@ -196,9 +200,10 @@ por una lectura externa. Conservar red, id de libro e id de bóveda junto a cada
 Eventos del libro: vault, open, cancel, price, default, margin, repay, liquidate,
 writeoff, credit, claim, publisher, buyer, series, listed e init. Para recuperar un
 resultado siempre consultar el contrato: un evento de reintento no cambia el estado
-terminal, y cancelar una bóveda cerrada no transforma un préstamo ya pagado.
+terminal, y cancel sobre un préstamo ya abierto/terminal devuelve State. Reintentar una
+cancelación previa sin deuda es idempotente y no vuelve a emitir evento.
 
 La retención de eventos RPC es limitada. Mantener un índice por hashes e ids para
 la web; ninguna función enumera toda la cartera. Estado persistente e instancia tienen
-TTL; lecturas reales extienden lo usado, simulaciones no. Restaurar entradas archivadas
+TTL; transacciones reales extienden lo usado, simulaciones no. Usar keep_alive periódicamente. Restaurar entradas archivadas
 antes de operar. No confundir ausencia de un índice con ausencia de deuda.

@@ -1,11 +1,11 @@
 import 'server-only';
 import { readBalances, assetBalance } from '../../stellar/horizon';
 import { RBOND, USDC } from '../../stellar/assets';
-import { vaultKey } from '../env';
+import { ApiError, vaultKey } from '../env';
 import { terms, loanHealth, type LoanView } from '../../loan/model';
 import { a, balance, BOND, BOOK, issuerKey, read, rpcServer, RULES, sym, units } from './chain';
 import { explorer } from './network';
-import { get } from './store';
+import { get, REGISTRY } from './store';
 import { index, ownBond, verified } from './records';
 import { loanView } from './setup';
 import { type Config, type Series, type Spec, type VaultConfig } from './types';
@@ -18,7 +18,9 @@ export async function state(wallet: string) {
     return { ...record, status: approval ? 'approved' : 'under_review', approval, certificateStored: false };
   }));
   const loans = await Promise.all(idx.loans.filter(l => l.id).map(async item => {
-    const id = item.id!, spec = await read<Spec>(BOOK, 'get_vault', [a(id)]), vault = await read<VaultConfig>(id, 'get_config');
+    const id = item.id!, spec = await read<Spec>(BOOK, 'get_vault', [a(id)]);
+    if (spec.borrower !== wallet) throw new ApiError(403, 'La bóveda pertenece a otra empresa.');
+    const vault = await read<VaultConfig>(id, 'get_config');
     const view = vault.state[0] === 'Pending' ? null : await loanView(id);
     const [series, escrow, txs, held, deliveryBalance] = await Promise.all([read<Series>(BOOK, 'get_series', [sym(spec.series)]), get<{ id: string; hash: string }>(`escrow:${id}`), get<{ hashes: string[] }>(`transactions:${wallet}:${id}`), balance(BOND, id), balance(BOND, spec.delivery)]);
     const status = view?.loan.status[0] ?? vault.state[0];
@@ -43,7 +45,7 @@ export async function state(wallet: string) {
     const latest = loans.filter(l => l.bondId === bond.id).at(-1);
     const availability = bond.status === 'under_review' ? 'under_review' : idx.loans.some(l => l.bondId === bond.id && !l.id) || latest?.status === 'Pending' ? 'reserved' : latest && ['Active', 'Margin', 'Defaulted'].includes(latest.status) ? 'pledged' : latest && ['Liquidated', 'WrittenOff'].includes(latest.status) ? 'sold' : latest && latest.deliveryBalance > 0n ? 'awaiting_delivery' : 'available';
     const series = bond.status === 'approved' ? await read<Series>(BOOK, 'get_series', [sym(bond.series)]) : null;
-    return { ...bond, availability, seriesState: series, priceAge: series ? Number(ledger.closeTime) - Number(series.quote.timestamp) : null, transactions: (bond.approval?.hashes ?? []).map(hash => ({ hash, url: explorer('tx', hash) })), links: { book: explorer('contract', BOOK), token: explorer('contract', BOND), declaration: explorer('account', vaultKey().publicKey()) + '?filter=data' } };
+    return { ...bond, availability, seriesState: series, priceAge: series ? Number(ledger.closeTime) - Number(series.quote.timestamp) : null, transactions: (bond.approval?.hashes ?? []).map(hash => ({ hash, url: explorer('tx', hash) })), links: { book: explorer('contract', BOOK), token: explorer('contract', BOND), declaration: explorer('contract', REGISTRY) } };
   }));
   const openLoans = loans.filter(l => ['Pending', 'Active', 'Margin', 'Defaulted'].includes(l.status)).length + idx.loans.filter(l => !l.id).length;
   const setup = loans.find(l => l.status === 'Pending') ?? null;

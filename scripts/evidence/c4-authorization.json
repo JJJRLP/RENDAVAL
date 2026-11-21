@@ -1,0 +1,307 @@
+{
+  "testedAt": "2026-11-21T06:36:51.324Z",
+  "mode": "real chain; Pollar HTTP fixture only",
+  "completed": true,
+  "owner": "GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II",
+  "other": "GDJNRVMQEPQTY6OWECDRB4ABSGSDE2G5X2AQXQI62KPSWLIE2JKBSSBE",
+  "results": [
+    {
+      "test": "state: missing token",
+      "status": 401
+    },
+    {
+      "test": "register: missing token",
+      "status": 401
+    },
+    {
+      "test": "approve: missing token",
+      "status": 401
+    },
+    {
+      "test": "accept: missing token",
+      "status": 401
+    },
+    {
+      "test": "fund: missing token",
+      "status": 401
+    },
+    {
+      "test": "price: missing token",
+      "status": 401
+    },
+    {
+      "test": "default: missing token",
+      "status": 401
+    },
+    {
+      "test": "liquidate: missing token",
+      "status": 401
+    },
+    {
+      "test": "deposit/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "deposit/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "open/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "open/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "repay/topup: missing token",
+      "status": 401
+    },
+    {
+      "test": "repay/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "repay/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "claim/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "claim/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "approve: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "accept: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "fund: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "price: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "default: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "liquidate: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "deposit/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "deposit/submit: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "open/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "open/submit: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "repay/topup: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "repay/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "repay/submit: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "state only lists Pollar wallet, ignores requested owner",
+      "status": 200
+    },
+    {
+      "test": "incorrect registry index still checked against book borrower",
+      "status": 403
+    },
+    {
+      "test": "state rejects a foreign loan even if indexed for the caller",
+      "status": 403
+    },
+    {
+      "test": "state: unverified",
+      "status": 403
+    },
+    {
+      "test": "register: unverified",
+      "status": 403
+    },
+    {
+      "test": "approve: unverified",
+      "status": 403
+    },
+    {
+      "test": "accept: unverified",
+      "status": 403
+    },
+    {
+      "test": "fund: unverified",
+      "status": 403
+    },
+    {
+      "test": "price: unverified",
+      "status": 403
+    },
+    {
+      "test": "default: unverified",
+      "status": 403
+    },
+    {
+      "test": "liquidate: unverified",
+      "status": 403
+    },
+    {
+      "test": "deposit/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "deposit/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "open/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "open/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "repay/topup: unverified",
+      "status": 403
+    },
+    {
+      "test": "repay/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "repay/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "claim/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "claim/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "exact company signature",
+      "status": "accepted"
+    },
+    {
+      "test": "fee bump preserves exact company transaction",
+      "status": "accepted"
+    },
+    {
+      "test": "wrong contract",
+      "status": 400
+    },
+    {
+      "test": "wrong function",
+      "status": 400
+    },
+    {
+      "test": "wrong amount",
+      "status": 400
+    },
+    {
+      "test": "wrong recipient",
+      "status": 400
+    },
+    {
+      "test": "extra operation",
+      "status": 400
+    },
+    {
+      "test": "mainnet signature",
+      "status": 400
+    },
+    {
+      "test": "injected nested Soroban authorization",
+      "status": 400
+    },
+    {
+      "test": "wrong signature",
+      "status": 400
+    },
+    {
+      "test": "claim cannot redirect company credit",
+      "status": 400
+    },
+    {
+      "test": "document/wallet injection rejected",
+      "status": 400
+    },
+    {
+      "test": "deposit: successful transaction replay after closure",
+      "status": 200
+    },
+    {
+      "test": "open: successful transaction replay after closure",
+      "status": 200
+    },
+    {
+      "test": "repay: successful transaction replay after closure",
+      "status": 200
+    }
+  ],
+  "transactions": [
+    {
+      "label": "attacker-friendbot",
+      "hash": "9cfd2999abc5b8784f2e5ede234e77f4ae3a593e50085874e8dc9666ae53c6f2"
+    },
+    {
+      "label": "attacker-attestation",
+      "hash": "bbe59c6e3f3c8663363d5da27231fd6695d01693616d9ccc7c530def4d59a7dd"
+    },
+    {
+      "label": "poisoned-index-friendbot",
+      "hash": "09f5665ca702135fd97dd74f524c0c2378a05872d4f700e742bfdec7a5a1e388"
+    },
+    {
+      "label": "poisoned-index-attestation",
+      "hash": "81b5d6a506f2163294030923f28569ae010436069332270f1fe073d9e580b18e"
+    },
+    {
+      "label": "registry:company:CB6VYHQXCB3EKR4Q43LNDH7Y6GZXURIUBTOCHBWPCNSACANPHKSMSSKN:GCLDJ7EKSPCL5BELQGBPK7NCRHVT6UISKCG3EFVK3PWEBRZWLHE7I5TA",
+      "hash": "48c429f365a8e2a3ba4cb3726c5485e78e00c37908b1a1f404ed7c73f83497ff"
+    },
+    {
+      "label": "registry:sign:GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II:GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II:claim",
+      "hash": "ae9b3b8025c5e10d78ac1124b40755380f65ea1889c3f9ed9afba1b53de21f3d"
+    },
+    {
+      "label": "browser:deposit:CCMZDQGDI3HLECRQ2Q4OSSJ2WW2RAVBUHDZODT66HD7HJ3IV2UVDXBNB:1592f4635971ddfb2d9ac2f09b64bd8b6655d4dfed8e43bde1b4a745b393370f",
+      "hash": "1592f4635971ddfb2d9ac2f09b64bd8b6655d4dfed8e43bde1b4a745b393370f"
+    },
+    {
+      "label": "browser:open:CCMZDQGDI3HLECRQ2Q4OSSJ2WW2RAVBUHDZODT66HD7HJ3IV2UVDXBNB:1c290604feb4f222d6eaebd57a45f860752b17c05f714e4bc0e5bacca57fa2d0",
+      "hash": "1c290604feb4f222d6eaebd57a45f860752b17c05f714e4bc0e5bacca57fa2d0"
+    },
+    {
+      "label": "browser:repay:CCMZDQGDI3HLECRQ2Q4OSSJ2WW2RAVBUHDZODT66HD7HJ3IV2UVDXBNB:f64d26a082aa802a3ecb45b34d7af751bb86fec87465bd967dd8be0f1e222a55",
+      "hash": "f64d26a082aa802a3ecb45b34d7af751bb86fec87465bd967dd8be0f1e222a55"
+    }
+  ]
+}

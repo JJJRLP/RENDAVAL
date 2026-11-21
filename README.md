@@ -5,7 +5,7 @@ mercado, respaldados por bonos tokenizados. MVP de hackathon sobre **Stellar
 testnet**: activos sin valor real, custodia/tokenización simuladas y proveedores
 sandbox. Next.js 16, React 19, Pollar, Didit y Trustless Work.
 
-El servidor B1 utiliza los contratos finales C3b. La landing y las pantallas
+El servidor B1 utiliza los contratos C4. La landing y las pantallas
 completas se adaptan en B2; el registro/preparación antiguos quedan deshabilitados
 con un aviso. [Interfaz de contratos](contracts/INTERFAZ.md),
 [API y recorrido del servidor](docs/notas-tecnicas.md).
@@ -20,17 +20,17 @@ Navegador /app
 Next.js /api/kyb/* y /api/loan/*
   Pollar Server API → identidad de empresa (no dirección enviada por cliente)
   Didit sandbox → verificación; constancias KYB existentes preservadas
-  Stellar account data → declaraciones, revisión, índice por empresa y outbox
+  Registro Soroban → declaraciones, revisión, índice por empresa y outbox
+  Stellar account data → constancias KYB
   Reglas RBOND → aprobación de tenedores; impide revocar garantía prendada
-  Libro C3b → series, precio, deuda, salud, margen, default, repay y liquidación
+  Libro C4 → series, precio, deuda, salud, margen, default, repay y liquidación
   Bóveda por préstamo → bonos; custodia auxiliar para entrega bloqueada
   Trustless Work API → USDC del lender, release neto a la bóveda
 ```
 
 Sin base de datos. Un índice durable por empresa permite leer sus ids de préstamo
 sin recorrer los préstamos del sistema ni depender de retención de eventos RPC.
-Las declaraciones pendientes y su hash de certificado viven en datos de la cuenta
-Rendaval. Aprobación explícita de demo autoriza a la empresa, registra una serie,
+Las declaraciones pendientes y su hash de certificado viven en el registro Soroban. Aprobación explícita de demo autoriza a la empresa, registra una serie,
 publica su precio y emite RBOND. Un outbox Stellar conserva la operación antes de
 su envío para recuperar respuestas perdidas sin pagos duplicados.
 
@@ -48,7 +48,8 @@ servidor con claves de prueba.
 
 | Contrato testnet | Dirección |
 | --- | --- |
-| Libro | [CAC2…PKJA](https://stellar.expert/explorer/testnet/contract/CAC2Y7NO6NVBOSLAKHUQKIIZ5RIIAYXUGRKRB64JPYPPSM2KZQPBPKJA) |
+| Libro | [CB6V…SSKN](https://stellar.expert/explorer/testnet/contract/CB6VYHQXCB3EKR4Q43LNDH7Y6GZXURIUBTOCHBWPCNSACANPHKSMSSKN) |
+| Registro app | [CAR5…AGGB](https://stellar.expert/explorer/testnet/contract/CAR55ERAQUCHESSOEW2UUWYAUC3PVK7LIV7MIP6IIWRNM7AV3TYVAGGB) |
 | Reglas RBOND | [CCLL…HUKC](https://stellar.expert/explorer/testnet/contract/CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC) |
 | RBOND SAC | [CDMV…EGC3](https://stellar.expert/explorer/testnet/contract/CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3) |
 | USDC SAC | [CBIE…DAMA](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA) |
@@ -71,8 +72,8 @@ sus valores de testnet y ejecute `npm run dev`. Abra `/app`.
 | BOND_ISSUER_SECRET_KEY | Emisor RBOND, revisión y precios |
 
 Pollar dashboard: configurar origen, login, patrocinio de trustlines y activos
-USDC y RBOND. Las cuentas del servidor necesitan XLM para comisiones y reservas de
-índice/outbox. Lender necesita USDC testnet. No se usan variables NEW_* ni OLD_*.
+USDC y RBOND. Las cuentas del servidor necesitan XLM para comisiones y renta del
+registro Soroban y reservas de constancias KYB. Lender necesita USDC testnet. No se usan variables NEW_* ni OLD_*.
 Vercel utiliza las mismas variables; no hay configuración adicional ni base de datos.
 
 ## Comandos y evidencia
@@ -83,7 +84,7 @@ Vercel utiliza las mismas variables; no hay configuración adicional ni base de 
 - `scripts/verify-b1-authorization.ts`: rutas, pertenencia y firmas manipuladas.
 - `scripts/verify-kyb.ts`: Didit sandbox y constancia Stellar.
 - `scripts/fund-lender.ts`: recarga testnet del lender; no es parte de la prueba B1.
-- `scripts/c3-verify.mjs`: verificador de evidencia de contratos C3b, solo lectura.
+- `scripts/c4-verify.mjs`: verificador de evidencia de contratos C4, solo lectura.
 
 Scripts TypeScript: `node --env-file=.env.local --conditions=react-server --import tsx
 scripts/<nombre>.ts`. Hashes y resultados en `scripts/evidence/`. Las pruebas omiten
@@ -99,6 +100,7 @@ interés anual 8 % base 360. Un adelanto de prueba cubre interés más fee una v
 préstamo. Los tipos de cambio locales son referencias fijas de demostración.
 
 No es un producto auditado ni apto para dinero real. El certificado se declara por
-hash; su revisión es una simulación explícita. Las entradas de índice tienen tamaño
-máximo y consumen reservas; TTL de contratos requiere mantenimiento/restauración.
+hash; su revisión es una simulación explícita. Cada entrada del registro tiene tamaño máximo, pero el índice usa slots independientes
+sin vector creciente ni reservas clásicas. TTL requiere transacciones de mantenimiento
+y restauración si se deja archivar. [Informe C4](contracts/C4-REPORT.md).
 UI B2, liquidadores externos y operación comercial quedan fuera de esta fase.

@@ -54,7 +54,7 @@ export async function fund(wallet: string, id: string) {
   const now = Number((await rpcServer.getLatestLedger()).closeTime);
   if (BigInt(now) > quote.quote.timestamp + bookConfig.max_price_age) throw new ApiError(409, 'Renueve el precio antes de fondear.');
   const net = spec.principal - spec.principal * 30n / 10000n;
-  if (await get(`released:${id}`) && await balance(USD, id) === net) return { contractId: id, status: 'ready_to_open', escrowId: (await get<{ id: string }>(`escrow:${id}`))?.id };
+  if (await get(`released:${id}`) && await balance(USD, id) >= net) return { contractId: id, status: 'ready_to_open', escrowId: (await get<{ id: string }>(`escrow:${id}`))?.id };
   const roles = { serviceProvider: operator.publicKey(), receiver: id, approver: lender.publicKey(), platformAddress: operator.publicKey(), releaseSigner: operator.publicKey(), disputeResolver: operator.publicKey() };
   const deployed = await apiCall(`tw-deploy:${id}`, operator, '/deployer/single-release', { signer: operator.publicKey(), engagementId: `b1-${id}`, title: 'Rendaval USDC loan', description: 'USDC to RBOND vault', roles, amount: Number(spec.principal) / 1e7, platformFee: 0, milestones: [{ description: 'RBOND depositado en la bóveda' }], trustline: { address: USDC.issuer, symbol: 'USDC' } });
   const escrow = Array.isArray(deployed.value) ? deployed.value[0] as string : deployed.value as string;
@@ -68,14 +68,14 @@ export async function fund(wallet: string, id: string) {
   hashes.push((await apiCall(`tw-fund:${id}`, lender, '/escrow/single-release/fund-escrow', { contractId: escrow, signer: lender.publicKey(), amount: Number(spec.principal) / 1e7 })).hash);
   // A completed release is recovered by the outbox even when escrow balance is now zero.
   const released = await get<{ hash: string }>(`released:${id}`);
-  if (!released && await balance(USD, id) !== net && await balance(USD, escrow) !== spec.principal) throw new ApiError(409, 'Saldo USDC inesperado; no se abre la deuda.');
+  if (!released && await balance(USD, id) < net && await balance(USD, escrow) !== spec.principal) throw new ApiError(409, 'Saldo USDC inesperado; no se abre la deuda.');
   for (const [step, key, body] of [
     ['change-milestone-status', operator, { milestoneIndex: '0', newStatus: 'completed', newEvidence: 'RBOND balance and vault terms verified', serviceProvider: operator.publicKey() }],
     ['approve-milestone', lender, { milestoneIndex: '0', approver: lender.publicKey() }],
     ['release-funds', operator, { releaseSigner: operator.publicKey() }],
   ] as const) hashes.push((await apiCall(`tw-${step}:${id}`, key, `/escrow/single-release/${step}`, { contractId: escrow, ...body })).hash);
   await update(`released:${id}`, old => old ?? { hash: hashes.at(-1) });
-  if (await balance(USD, id) !== net) throw new ApiError(409, 'La bóveda debe recibir exactamente el neto.');
+  if (await balance(USD, id) < net) throw new ApiError(409, 'La bóveda debe recibir al menos el neto.');
   return { contractId: id, escrowId: escrow, status: 'ready_to_open', hashes };
 }
 export { terminal };
