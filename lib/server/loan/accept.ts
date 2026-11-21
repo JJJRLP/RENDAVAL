@@ -4,7 +4,7 @@ import { ApiError, vaultKey } from '../env';
 import { escrowsFor, state } from './state';
 import { bondAsset, lenderKey, networkPassphrase, send, server, tw } from './network';
 import { deploymentJournal, cleanJournal } from './deployment-journal';
-import { LIMIT_MESSAGE } from '../../loan/model';
+import { bondUsd, LIMIT_MESSAGE } from '../../loan/model';
 import { validateBond } from './register';
 export async function accept(wallet: string, input?: unknown) {
   const signer = vaultKey();
@@ -20,8 +20,8 @@ export async function accept(wallet: string, input?: unknown) {
   const journalKey = `${wallet}:${existing.length}`;
   if (current.bonds < 100 || current.bonds > 400) throw new ApiError(409, 'Registre primero un bono de entre 100 y 400 dólares.');
   const bond = input ? validateBond(input) : null;
-  if (bond && Math.abs(bond.nominalBs / 6.96 - current.bonds) > 0.000001) throw new ApiError(400, 'El valor declarado no coincide con sus bonos disponibles.');
-  const description = bond ? JSON.stringify(bond) : `Bono registrado: Bs ${(current.bonds * 6.96).toFixed(2)}. Datos originales referenciados por hash en la emisión.`;
+  if (bond && Math.abs(bondUsd(bond) - current.bonds) > 0.000001) throw new ApiError(400, 'El valor declarado no coincide con sus bonos disponibles.');
+  const description = bond ? JSON.stringify(bond) : `Bono registrado por USD ${current.bonds.toFixed(2)}. Datos originales referenciados por hash en la emisión.`;
   const signedXdr = await deploymentJournal(journalKey, async () => {
     if ((await escrowsFor(wallet)).length !== existing.length) throw new ApiError(409, 'Su garantía ya está creada. Vuelva a continuar.');
     const account = await server.loadAccount(signer.publicKey());

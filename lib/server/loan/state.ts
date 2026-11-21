@@ -3,7 +3,7 @@ import { ApiError, vaultKey } from '../env';
 import { readAttestation } from '../attestation';
 import { assetBalance, readBalances } from '../../stellar/horizon';
 import { USDC, VBOND } from '../../stellar/assets';
-import { terms, OPEN_LOAN_LIMIT, type LoanState, type LoanView, type Bond } from '../../loan/model';
+import { normalizeBond, terms, OPEN_LOAN_LIMIT, type LoanState, type LoanView, type Bond } from '../../loan/model';
 import { cleanObservedJournals, journalAccount } from './deployment-journal';
 import { historyPages, loanHistory } from './history';
 import { explorer, lenderKey, server, tw } from './network';
@@ -11,7 +11,7 @@ export type Escrow = { contractId: string; signer: string; amount: number; balan
 export async function verified(wallet: string) {
   const entry = await readAttestation(wallet);
   if (!entry) throw new ApiError(403, 'Verifique su empresa antes de registrar sus bonos.');
-  return { status: 'verified' as const, receiptUrl: entry.receiptUrl };
+  return { status: 'verified' as const, country: entry.country, receiptUrl: entry.receiptUrl };
 }
 export async function escrowsFor(wallet: string) {
   const all: Escrow[] = [];
@@ -47,7 +47,7 @@ export async function state(wallet: string): Promise<LoanState> {
     const payment = transactions.find(tx => tx.label === 'Desembolso');
     const repayment = history.repayments.get(escrow.contractId);
     let bond: Bond | null = null;
-    try { const parsed = JSON.parse(escrow.description); if (typeof parsed.issuer === 'string' && typeof parsed.series === 'string') bond = parsed; } catch { /* Historical description is plain text. */ }
+    try { bond = normalizeBond(JSON.parse(escrow.description)); } catch { /* Historical description is plain text. */ }
     return { bond, locked: escrow.flags.released || escrow.flags.resolved ? 0 : escrow.balance,
       repayment: repayment ? { ...repayment, releaseStatus: escrow.flags.released ? 'released' : 'pending' } : null,
       stage: escrow.flags.released ? 'closed' : escrow.flags.resolved ? 'liquidated' : escrow.flags.disputed ? 'disputed' : repayment ? 'repaid_release_pending' : paid.has(escrow.contractId) ? 'active' : escrow.balance >= escrow.amount ? 'collateral_locked' : 'escrow_created',

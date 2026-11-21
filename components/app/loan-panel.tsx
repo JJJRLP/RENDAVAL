@@ -1,7 +1,8 @@
 'use client';
 import { useState, type ReactNode } from 'react';
 import { EXAMPLE_ANNUAL_RATE, formatNumber } from '@/lib/format';
-import { LIMIT_MESSAGE, type LoanState } from '@/lib/loan/model';
+import { countryFor } from '@/lib/countries';
+import { bondValue, LIMIT_MESSAGE, type LoanState } from '@/lib/loan/model';
 import { useLoan } from './use-loan';
 import { BondForm } from './bond-form';
 import { VerificationStages } from './verification-stages';
@@ -10,7 +11,7 @@ import { LoanHealth } from './loan-health';
 const DEPOSIT_STEPS = ['Preparando su garantía', 'Confirme el depósito', 'Garantía protegida', 'Dólares enviados'];
 const REPAY_STEPS = ['Preparando el reembolso', 'Confirme el pago', 'Pago recibido', 'Bonos devueltos'];
 const usdc = (value: number) => `${formatNumber(value, 2)} USDC`;
-const day = (iso: string) => new Date(iso).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const day = (iso: string) => new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 /** Progress of a running operation. Hidden until the person starts it. */
 function Checklist({ steps, current, done }: { steps: string[]; current: number; done?: boolean }) {
@@ -92,7 +93,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
         {state && !state.setup && (state.limitReached ? <p className="mt-5 max-w-xl leading-7 text-white/75">{LIMIT_MESSAGE} <a className="underline" href="#loans-title">Ver sus préstamos</a></p> : state.loans.length && !showForm ? <>
           <p className="mt-5 max-w-xl leading-7 text-white/75">Obtenga dólares con otro bono mientras sus préstamos siguen su curso.</p>
           <button disabled={loan.busy} className="btn-primary mt-6 disabled:opacity-60" onClick={() => setShowForm(true)}>Registrar otro bono</button>
-        </> : <BondForm key={state.loans.length} exampleIndex={state.loans.length} busy={loan.busy} register={bond => { void loan.register(bond).then(success => { if (success) setShowForm(false); }); }} />)}
+        </> : <BondForm country={state.verification.country} key={state.loans.length} exampleIndex={state.loans.length} busy={loan.busy} register={bond => { void loan.register(bond).then(success => { if (success) setShowForm(false); }); }} />)}
 
         {offer && t && (
           <>
@@ -100,7 +101,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
               <Hero label="Recibe hoy" value={formatNumber(t.loan, 2)} unit="USDC" note="Sus bonos quedan en garantía, siguen siendo suyos y conservan su cupón. Al devolver el préstamo los recupera, menos el costo de custodia." />
               <Facts
                 rows={[
-                  ['Garantía', `Bs ${formatNumber(t.nominalBs, 2)} · USD ${formatNumber(t.collateral, 2)}`],
+                  ['Garantía', bondValue(loan.bond, t.collateral, countryFor(state?.verification.country)?.currency)],
                   ['Financiamiento', '50 % del valor de sus bonos'],
                   ['Tasa anual', `${formatNumber(EXAMPLE_ANNUAL_RATE * 100)} % fija`],
                   ['Plazo', '30 días'],
@@ -177,7 +178,7 @@ export function LoanPanel({ address, onState }: { address: string; onState: (sta
             const days = Math.ceil((Date.parse(item.terms.dueDate) - now) / 86400000);
             return <article key={id} className="min-w-0 p-6 md:p-8" aria-busy={running && loan.busy}>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_17rem] lg:items-center">
-                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-3 text-sm text-blue"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
+                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-1 text-sm text-ink/65">Garantía: {bondValue(item.bond, item.terms.collateral, countryFor(state.verification.country)?.currency).replace(' (referencia de demostración)', '')}</p><p className="mt-3 text-sm text-blue"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
                 <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
                 <div className="text-sm">
                   {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>

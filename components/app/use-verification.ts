@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { DEFAULT_COUNTRY, type CountryCode } from '@/lib/countries';
 import { usePollar } from '@pollar/react';
-type Pending = { sessionId: string; url: string };
-type Result = { status: 'none' | 'pending' | 'verified'; state?: 'review' | 'rejected' | 'in_progress'; receiptUrl?: string };
+type Pending = { sessionId: string; url: string; country?: CountryCode };
+type Result = { country?: CountryCode; status: 'none' | 'pending' | 'verified'; state?: 'review' | 'rejected' | 'in_progress'; receiptUrl?: string };
 export function useVerification(address: string) {
   const { getClient } = usePollar();
   const [result, setResult] = useState<Result>({ status: 'none' });
@@ -13,7 +14,7 @@ export function useVerification(address: string) {
   const [storageWarning, setStorageWarning] = useState('');
   const generation = useRef(0);
   const key = `vault:verification:${address}`;
-  const api = useCallback(async (action: string, session?: Pending) => {
+  const api = useCallback(async (action: string, session?: Pending, country?: CountryCode) => {
     const client = getClient();
     const auth = client.getAuthState();
     if (auth.step !== 'authenticated' || !auth.verified || client.getWallet()?.address !== address)
@@ -21,7 +22,7 @@ export function useVerification(address: string) {
     const response = await fetch(`/api/kyb/${action}`, {
       method: action === 'status' ? 'GET' : 'POST',
       headers: { Authorization: `Bearer ${auth.session.token.accessToken}`, 'Content-Type': 'application/json' },
-      ...(action !== 'status' ? { body: JSON.stringify({ sessionId: session?.sessionId }) } : {}),
+      ...(action !== 'status' ? { body: JSON.stringify({ sessionId: session?.sessionId, country }) } : {}),
       signal: AbortSignal.timeout(45000),
     }).catch(() => { throw new Error('No pudimos conectar con el servicio. Compruebe su conexión y vuelva a intentar.'); });
     const data = await response.json();
@@ -68,11 +69,11 @@ export function useVerification(address: string) {
     }, 0);
     return () => { clearTimeout(timer); lifecycle.current++; };
   }, [key, check]);
-  async function start(test: boolean) {
+  async function start(test: boolean, country: CountryCode = DEFAULT_COUNTRY) {
     const run = ++generation.current;
     setBusy(true); setStarting(true); setError('');
     try {
-      const session: Pending = test && pending ? pending : await api('start');
+      const session: Pending = test && pending ? pending : await api('start', undefined, country);
       if (run !== generation.current) return;
       save(session);
       setResult({ status: 'pending', state: 'in_progress' });

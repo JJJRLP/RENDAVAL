@@ -1,6 +1,6 @@
 # Rendaval
 
-Préstamos en dólares digitales (USDC) para empresas bolivianas, respaldados por sus bonos tokenizados. La empresa deja sus bonos en garantía en un escrow sobre Stellar, recibe USDC y recupera los bonos al devolver el préstamo. Los bonos siguen siendo suyos durante todo el plazo.
+Préstamos en dólares digitales (USDC) para empresas de cualquier país, con Bolivia como primer mercado y país predeterminado, respaldados por sus bonos tokenizados. La empresa deja sus bonos en garantía en un escrow sobre Stellar, recibe USDC y recupera los bonos al devolver el préstamo. Los bonos siguen siendo suyos durante todo el plazo.
 
 > **Estado:** MVP de hackathon sobre la **red de pruebas de Stellar**. Los bonos y los dólares no tienen valor real, la tokenización del bono es simulada (no hay custodio) y los servicios externos se usan en modo sandbox.
 
@@ -14,8 +14,8 @@ Préstamos en dólares digitales (USDC) para empresas bolivianas, respaldados po
 ## Recorrido de la empresa
 
 1. **Acceso.** Ingresa con correo o Google. Se crea su cuenta en Stellar sin instalar nada (Pollar).
-2. **Verificación.** Confirma la identidad legal de la empresa (Didit, flujo para Bolivia). La aprobación queda registrada en Stellar como constancia pública.
-3. **Registro del bono.** Declara su bono en bolivianos. Rendaval emite los bonos digitales equivalentes a su valor en dólares (paso simulado).
+2. **Verificación.** Confirma la identidad legal de la empresa (Didit), tras elegir su país; Bolivia aparece preseleccionada y «Otro país» permite continuar en USD. La aprobación queda registrada en Stellar como constancia pública.
+3. **Registro del bono.** Declara su bono en la moneda local o en USD, con un equivalente de USD 100–400 según referencias de demostración. Rendaval emite los bonos digitales equivalentes a su valor en dólares (paso simulado).
 4. **Oferta.** Rendaval fija las condiciones: 50 % del valor de la garantía, 8 % anual, 30 días. La empresa solo acepta.
 5. **Garantía y desembolso.** La empresa firma el depósito de los bonos en un escrow (Trustless Work) y el prestamista envía los USDC.
 6. **Reembolso.** La empresa devuelve capital más interés con una firma; el prestamista aprueba y Rendaval libera la garantía.
@@ -34,7 +34,7 @@ Rutas del servidor (Next.js, /api/kyb/* y /api/loan/*)
 ```
 
 - **Sin base de datos.** Todo el estado se lee de la red y de los proveedores, así que el despliegue solo necesita variables de entorno:
-  - Empresa verificada: entrada de datos `kyb:<cuenta>` en la cuenta de Rendaval.
+  - Empresa verificada: entrada de datos `kyb:<cuenta>` en la cuenta de Rendaval, con sesión y país. Las constancias antiguas corresponden a Bolivia.
   - Bono registrado: saldo del activo `VBOND` de la empresa (1 VBOND = 1 USD de garantía).
   - Préstamo: escrow de Trustless Work asociado a la empresa.
   - Desembolso: pago en USDC y marcador escritos en una misma transacción del prestamista, para que no pueda pagarse dos veces.
@@ -128,7 +128,7 @@ docs/                 Notas técnicas
 
 - **Devolución de la garantía.** La liberación del escrow por la API de Trustless Work falla hoy para activos que no son stablecoins, porque su cuenta de comisiones no tiene trustline del bono. La aplicación registra el pago, muestra la devolución «en proceso» y permite comprobarla desde cada préstamo; se completará sin cambios de código cuando el proveedor agregue la trustline.
 - **Montos de prueba.** La garantía admite entre USD 100 y USD 400 (préstamo de hasta 200 USDC), por el tamaño de la tesorería de demostración.
-- **Simulaciones.** La tokenización del bono, el tipo de cambio (Bs 6,96 por USD) y el prestamista único son de demostración. La verificación ofrece una aprobación de prueba además del flujo real.
+- **Simulaciones.** La tokenización del bono, los tipos de cambio de referencia fijos por país (de demostración, no cotizaciones en tiempo real) y el prestamista único son de demostración. La verificación ofrece una aprobación de prueba además del flujo real.
 - **Hasta 3 préstamos abiertos por empresa** (activos o pagados con bonos pendientes de devolución), y un solo prestamista. Puede registrar otro bono cuando no hay bonos disponibles ni un préstamo en preparación; cada préstamo se devuelve por separado.
 - **Comisiones de red.** Las firmas de la empresa sobre el escrow pagan su comisión en XLM desde su cuenta; no se patrocinan.
 - **No apto para producción.** No hay auditoría de contratos, gestión de llaves ni cumplimiento regulatorio.
