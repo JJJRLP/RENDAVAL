@@ -1,7 +1,8 @@
-# Interfaz del libro de préstamos — A4, especificación para la web
+# Interfaz del libro de préstamos — C1, especificación para la web
 
 Instancia testnet y hashes: [evidencia](../scripts/evidence/loan-book-testnet.json).
-Usar `contractId` de ese archivo. El WASM incluye la especificación de tipos.
+Usar `contractId` (libro), `rulesContractId` (reglas), `bondToken` (SAC) y
+`issuer` de ese archivo. RVBOND reemplaza a VBOND para el reinicio limpio. El WASM incluye la especificación de tipos.
 La aplicación existente aún no integra esta interfaz.
 
 ## Identificadores y unidades
@@ -37,17 +38,18 @@ no devuelve valor. Los errores se revierten junto con pagos y eventos.
 
 | Función | Argumentos y resultado | Autorización / conducta |
 | --- | --- | --- |
-| __constructor | `(operator: Address, issuer: Address, usdc: Address, margin_bps: u32, default_bps: u32, max_step_bps: u32, max_price_age: u64, discount_bps: u32)` | Atómico al desplegar; parámetros inmutables. |
+| __constructor | `(operator: Address, issuer: Address, usdc: Address, rules: Address, margin_bps: u32, default_bps: u32, max_step_bps: u32, max_price_age: u64, discount_bps: u32)` | Atómico al desplegar; parámetros inmutables. |
 | register_series | `(series: Symbol, token: Address)` | Emisor; vínculo inmutable y precio 100 % con fecha actual. Sin límite global ni acceso al catálogo. |
 | list_series | `(series: Symbol)` | Emisor; añade una serie existente al catálogo, máximo 64. Repetir es inocuo. |
 | get_series | `(name: Symbol) -> Result<Series, Error>` | Devuelve token y quote; no llama al token. |
-| open | `(id: Address, series: Symbol, borrower: Address, lender: Address, face: i128, principal: i128)` | Operador **y** prestamista; exige saldo >= face y autorización del escrow, registra y transfiere capital atómicamente. |
+| open | `(id: Address, series: Symbol, borrower: Address, lender: Address, face: i128, principal: i128)` | Operador **y** prestamista; exige saldo >= face, autorización y admin del SAC = rules; verifica vínculo de reglas con este libro, marca prenda y paga atómicamente. |
 | publish_price | `(series: Symbol, price: i128)` | Emisor; cambia una cotización compartida, no un préstamo. |
 | set_buyer | `(buyer: Address, allowed: bool)` | Emisor; false elimina permiso, true lo conserva persistente. |
 | flag_margin | `(id: Address)` | Cualquiera; precio fresco y deuda/valor >= margen. |
 | mark_default | `(id: Address)` | Cualquiera; saldo < face o saldo congelado sin exigir frescura; también deuda/valor >= default con precio fresco, o ahora > due. |
 | repay | `(id: Address)` | Prestatario; paga deuda entera, incluso en Defaulted, hasta liquidación. |
 | liquidate | `(id: Address, buyer: Address, expected_price: i128)` | Comprador autorizado; Defaulted, saldo legible y autorizado, precio fresco e igual al esperado. |
+| release_pledge | `(id: Address)` | Cualquiera; solo Repaid/Liquidated y saldo actual exactamente cero. Retira la marca mediante llamada libro → reglas. Repetir después de retirarla no hace nada. |
 | get_loan | `(id: Address) -> Result<View, Error>` | Precio actual de serie si abierto; foto final si cerrado. Reconcilia margen del id consultado. |
 | get_price | `(id: Address) -> Result<i128, Error>` | Igual criterio de precio que get_loan. No recibe una serie. |
 | get_config | `() -> Config` | Parámetros del constructor. |
@@ -55,7 +57,7 @@ no devuelve valor. Los errores se revierten junto con pagos y eventos.
 
 `Series = { token: Address, quote: PriceData }`.
 `Collateral = { balance: i128, authorized: bool, known: bool }`.
-`Config` contiene exactamente los ocho parámetros del constructor.
+`Config` contiene exactamente los nueve parámetros del constructor, incluido `rules`.
 `Loan` contiene `asset: Symbol` (serie), `price_time: u64`, `borrower: Address`,
 `lender: Address`, `face: i128`, `principal: i128`, `interest: i128`, `due: u64`,
 `status: Status`, `price: i128`, `loss: i128`, `proceeds: i128`, `surplus: i128`,
@@ -191,8 +193,9 @@ del host. Un token hostil puede hacer fallar las llamadas que consultan **su pro
 serie**, incluida una devolución, o mentir sobre su saldo. No se recorre ni llama
 ese token desde operaciones de otras series, registro, catálogo o lecturas SEP-40.
 No agrupar operaciones independientes con un token no confiable en una misma
-transacción. El emisor debe registrar SAC conocidos. Los cerrados nunca llaman
-al token y su foto no cambia con posteriores clawbacks.
+transacción. El emisor debe registrar SAC conocidos. Las vistas de cerrados nunca llaman
+al token y su foto no cambia. La operación separada release_pledge sí consulta el saldo
+actual y falla si no puede leerlo; nunca usa la foto del cierre para desproteger.
 
 ## Errores y reintentos
 
@@ -211,6 +214,8 @@ al token y su foto no cambia con posteriores clawbacks.
 | 11 | Capacity | Ya se publicaron 64 series en el catálogo |
 | 12 | Collateral | Saldo insuficiente al abrir o garantía congelada al abrir/liquidar |
 | 13 | CollateralRead | No se pudo verificar saldo y autorización |
+| 14 | Rules | Admin distinto de reglas, admin ilegible o reglas vinculadas a otro libro |
+| 15 | Nonempty | Préstamo cerrado pero aún hay bonos en escrow |
 
 Firmas, saldo, trustline, recursos y restauración pueden fallar en host/SAC y
 no usan esos códigos. `open` y `register_series` duplicados devuelven Exists;
@@ -245,7 +250,7 @@ Renovar TTL no es una transición de negocio. Config está en instance;
 Loan(id), Series(symbol), Assets y Buyer(address) en persistent.
 Préstamos abiertos y entradas consultadas renuevan a 2.073.600 ledgers si quedan
 menos de 1.036.800; también instancia y código. No hay mantenimiento global.
-Cerrados no renuevan Loan ni consultan Series o token: conservan la foto final y pueden
+Las vistas de cerrados no renuevan Loan ni consultan Series o token: conservan la foto final y pueden
 archivarse. El cierre puede haber renovado al cargar el préstamo todavía vivo;
 lo ya pagado no se recupera. Lecturas/reintentos posteriores no prolongan eso.
 
@@ -264,26 +269,120 @@ histórica global por usuario requeriría una fuente adicional: no se promete qu
 getEvents sea una base de datos eterna. Para un índice opcional, deduplicar por
 (red, contrato, event.id), conservar cursor y recuperar huecos de retención.
 La salud exige consultar get_loan: ni los eventos del libro ni los de precio
-anuncian automáticamente un clawback o una congelación del SAC.
+anuncian automáticamente una salida del escrow. La marca impide revocación
+por las reglas; no impide transferencias autorizadas por el propio escrow.
 
-## Firmas y trabajo de la fase web
+## Contrato de reglas y protección C1
 
-El servidor registra series con `BOND_ISSUER_SECRET_KEY`. Para open con origen
-prestamista, simula, firma la autorización Soroban del operador con
-`VAULT_SECRET_KEY` (`authorizeEntry`, vencimiento de ledger acotado), ensambla y
-firma el sobre con `LENDER_SECRET_KEY`. Firmar solo el sobre con ambas claves no
-sustituye la autorización. Ver [script](../scripts/loan-book-testnet.mjs).
+RVBOND tiene AUTH_REQUIRED, AUTH_REVOCABLE y AUTH_IMMUTABLE activos y clawback
+inactivo. Su SAC es `CDPPMX5DG2XQUNQFYKIB77OZVZJWAHRDEOLHOCRBJ2UK4MGBNHQUGZGW`;
+emisor `GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6`.
+No usar la clave del VBOND retirado. El registro de series sigue sin catálogo global.
+Las reglas pueden administrar más de un SAC del mismo emisor: la clave persistente
+de protección es `(token, holder)`. Darles el admin de otro activo exige revisar
+por separado sus flags, procedencia y ausencia de clawback; open comprueba admin,
+no flags clásicos ni autenticidad de código. Para esta versión la web acepta solo
+el SAC RVBOND verificado en la evidencia, no un token proporcionado por el visitante.
 
-Para Pollar, construir repay(id) con origen prestatario, simular/preparar y
-firmar con signTx; require_auth y el pago anidado usan esa firma. Necesita
-trustline y deuda completa en USDC, además de XLM para comisión o patrocinador.
-El script verifica este patrón con una cuenta efímera, no con el navegador.
+| Función de reglas | Argumentos / resultado | Firma y condición |
+| --- | --- | --- |
+| __constructor | `(issuer: Address, book: Address)` | Atómico al desplegar; book debe ser C; configuración inmutable. |
+| get_config | `() -> { issuer, book }` | Lectura. |
+| pledged | `(token: Address, holder: Address) -> bool` | Lectura; renueva TTL de la marca existente. |
+| set_authorized | `(token: Address, holder: Address, authorized: bool)` | Emisor. false falla con Pledged (101) si hay marca, incluso con saldo cero. |
+| protect | `(token: Address, holder: Address)` | Solo autorización contractual del libro; holder debe ser C. No llamar desde servidor. |
+| release | `(token: Address, holder: Address)` | Solo libro; comprueba de nuevo saldo cero. No llamar desde servidor. |
 
-La fase web debe adoptar el nuevo id de contrato, pasar el token al registrar,
-reservar series exclusivas **sin listarlas**, firmar open con las dos partes y
-consultar get_loan por id. Mostrar saldo, faltante, autorización y lectura fallida
-además de precio, edad, descuento, excedente y pérdida. Permitir flag de default
-por garantía y cura por pago completo hasta liquidación. No presentar el ratio
-como prueba de salud si authorized=false o known=false. El catálogo no sirve
-para descubrir préstamos ni visitantes. La entrega del bono sigue requiriendo
-coordinación externa y no es atómica con el pago de liquidación.
+Escrituras devuelven Result<(), Error>. Errores de reglas: 101 Pledged,
+102 Nonempty, 103 Invalid. Las firmas ausentes fallan en el host. Las reglas
+no tienen mint, transfer, burn, clawback, set_admin, upgrade, pause ni passthrough.
+La emisión se hace con pago clásico del emisor a una cuenta aprobada.
+
+Eventos de reglas: `init` con config; `authorized, token, holder` con authorized;
+`pledge, token, holder` con pledged. Cambios idénticos no repiten evento.
+La retirada emite el evento pledge=false en reglas, no un segundo evento en libro.
+Config vive en instance y marcas en persistent, con TTL/umbral 2.073.600/1.036.800.
+Una marca archivada se restaura: no desaparece ni se interpreta como false.
+Cualquiera puede mantenerla viva enviando pledged como transacción; una simulación
+no persiste TTL. Ante un fallo de archivo o RPC, restaurar/simular, nunca permitir revocación
+por asumir que no existe la marca. La marca no depende del TTL del préstamo cerrado.
+
+La marca nace **en open**, antes del pago USDC, en la misma transacción. Si el pago
+falla, también se revierten préstamo y marca. El intervalo entre depósito y open
+todavía no tiene protección; no hay deuda desembolsada y open rechaza un saldo
+congelado o insuficiente. Repay y liquidate no retiran la marca. release_pledge
+requiere estado terminal y saldo actual cero (también cero de cualquier exceso sobre
+face); es independiente del precio y no requiere firma de empresa, emisor u operador.
+Después de retirar la marca no volver a depositar en ese escrow cerrado.
+
+Las direcciones del libro y reglas se calculan con la cuenta de despliegue y dos
+salts públicos antes de desplegar. Cada constructor fija la dirección del otro.
+Crear esos contratos requiere la firma de la cuenta de despliegue; conocer los salts
+no permite capturarlos. No hay inicialización ni enlace posterior. Se verifican ambos
+constructores antes de entregar el admin del SAC. Ambos carecen de actualización.
+
+Las cuentas G conservan las rutas clásicas de autorización del emisor: las reglas
+no pueden impedir que el emisor use esas operaciones directamente. Por eso solo
+un escrow C puede respaldar un préstamo. Tampoco se impide la emisión adicional,
+la revocación de receptores ordinarios ni una salida permitida por el escrow.
+La entrega tras liquidar sigue coordinándose fuera del libro.
+
+## Firmas y pasos de la fase web
+
+Usar exclusivamente Stellar testnet y las direcciones de la evidencia C1. Todas
+las cantidades son enteros de siete decimales; simular/preparar cada transacción,
+confirmar su hash y consultar el estado antes del siguiente paso. Ante timeout,
+consultar el hash original; no crear un préstamo con otro id ni volver a emitir
+bonos por asumir que falló la red. Los pagos clásicos y depósitos no son idempotentes:
+el servidor debe conservar su hash confirmado como parte del flujo.
+
+1. **Registrar bono para una empresa.** Comprobar identidad y aprobación del emisor.
+   La empresa firma `changeTrust` para `RVBOND:issuer` y USDC si no existen esas
+   trustlines. El servidor llama reglas.set_authorized(SAC, empresa, true), firmado
+   con `NEW_BOND_ISSUER_SECRET_KEY`. Confirmar autorización. El emisor firma un
+   pago clásico de RVBOND a la empresa por el nominal aprobado (emisión). Confirmar
+   saldo. Registrar una serie exclusiva mediante libro.register_series(nombre, SAC),
+   firmado por el mismo emisor, **sin list_series** para visitantes. El precio inicial
+   es 100 %. No llamar SAC.mint: el emisor ya no es su admin y reglas no lo expone.
+2. **Autorizar escrow.** Crear el escrow real por el flujo de Trustless Work de la
+   próxima fase; comprobar activo, roles, empresa y condiciones de salida. El emisor
+   firma reglas.set_authorized(SAC, escrow, true). La empresa firma el depósito al
+   escrow por el flujo TW. Verificar saldo y autorización en SAC por RPC. Aprobar
+   también todos los receptores previstos, incluido el cobrador TW, que necesita su
+   propia trustline. C1 no prueba ni cambia ese cobrador.
+3. **Abrir préstamo.** Invocar libro.open(escrow, serie, empresa, prestamista, face,
+   principal) con origen de transacción prestamista. Simular; firmar la entrada de
+   autorización Soroban del operador con `VAULT_SECRET_KEY` usando authorizeEntry y
+   vencimiento de ledger acotado; ensamblar y firmar el sobre con `LENDER_SECRET_KEY`.
+   Firmar solamente el sobre con ambas claves no sustituye la autorización Soroban.
+   El pago anidado usa la firma del prestamista. No firmar protect: la autorización
+   libro → reglas es contractual. Confirmar get_loan y reglas.pledged(SAC, escrow).
+4. **Publicar precio.** El servidor verifica que la serie pertenece al flujo correcto
+   y firma libro.publish_price(serie, precio) con `NEW_BOND_ISSUER_SECRET_KEY`.
+   Confirmar cada paso de hasta 25 % respecto del anterior. Renovar antes de 24 h;
+   publicar el mismo precio en otro segundo renueva la fecha. El emisor es también
+   el publicador y no hay una clave de precios distinta.
+5. **Pagar préstamo.** La empresa debe tener deuda completa en USDC y firma
+   libro.repay(escrow) como origen (Pollar/signTx en la próxima fase). Simular y
+   preparar; require_auth y transferencia anidada usan esa firma. Confirmar Repaid.
+   No marcar garantía liberada: la prenda continúa hasta que salgan todos los bonos.
+   Repay repetido no vuelve a cobrar, pero sigue exigiendo la firma de la empresa.
+6. **Devolver bonos y levantar prenda.** Ejecutar la salida por las rutas oficiales
+   del escrow TW y sus firmas/roles; C1 no especifica ni sustituye esas firmas.
+   Confirmar saldo SAC del escrow exactamente cero y estado Repaid o Liquidated.
+   Cualquier cuenta con XLM para la comisión puede enviar libro.release_pledge(escrow),
+   firmando solo el sobre. Confirmar reglas.pledged=false. Si quedan bonos, falla
+   Nonempty; si no se conoce saldo, falla CollateralRead. No llamar reglas.release
+   con la clave del backend: nunca tiene autorización para retirar la marca.
+
+Ver [ejecutor C1](../scripts/bond-rules-testnet.mjs) para authorizeEntry y orden de
+llamadas. El contrato auxiliar test-escrow es **solo una prueba**: su dueño puede
+retirar en cualquier momento y no debe usarse como escrow de producto. La corrida
+final usa al operador como empresa para poder recuperar fondos sin guardar claves
+nuevas; en la web empresa y operador son roles distintos.
+
+La web debe mostrar precio y edad, estado, saldo, autorización, faltante o lectura
+no verificable, y protección pendiente aun después de pagar. Mostrar por separado
+el saldo actual al liberar: la foto final de get_loan no se actualiza. No usar assets
+para descubrir visitantes ni interpretar health_bps como salud si known=false o
+authorized=false. Esta fase no cambia app/, components/ ni lib/.

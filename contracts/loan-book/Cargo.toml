@@ -11,4 +11,5 @@ crate-type = ["cdylib", "rlib"]
 soroban-sdk = { workspace = true }
 
 [dev-dependencies]
+rendaval-bond-rules = { path = "../bond-rules" }
 soroban-sdk = { workspace = true, features = ["testutils"] }

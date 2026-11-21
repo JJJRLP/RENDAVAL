@@ -4,6 +4,21 @@ use soroban_sdk::{
     Symbol, Vec,
 };
 
+// Wire-only client avoids linking another contract's exported functions into this WASM.
+#[contracttype]
+#[derive(Clone)]
+pub struct RulesConfig {
+    pub issuer: Address,
+    pub book: Address,
+}
+#[soroban_sdk::contractclient(name = "RulesClient")]
+pub trait RulesInterface {
+    fn get_config(e: Env) -> RulesConfig;
+    fn pledged(e: Env, token: Address, holder: Address) -> bool;
+    fn protect(e: Env, token: Address, holder: Address);
+    fn release(e: Env, token: Address, holder: Address);
+}
+
 pub const SCALE: i128 = 10_000_000;
 pub const MAX_LISTED_SERIES: u32 = 64;
 const TERM: u64 = 30 * 86400;
@@ -27,6 +42,8 @@ pub enum Error {
     Capacity = 11,
     Collateral = 12,
     CollateralRead = 13,
+    Rules = 14,
+    Nonempty = 15,
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -40,6 +57,7 @@ pub enum Status {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
+    pub rules: Address,
     pub operator: Address,
     pub max_step_bps: u32,
     pub max_price_age: u64,
@@ -296,13 +314,15 @@ impl LoanBook {
         operator: Address,
         issuer: Address,
         usdc: Address,
+        rules: Address,
         margin_bps: u32,
         default_bps: u32,
         max_step_bps: u32,
         max_price_age: u64,
         discount_bps: u32,
     ) -> Result<(), Error> {
-        if max_step_bps == 0
+        if rules.to_string().to_bytes().get(0) != Some(b'C')
+            || max_step_bps == 0
             || max_step_bps > 10000
             || max_price_age == 0
             || discount_bps >= 10000
@@ -313,6 +333,7 @@ impl LoanBook {
             return Err(Error::Invalid);
         }
         let c = Config {
+            rules,
             operator,
             max_step_bps,
             max_price_age,
@@ -448,9 +469,43 @@ impl LoanBook {
         if principal > value(&l)? / 2 {
             return Err(Error::Invalid);
         }
+        match token::StellarAssetClient::new(&e, &registered.token).try_admin() {
+            Ok(Ok(admin)) if admin == c.rules => (),
+            _ => return Err(Error::Rules),
+        }
+        let rules = RulesClient::new(&e, &c.rules);
+        if rules.get_config().book != e.current_contract_address() {
+            return Err(Error::Rules);
+        }
         save(&e, &id, &l);
+        rules.protect(&registered.token, &id);
         token::Client::new(&e, &c.usdc).transfer(&l.lender, &l.borrower, &principal);
         Opened { id, loan: l }.publish(&e);
+        Ok(())
+    }
+    // Permissionless trigger, but only this book authorizes the nested rules call.
+    // Read the final loan directly: do not reconcile or trust its closing balance.
+    pub fn release_pledge(e: Env, id: Address) -> Result<(), Error> {
+        let c = config(&e);
+        let l: Loan = e
+            .storage()
+            .persistent()
+            .get(&Key::Loan(id.clone()))
+            .ok_or(Error::Missing)?;
+        if !closed(&l) {
+            return Err(Error::State);
+        }
+        let token = series(&e, &l.asset)?.token;
+        let rules = RulesClient::new(&e, &c.rules);
+        if !rules.pledged(&token, &id) {
+            return Ok(());
+        }
+        match token::Client::new(&e, &token).try_balance(&id) {
+            Ok(Ok(0)) => (),
+            Ok(Ok(n)) if n > 0 => return Err(Error::Nonempty),
+            _ => return Err(Error::CollateralRead),
+        }
+        rules.release(&token, &id);
         Ok(())
     }
     // Registration never loads the catalogue; names and token bindings are permanent.

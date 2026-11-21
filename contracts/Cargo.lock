@@ -1327,7 +1327,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "rendaval-bond-rules"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "rendaval-loan-book"
+version = "0.1.0"
+dependencies = [
+ "rendaval-bond-rules",
+ "soroban-sdk",
+]
+
+[[package]]
+name = "rendaval-test-escrow"
 version = "0.1.0"
 dependencies = [
  "soroban-sdk",

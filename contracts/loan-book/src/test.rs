@@ -8,6 +8,7 @@ use std::string::ToString;
 struct Fixture {
     e: Env,
     book: Address,
+    rules: Address,
     issuer: Address,
     operator: Address,
     token: Address,
@@ -35,12 +36,19 @@ impl Fixture {
             .set_flag(soroban_sdk::testutils::IssuerFlags::ClawbackEnabledFlag);
         let token = asset.address();
         let operator = Address::generate(&e);
-        let book = e.register(
+        let book = Address::generate(&e);
+        let rules = e.register(
+            rendaval_bond_rules::BondRules,
+            (issuer.clone(), book.clone()),
+        );
+        e.register_at(
+            &book,
             LoanBook,
             (
                 operator.clone(),
                 issuer.clone(),
                 token.clone(),
+                rules.clone(),
                 7000u32,
                 8500u32,
                 2500u32,
@@ -56,11 +64,13 @@ impl Fixture {
             series: Symbol::new(&e, "BOND_A"),
             e,
             book,
+            rules,
             issuer,
             operator,
             token,
         };
         token::StellarAssetClient::new(&f.e, &f.token).mint(&f.lender, &(1000 * SCALE));
+        token::StellarAssetClient::new(&f.e, &f.token).set_admin(&f.rules);
         f.c().register_series(&f.series, &f.token);
         f.c().list_series(&f.series);
         f.mint(&f.id, 200 * SCALE);
@@ -543,6 +553,7 @@ fn constructor_guard_boundaries() {
                 Address::generate(&e),
                 Address::generate(&e),
                 Address::generate(&e),
+                f.rules.clone(),
                 7000,
                 8500,
                 step,
@@ -575,6 +586,12 @@ fn opening_cost_is_independent_of_ten_thousand_existing_loans() {
             e.mock_all_auths();
             let rebind = |a: &Address| Address::from_str(&e, &a.to_string().to_string());
             f.book = rebind(&f.book);
+            f.rules = rebind(&f.rules);
+            e.register_at(
+                &f.rules,
+                rendaval_bond_rules::BondRules,
+                (rebind(&f.issuer), f.book.clone()),
+            );
             f.operator = rebind(&f.operator);
             f.issuer = rebind(&f.issuer);
             f.token = rebind(&f.token);
@@ -590,6 +607,7 @@ fn opening_cost_is_independent_of_ten_thousand_existing_loans() {
                     f.operator.clone(),
                     f.issuer.clone(),
                     f.token.clone(),
+                    f.rules.clone(),
                     7000u32,
                     8500u32,
                     2500u32,
@@ -825,6 +843,12 @@ fn frozen_collateral_defaults_but_cannot_be_sold_until_authorized() {
 struct BrokenToken;
 #[contractimpl]
 impl BrokenToken {
+    pub fn __constructor(e: Env, admin: Address) {
+        e.storage().instance().set(&1u32, &admin);
+    }
+    pub fn admin(e: Env) -> Address {
+        e.storage().instance().get(&1u32).unwrap()
+    }
     pub fn balance(e: Env, _id: Address) -> i128 {
         match e.storage().instance().get::<_, u32>(&0u32).unwrap_or(0) {
             0 => 200 * SCALE,
@@ -845,7 +869,7 @@ fn broken_token_is_unknown_and_does_not_affect_other_series_or_repayment() {
     let f = Fixture::new();
     f.open();
     let c = f.c();
-    let broken = f.e.register(BrokenToken, ());
+    let broken = f.e.register(BrokenToken, (f.rules.clone(),));
     let name = Symbol::new(&f.e, "BROKEN");
     c.register_series(&name, &broken);
     let id = Address::generate(&f.e);
@@ -889,6 +913,9 @@ fn broken_token_is_unknown_and_does_not_affect_other_series_or_repayment() {
     f.mint(&f.borrower, c.get_loan(&id).loan.interest);
     c.repay(&id);
     assert!(!c.get_loan(&id).loan.collateral.known);
+    assert_eq!(c.try_release_pledge(&id), Err(Ok(Error::CollateralRead)));
+    BrokenTokenClient::new(&f.e, &broken).break_token(&1);
+    assert_eq!(c.try_release_pledge(&id), Err(Ok(Error::CollateralRead)));
     f.mint(&f.borrower, c.get_loan(&f.id).loan.interest);
     c.repay(&f.id);
     assert_eq!(c.get_loan(&f.id).loan.status, Status::Repaid);
@@ -910,6 +937,12 @@ fn series_registration_cost_is_constant_and_unlisted_quotes_work() {
             e.mock_all_auths();
             let rebind = |a: &Address| Address::from_str(&e, &a.to_string().to_string());
             f.book = rebind(&f.book);
+            f.rules = rebind(&f.rules);
+            e.register_at(
+                &f.rules,
+                rendaval_bond_rules::BondRules,
+                (rebind(&f.issuer), f.book.clone()),
+            );
             f.issuer = rebind(&f.issuer);
             f.operator = rebind(&f.operator);
             f.token = rebind(&f.token);
@@ -920,6 +953,7 @@ fn series_registration_cost_is_constant_and_unlisted_quotes_work() {
                     f.operator.clone(),
                     f.issuer.clone(),
                     f.token.clone(),
+                    f.rules.clone(),
                     7000u32,
                     8500u32,
                     2500u32,
@@ -1004,4 +1038,105 @@ fn frozen_loan_can_be_repaid_without_thawing() {
     assert_eq!(v.loan.status, Status::Repaid);
     assert!(!v.loan.collateral.authorized);
     assert_eq!(v.shortfall, Some(0));
+}
+
+#[test]
+fn pledge_is_atomic_and_only_terminal_empty_loans_can_release() {
+    let f = Fixture::new();
+    let r = rendaval_bond_rules::BondRulesClient::new(&f.e, &f.rules);
+    // Failure in payout must roll back the mark as well as the loan.
+    token::Client::new(&f.e, &f.token).transfer(&f.lender, &f.buyer, &(1000 * SCALE));
+    assert!(f
+        .c()
+        .try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        )
+        .is_err());
+    assert!(!r.pledged(&f.token, &f.id));
+    f.mint(&f.lender, 1000 * SCALE);
+    f.open();
+    assert!(r.pledged(&f.token, &f.id));
+    assert_eq!(
+        r.try_set_authorized(&f.token, &f.id, &false),
+        Err(Ok(rendaval_bond_rules::Error::Pledged))
+    );
+    assert_eq!(f.c().try_release_pledge(&f.id), Err(Ok(Error::State)));
+    // Empty but active still cannot release. Mock the holder's own transfer only.
+    token::Client::new(&f.e, &f.token).transfer(&f.id, &f.buyer, &(200 * SCALE));
+    f.e.mock_auths(&[]);
+    assert_eq!(f.c().try_release_pledge(&f.id), Err(Ok(Error::State)));
+    // No account (including operator and issuer) can authorize as the book.
+    assert!(r.try_release(&f.token, &f.id).is_err());
+    assert!(r.try_protect(&f.token, &Address::generate(&f.e)).is_err());
+    assert!(r.try_set_authorized(&f.token, &f.id, &false).is_err());
+    f.e.mock_all_auths();
+    f.mint(&f.id, 200 * SCALE);
+    f.mint(&f.borrower, f.c().get_loan(&f.id).loan.interest);
+    f.c().repay(&f.id);
+    f.e.mock_auths(&[]);
+    assert_eq!(f.c().try_release_pledge(&f.id), Err(Ok(Error::Nonempty)));
+    assert!(r.pledged(&f.token, &f.id));
+    f.e.mock_all_auths();
+    token::Client::new(&f.e, &f.token).transfer(&f.id, &f.buyer, &(200 * SCALE));
+    f.e.mock_auths(&[]);
+    // No mocks: book's direct invocation supplies contract authorization.
+    f.c().release_pledge(&f.id);
+    f.c().release_pledge(&f.id);
+    assert!(!r.pledged(&f.token, &f.id));
+    f.e.mock_all_auths();
+    r.set_authorized(&f.token, &f.id, &false);
+    assert!(!token::StellarAssetClient::new(&f.e, &f.token).authorized(&f.id));
+}
+
+#[test]
+fn opening_requires_rules_admin_and_correct_book_binding() {
+    let f = Fixture::new();
+    token::StellarAssetClient::new(&f.e, &f.token).set_admin(&f.issuer);
+    assert_eq!(
+        f.c().try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        ),
+        Err(Ok(Error::Rules))
+    );
+    assert_eq!(f.balance(&f.borrower), 0);
+    token::StellarAssetClient::new(&f.e, &f.token).set_admin(&f.rules);
+    f.e.register_at(
+        &f.rules,
+        rendaval_bond_rules::BondRules,
+        (f.issuer.clone(), Address::generate(&f.e)),
+    );
+    assert_eq!(
+        f.c().try_open(
+            &f.id,
+            &f.series,
+            &f.borrower,
+            &f.lender,
+            &(200 * SCALE),
+            &(100 * SCALE)
+        ),
+        Err(Ok(Error::Rules))
+    );
+}
+
+#[test]
+fn liquidated_collateral_stays_protected_until_empty() {
+    let f = Fixture::new();
+    f.default(5_500_000);
+    f.c().set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 200 * SCALE);
+    f.c().liquidate(&f.id, &f.buyer, &5_500_000);
+    assert_eq!(f.c().try_release_pledge(&f.id), Err(Ok(Error::Nonempty)));
+    token::Client::new(&f.e, &f.token).transfer(&f.id, &f.buyer, &(200 * SCALE));
+    f.e.mock_auths(&[]);
+    f.c().release_pledge(&f.id);
 }

@@ -1,4 +1,4 @@
-# Escala del libro de préstamos — A4
+# Escala del libro de préstamos — C1
 
 Revisión del 20 de noviembre de 2026. Una entrada por préstamo y otra por serie:
 ni abrir ni registrar ni publicar un precio recorre lo que ya existe. El límite
@@ -56,10 +56,10 @@ Una simulación sola no mantiene vivo el estado.
 La guía oficial de [estrategias de almacenamiento](https://developers.stellar.org/docs/build/guides/storage/storage-strategies)
 recomienda una clave por entidad para poblaciones crecientes, catálogos con
 límite para conjuntos pequeños e índices de eventos fuera del contrato cuando
-se necesita enumerar. Eso es lo que aplica A4. No se intenta devolver un millón
+se necesita enumerar. Eso es lo que conserva C1. No se intenta devolver un millón
 de préstamos en una llamada ni renovar toda la cartera a la vez.
 
-## Diseño A4
+## Diseño C1
 
 `Loan(id)` guarda el préstamo y su última foto de garantía. `Series(nombre)`
 guarda token inmutable y último precio. `Assets` guarda hasta 64 nombres
@@ -85,12 +85,18 @@ en testnet; las columnas grandes describen el diseño.
 | Assets | Hasta 64 nombres | Igual | Igual, solo los elegidos por el emisor |
 | Config + código | Constante | Igual | Igual |
 | Buyer | B permisos activos | B | B; revocar elimina la entrada |
-| open, get_loan, flag_margin, mark_default, repay, liquidate | O(1) | O(1) | O(1), más llamadas al token de esa serie |
+| open, get_loan, flag_margin, mark_default, repay, liquidate | O(1) | O(1) | O(1), más llamadas al token y reglas de esa serie |
 | register_series, get_series, publish_price, lecturas SEP-40 por nombre | O(1) | O(1) | O(1) |
 | list_series, assets | O(C), C <= 64 | Igual | Igual |
 | Buscar toda la cartera fuera del contrato | O(N) | O(N) | O(N), requiere fuente histórica |
 
-open lee la serie y consulta balance(id) y authorized(id) en su token. Exige
+open lee la serie, consulta balance(id), authorized(id) y admin() en su token;
+comprueba el vínculo de reglas y escribe una marca persistente (token, id) en ellas.
+La marca y el pago se revierten juntos si falla la transacción. release_pledge
+consulta un préstamo terminal y saldo actual cero, sin recorrer otros préstamos.
+El estado adicional crece O(P), con P prendas pendientes de liberación, incluidas
+las de préstamos cerrados que todavía tienen bonos. La retirada elimina la marca,
+pero no elimina el préstamo ni permite reciclar su id. Exige
 saldo >= nominal y autorización, además del LTV y precio fresco. Las demás
 operaciones sobre abiertos también leen esa garantía: no hay barrido de cartera.
 El valor utiliza min(saldo, nominal), por lo que un saldo enorme de un token
@@ -100,9 +106,9 @@ exige autorización; pagar permite cerrar aunque haya faltante o congelación.
 
 La semántica de autorización y clawback de balances de contrato está definida
 en [CAP-46-6](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0046-06.md).
-La prueba real crea un activo clásico nuevo con autorización obligatoria,
-revocación y clawback. No modifica el activo del producto ni consulta Trustless
-Work. Verificar saldo no acredita propiedad del escrow ni entrega futura.
+La prueba destructiva C1 usa un activo desechable con autorización obligatoria,
+revocación, flags inmutables y sin clawback. La corrida final usa RVBOND con esa
+misma política y admin en las reglas. Ninguna llama Trustless Work. Verificar saldo no acredita propiedad del escrow ni entrega futura.
 
 Las llamadas try_* capturan errores recuperables y tipos inesperados. Un saldo
 negativo también es inválido. Se muestra known=false y shortfall=None, no un
@@ -126,7 +132,8 @@ a cargo de Rendaval. La llamada de cierre puede renovar al cargar el abierto.
 
 Los eventos permiten un índice opcional: open contiene id, borrower, lender y
 serie; price identifica la serie compartida, y default/repay/liquidate guardan
-la foto relevante. Un clawback o congelación externo no emite evento del libro.
+la foto relevante. Una salida del escrow no emite evento del libro. La prenda impide revocación
+por las reglas; no sustituye las condiciones de salida del escrow.
 Para salud actual se consulta get_loan. Otra aplicación puede indexar por
 (red, contrato, event.id), conservar cursor y ledger, y recuperar huecos.
 
@@ -155,11 +162,21 @@ posteriores del token. Conservan firmas, atomicidad, umbrales, cura, descuento,
 reparto y pérdidas, reintentos, SEP-40 y TTL.
 
 [La evidencia testnet](../scripts/evidence/loan-book-testnet.json) identifica
-la instancia vigente, hash del WASM y todas las transacciones enviadas. Incluye
-recursos simulados de open y cinco recorridos: liquidación con descuento, pago
-normal, cura tras default por precio, clawback seguido de default y pago, y
-congelación seguida de default y pago. El comprador solo paga USDC: el libro
-no entrega bonos. El script devuelve los fondos recuperables al prestamista.
+la única instancia vigente C1, reglas, SAC RVBOND, auxiliar de prueba, hashes WASM
+y transacciones. La simulación de la apertura real usó 3.243.457 instrucciones,
+9 entradas de solo lectura, 5 de escritura, 376 bytes leídos de disco y 1.232
+bytes escritos. Son recursos de esa invocación concreta, no una tarifa fija.
+Incluye préstamo abierto, rechazo
+de congelación, pago, rechazo de retirada con bonos pendientes, salida y retirada
+exitosa. La verificación independiente compara WASM, flags, configuración y hashes.
+
+[La prueba desechable](../scripts/evidence/bond-rules-throwaway.json) conserva
+los ataques con cuentas Friendbot y un token de pago sin valor, sin fondos del
+prestamista real. Distingue fallos enviados en ledger de rechazos en simulación,
+autorización enforce y construcción SDK. Las pruebas defensivas Rust anteriores
+que fuerzan congelación o clawback conservan mocks privilegiados: no representan
+facultades disponibles sobre RVBOND. Siguen comprobando valoración y pago frente
+a garantía dañada o tokens defectuosos.
 
 ## Límites pendientes
 
@@ -167,7 +184,9 @@ No hay atomicidad entre pago de liquidación y entrega externa del bono. No se
 verifican las condiciones de salida del escrow. Precio y token son decisiones
 del emisor; la guarda de paso no impide varios pasos consecutivos ni garantiza
 un precio económico correcto. No hay actualización del contrato, amortización
-parcial ni compensación por clawback.
+parcial ni compensación por una salida autorizada del escrow. La protección de C1
+impide la congelación y clawback unilateral del emisor sobre la garantía del
+SAC configurado, no el impago económico del bono.
 
 Antes de mainnet: auditoría independiente, custodia y rotación de claves,
 alertas de precios/garantía/TTL, fuentes históricas para búsquedas, pruebas WASM

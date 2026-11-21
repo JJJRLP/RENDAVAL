@@ -2,6 +2,10 @@
 
 Producto para empresas de cualquier país; Bolivia es el primer mercado y el país predeterminado. Detalle de cada fase del MVP. La visión general está en el [README](../README.md).
 
+Para el reinicio C1 con RVBOND, consultar [la especificación de contratos](../contracts/INTERFAZ.md).
+Estas notas describen la web anterior, todavía sin integrar el nuevo libro ni reglas.
+Su configuración VBOND no debe usarse para nuevas operaciones de RVBOND.
+
 ## Acceso y verificación de empresa
 
 Instale las dependencias con `npm install`. Copie `.env.example` a `.env.local` y complete:
