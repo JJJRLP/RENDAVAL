@@ -1,0 +1,166 @@
+{
+  "network": "testnet",
+  "sdk": "29.0.1",
+  "started": "2026-11-21T01:49:53.170Z",
+  "transactions": [
+    {
+      "label": "upload_wasm",
+      "hash": "1618eef608e41062ffca126423634adc8213da6e5eb001f5f9c0218d5c093939"
+    },
+    {
+      "label": "deploy_initialize",
+      "hash": "09c13799a740dca82f20b9fd229476a1023edd2e132d9258b42743f73552a3a4"
+    },
+    {
+      "label": "friendbot_borrower",
+      "hash": "156f2176647d303d58509a046392d5c02ec37710cf8df4cf072ee2aff42606c8"
+    },
+    {
+      "label": "trustline_borrower",
+      "hash": "c9dcec3ab38228db21e75cd13ab053d3540f67106c61bf7520f4785d59359504"
+    },
+    {
+      "label": "friendbot_buyer",
+      "hash": "64aeae08b18579dab20d87a17806aeeca41ac8ecf1e604d179456d77fc8a8908"
+    },
+    {
+      "label": "trustline_buyer",
+      "hash": "7d8717ebaa0bcd66b64c0545e4966b6cd32c04497c6bce8931bd19606168c237"
+    },
+    {
+      "label": "open_liquidation_loan",
+      "hash": "0ee27b3660633ce46fc8d0f1db97da818a75a4d626ce31a76848cb2c4ca64886"
+    },
+    {
+      "label": "price_margin",
+      "hash": "84e6b9dbb85278ba7ae141dae536a9821c568e4ded22f525069fc992affd1d3b"
+    },
+    {
+      "label": "flag_margin",
+      "hash": "512bb0580926039836a52f2ea6703b72d240387edf87cf8da2edf4772623515a"
+    },
+    {
+      "label": "price_default",
+      "hash": "3557ebaa996626238bf45d73624de298dcffae934067acde299c5a3dd04c249a"
+    },
+    {
+      "label": "mark_default",
+      "hash": "c12e61effa4b6e2c679d2c8d64dfd4f89eceb13cceeb8ddbbef19ff0c5746293"
+    },
+    {
+      "label": "authorize_buyer",
+      "hash": "eb34deb672807b3fbb97a52ba5df9acb9edd76f5d6df3e7f75446f6e806b0154"
+    },
+    {
+      "label": "fund_buyer",
+      "hash": "298fe15080362f49ca775fb6171f852ecf9c6ad522e9a421e879a994d8b7b995"
+    },
+    {
+      "label": "liquidate",
+      "hash": "271f37a169aa37960bc7e55bdffd7a56702c96895e188de227d4029c36e9171e"
+    },
+    {
+      "label": "return_first_loan_funds",
+      "hash": "001fa247fdb20ca34a44225e7675d515a3e5f5ae53e21c25130ba1783541d79b"
+    },
+    {
+      "label": "open_repayment_loan",
+      "hash": "24ac135b6fe0d8e0167f506f5a1a381998474f3ced933318429412c71df8913f"
+    },
+    {
+      "label": "fund_demo_interest",
+      "hash": "90d9cd7fa4a1fa6e0ea449ff1996188b56b8bdd1970bd8763075ff9db7c66bd8"
+    },
+    {
+      "label": "repay",
+      "hash": "5e30fb1a21a3f9c123ff4edd67c15038b0a368d4362947025ab60354054d1d2d"
+    },
+    {
+      "label": "revoke_demo_buyer",
+      "hash": "d6a5eebb0ec7b98a8d84785dd4a48a17821fe388c42f718917dd83ab08ad104c"
+    }
+  ],
+  "borrower": "GAJNEEXKWPTJACSOFYTZOUSYJXFITEADHHX35XGTTZX3KQZCWLLS6LXQ",
+  "buyer": "GAKNEOPAXJBWI6PWXW25J3JLSNUCQCJV3WS67OJUL44HD2OCPGDQVYLG",
+  "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+  "issuer": "GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT",
+  "protocol": 30,
+  "initialLenderUsdc": "127490000000",
+  "wasmSha256": "b2e4101d49de0858ad0d496985ae71753793458321f9e6b83e202cc976b6837c",
+  "contractId": "CAS76EAJ5M5EDDIHSSHDVTCOAM6YZB3HKZVT5VOALVJNHZTYCAMV2A7B",
+  "loanIds": [
+    "CBGV5KBUYOT7F44KEDQXQTIPLBS5J6YFEI7YYBK7WX37LC7J4FHG7ZOI",
+    "CAOP65X6COQDAURMGY6EES6SBWFR2PNY2IP3HSP4ZOGJ7F2JD2VML76H"
+  ],
+  "loans": [
+    {
+      "debt": "503333334",
+      "health_bps": "9151",
+      "loan": {
+        "borrower": "GAJNEEXKWPTJACSOFYTZOUSYJXFITEADHHX35XGTTZX3KQZCWLLS6LXQ",
+        "due": "1797817826",
+        "face": "1000000000",
+        "interest": "3333334",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "5500000",
+        "principal": "500000000",
+        "proceeds": "550000000",
+        "status": [
+          "Liquidated"
+        ],
+        "surplus": "46666666"
+      },
+      "overdue": false,
+      "value": "550000000"
+    },
+    {
+      "debt": "503333334",
+      "health_bps": "5033",
+      "loan": {
+        "borrower": "GAJNEEXKWPTJACSOFYTZOUSYJXFITEADHHX35XGTTZX3KQZCWLLS6LXQ",
+        "due": "1797817871",
+        "face": "1000000000",
+        "interest": "3333334",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "principal": "500000000",
+        "proceeds": "0",
+        "status": [
+          "Repaid"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "value": "1000000000"
+    }
+  ],
+  "grossLenderSpend": "1553333334",
+  "completed": true,
+  "finalLenderUsdc": "127490000000",
+  "storage": {
+    "latestLedger": 5840456,
+    "remainingLedgers": [
+      2073576,
+      2073581,
+      2073590
+    ],
+    "deployedWasmSha256": "b2e4101d49de0858ad0d496985ae71753793458321f9e6b83e202cc976b6837c"
+  },
+  "preparatoryTransactions": [
+    {
+      "label": "initial_wasm_upload",
+      "hash": "52ca2fb549e53be9f99ab18c1a04549c32fa32c3791718d7af5aba27a1aacb98",
+      "note": "Successful upload before correcting Uint8Array transaction hash formatting in the JS script; no USDC moved."
+    }
+  ],
+  "validation": {
+    "rustTests": 11,
+    "clippy": "passed with -D warnings",
+    "nextBuild": "passed",
+    "sacConfirmed": true,
+    "browserPollarTested": false,
+    "trustlessWorkCalled": false
+  }
+}
