@@ -1,208 +1,66 @@
 'use client';
-import { useState, type ReactNode } from 'react';
-import { EXAMPLE_ANNUAL_RATE, formatNumber } from '@/lib/format';
-import { countryFor } from '@/lib/countries';
-import { bondValue, DEMO_PRICES, LIMIT_MESSAGE, type LoanState } from '@/lib/loan/model';
+import { useEffect, useState } from 'react';
+import { formatNumber } from '@/lib/format';
+import { terms, type LoanState } from '@/lib/loan/model';
+import { amount, type CompanyLoan } from '@/lib/loan/client-state';
+import { RISK_RULES } from '@/lib/loan/risk-copy';
 import { useLoan } from './use-loan';
 import { BondForm } from './bond-form';
 import { VerificationStages } from './verification-stages';
 import { LoanHealth } from './loan-health';
-
-const DEPOSIT_STEPS = ['Preparando su garantía', 'Confirme el depósito', 'Garantía protegida', 'Dólares enviados'];
-const REPAY_STEPS = ['Preparando el reembolso', 'Confirme el pago', 'Pago recibido', 'Bonos devueltos'];
-const usdc = (value: number) => `${formatNumber(value, 2)} USDC`;
-const day = (iso: string) => new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-
-/** Progress of a running operation. Hidden until the person starts it. */
-function Checklist({ steps, current, done }: { steps: string[]; current: number; done?: boolean }) {
-  return (
-    <ol aria-live="polite" className="mt-6 grid gap-2 text-sm sm:grid-cols-4">
-      {steps.map((label, i) => (
-        <li key={label} aria-current={i === current && !done ? 'step' : undefined} className={`border-t-2 pt-2 ${i <= current || done ? 'border-blue-bright text-white' : 'border-white/20 text-white/45'}`}>
-          <span aria-hidden="true">{i < current || done ? '✓ ' : i === current ? '→ ' : ''}</span>
-          {label}
-        </li>
-      ))}
-    </ol>
-  );
+const money = (n: number) => `${formatNumber(n, 2)} USDC`;
+const button = 'btn-primary min-h-11 disabled:opacity-50';
+function Technical({ item }: { item: CompanyLoan }) {
+  const labels: Record<string, string> = { vault: 'Bóveda de este préstamo', book: 'Libro de préstamos', escrow: 'Desembolso · Trustless Work', rules: 'Permisos RBOND', delivery: 'Custodia auxiliar de entrega' };
+  return <details className="mt-5 border-t border-line pt-2 text-sm"><summary className="cursor-pointer py-3">Detalle técnico · actividad en Stellar</summary><p className="leading-6">RBOND es el bono regulado. La bóveda guarda los bonos; Trustless Work protege los dólares del desembolso.</p><ul className="mt-2">{Object.entries(item.links).map(([key, url]) => url && <li key={key}><a className="inline-block py-2 underline" href={url} target="_blank" rel="noreferrer">{labels[key] ?? key} ↗</a></li>)}{item.transactions.map((tx, i) => <li key={tx.hash}><a className="inline-block max-w-full break-words py-2 underline" href={tx.url} target="_blank" rel="noreferrer">{i + 1}. {tx.label.split(':')[0]} ↗</a></li>)}</ul></details>;
 }
-
-function Facts({ rows }: { rows: [string, ReactNode][] }) {
-  return (
-    <dl className="grid gap-3 border-t border-white/20 pt-5 text-sm lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-          <dt className="text-white/65">{label}</dt>
-          <dd className="font-semibold">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
+function Offer({ principal, fee, debt }: { principal: number; fee: number; debt: number }) {
+  return <div className="mt-5 grid gap-6 md:grid-cols-2"><div><p className="text-sm">Recibe en su cuenta</p><p className="mt-2 break-words font-serif text-4xl">{money(principal - fee)}</p><p className="mt-3 text-sm leading-6">La comisión se descuenta de los dólares, no de sus bonos. El plazo comienza con su segunda firma.</p></div><dl className="grid gap-3 text-sm">{[['Capital que debe', money(principal)], ['Comisión de desembolso · 0,3 %', money(fee)], ['Interés fijo · 8 % anual, 30/360', money(debt - principal)], ['Total a devolver en 30 días', money(debt)]].map(([k,v]) => <div key={k} className="flex flex-wrap justify-between gap-2 border-b border-line pb-2"><dt>{k}</dt><dd className="font-semibold">{v}</dd></div>)}</dl></div>;
 }
-
-function Hero({ label, value, unit, note }: { label: string; value: string; unit: string; note: string }) {
-  return (
-    <div>
-      <p className="text-sm text-white/70">{label}</p>
-      <p className="mt-2 break-words font-serif text-5xl font-semibold sm:text-6xl">
-        {value} <span className="font-sans text-lg text-blue-bright">{unit}</span>
-      </p>
-      <p className="mt-4 max-w-md text-sm leading-7 text-white/75">{note}</p>
-    </div>
-  );
-}
-
 export function LoanPanel({ address, onState }: { address: string; onState: (state: LoanState) => void }) {
-  const [now] = useState(() => Date.now());
-  const loan = useLoan(address, onState);
-  const state = loan.state;
-  const [showForm, setShowForm] = useState(false);
-  const stage = state?.setup?.stage ?? 'none';
-  const t = state?.setup?.terms;
-  const offer = stage === 'bond_registered' || stage === 'escrow_created' || stage === 'collateral_locked';
-  const depositStep = Math.max(loan.step, stage === 'collateral_locked' ? 2 : stage === 'escrow_created' ? 1 : -1);
-  const idle = !!state && !state.setup && state.loans.length > 0;
-  const eyebrow = offer ? 'Su oferta' : idle ? (state.limitReached ? 'Sus préstamos' : 'Nuevo préstamo') : 'Su próximo paso';
-  const title = !state ? 'Consultando su progreso…' : offer ? 'Reciba dólares por sus bonos' : state.limitReached ? 'Sus préstamos en curso' : state.loans.length ? 'Registre otro bono' : 'Registre su bono';
-  const nearest = state?.loans.filter(l => l.stage === 'active').sort((a, b) => a.terms.dueDate.localeCompare(b.terms.dueDate))[0]?.escrow?.contractId;
-
-  return (
-    <>
-      {/* The bar describes the set-up in progress; each finished set-up shows its own status in the list. */}
-      {!idle && <VerificationStages verified pending={false} stage={state?.setup?.stage} />}
-      <section className={`on-dark ${idle ? "mt-10" : "mt-4"} bg-ink p-6 text-white md:p-10`} aria-labelledby="next-step-title" aria-busy={loan.busy}>
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-bright">{eyebrow}</p>
-        <h2 id="next-step-title" className="mt-4 font-serif text-3xl font-semibold">{title}</h2>
-        {loan.bond && typeof loan.bond.issuer === 'string' && stage !== 'none' && (
-          <p className="mt-2 text-sm text-white/65">
-            Bono de {loan.bond.issuer} · Serie {loan.bond.series}
-          </p>
-        )}
-        {loan.error && !loan.operationId && (
-          <p role="alert" className="mt-5 border-l-2 border-blue-bright pl-4 leading-7">
-            {loan.error}
-          </p>
-        )}
-
-        {!state && (
-          <button type="button" disabled={loan.busy} onClick={loan.retry} className="btn-primary mt-6 disabled:opacity-60">
-            {loan.busy ? 'Consultando…' : 'Volver a consultar'}
-          </button>
-        )}
-
-        {state && !state.setup && (state.limitReached ? <p className="mt-5 max-w-xl leading-7 text-white/75">{LIMIT_MESSAGE} <a className="underline" href="#loans-title">Ver sus préstamos</a></p> : state.loans.length && !showForm ? <>
-          <p className="mt-5 max-w-xl leading-7 text-white/75">Obtenga dólares con otro bono mientras sus préstamos siguen su curso.</p>
-          <button disabled={loan.busy} className="btn-primary mt-6 disabled:opacity-60" onClick={() => setShowForm(true)}>Registrar otro bono</button>
-        </> : <BondForm country={state.verification.country} key={state.loans.length} exampleIndex={state.loans.length} busy={loan.busy} register={bond => { void loan.register(bond).then(success => { if (success) setShowForm(false); }); }} />)}
-
-        {offer && t && (
-          <>
-            <div className="mt-8 grid gap-8 lg:grid-cols-2">
-              <Hero label="Recibe hoy" value={formatNumber(t.loan, 2)} unit="USDC" note="Sus bonos quedan en garantía, siguen siendo suyos y conservan su cupón. Al devolver el préstamo los recupera, menos el costo de custodia." />
-              <Facts
-                rows={[
-                  ['Garantía', bondValue(loan.bond, t.collateral, countryFor(state?.verification.country)?.currency)],
-                  ['Financiamiento', '50 % del valor de sus bonos'],
-                  ['Tasa anual', `${formatNumber(EXAMPLE_ANNUAL_RATE * 100)} % fija`],
-                  ['Plazo', '30 días'],
-                  ['Costo del préstamo', usdc(t.interest)],
-                  ['Costo de custodia', `USD ${formatNumber(t.custodyFee, 2)} en bonos (0,3 %)`],
-                  ['Total a devolver', usdc(t.total)],
-                ]}
-              />
-            </div>
-            <button type="button" disabled={loan.busy} onClick={() => void loan.proceed()} className="btn-primary mt-8 w-full disabled:opacity-60 sm:w-auto">
-              {loan.busy
-                ? `${DEPOSIT_STEPS[Math.max(0, loan.step)]}…`
-                : loan.error
-                  ? 'Reintentar y continuar'
-                  : stage === 'collateral_locked'
-                    ? 'Continuar con el desembolso'
-                    : stage === 'escrow_created'
-                      ? 'Continuar con el depósito'
-                      : 'Aceptar y depositar garantía'}
-              <span aria-hidden="true" className="btn-arrow">
-                →
-              </span>
-            </button>
-            {depositStep >= 0 && <Checklist steps={DEPOSIT_STEPS} current={depositStep} />}
-          </>
-        )}
-
-        {state?.setup && (
-          <details className="mt-8 border-t border-white/20 pt-3 text-sm text-white/65">
-            <summary className="min-h-11 cursor-pointer py-3">Ver detalle técnico</summary>
-            <p className="leading-6">
-              Red de pruebas de Stellar. Cada bono digital (VBOND) representa USD 1 de garantía. La garantía se guarda en un contrato de
-              escrow de Trustless Work.
-            </p>
-            {loan.providerMessage && <p className="mt-2 break-words">Respuesta del proveedor de custodia: {loan.providerMessage}</p>}
-            <ul className="mt-2">
-              <li>
-                <a className="inline-block py-2 underline" href={state.verification.receiptUrl} target="_blank" rel="noreferrer">
-                  Constancia de empresa ↗
-                </a>
-              </li>
-              {state.escrow && (
-                <li>
-                  <a className="inline-block py-2 underline" href={state.escrow.url} target="_blank" rel="noreferrer">
-                    Contrato de garantía ↗
-                  </a>
-                </li>
-              )}
-              {state.transactions.map((tx) => (
-                <li key={tx.hash}>
-                  <a className="inline-block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">
-                    {tx.label} ↗
-                  </a>
-                </li>
-              ))}
-              {state.repayment && (
-                <li>
-                  <a className="inline-block py-2 underline" href={state.repayment.url} target="_blank" rel="noreferrer">
-                    Reembolso ↗
-                  </a>
-                </li>
-              )}
-            </ul>
-          </details>
-        )}
-      </section>
-      {!!state?.loans.length && <section className="mt-8" aria-labelledby="loans-title">
-        <h2 id="loans-title" className="font-serif text-2xl font-semibold">Sus préstamos</h2>
-        <div className="mt-4 divide-y divide-line border border-line bg-white">
-          {state.loans.map(item => {
-            const id = item.escrow!.contractId, running = loan.operationId === id;
-            const active = item.stage === 'active', closed = item.stage === 'closed';
-            const disputed = item.stage === 'disputed', liquidated = item.stage === 'liquidated', frozen = disputed || liquidated;
-            const days = Math.ceil((Date.parse(item.terms.dueDate) - now) / 86400000);
-            return <article key={id} className="min-w-0 p-6 md:p-8" aria-busy={running && loan.busy}>
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_17rem] lg:items-center">
-                <div className="min-w-0"><h3 className="break-words font-serif text-xl font-semibold">{item.bond?.issuer ?? 'Bono registrado'}</h3><p className="mt-1 text-sm text-ink/65">Serie {item.bond?.series ?? 'histórica'}</p><p className="mt-1 text-sm text-ink/65">Garantía: {bondValue(item.bond, item.terms.collateral, countryFor(state.verification.country)?.currency).replace(' (referencia de demostración)', '')}</p>{item.price !== 1 && <p className="mt-1 text-sm text-ink">Valor actual: USD {formatNumber(item.collateralValue, 2)} · {formatNumber(item.price * 100, 0)} % del inicial</p>}<p className="mt-3 text-sm text-blue"><span aria-hidden="true">{closed ? '✓' : active ? '●' : frozen ? '!' : '◷'} </span>{closed ? 'Cerrado' : active ? item.health.level === 'warning' ? 'Aviso de margen abierto' : item.health.level === 'risk' ? 'En riesgo · garantía ejecutable' : 'Activo' : disputed ? 'En revisión · garantía retenida' : liquidated ? 'Garantía ejecutada' : 'Pago recibido · bonos en devolución'}</p></div>
-                <div className="text-sm"><p className="text-ink/65">Recibió</p><p className="font-serif text-2xl">{usdc(item.terms.loan)}</p></div>
-                <div className="text-sm">
-                  {active ? <><p className="text-ink/65">Devuelve {usdc(item.terms.total)}</p><p className="font-semibold">{days >= 0 ? `Vence el ${day(item.terms.dueDate)} · ${days} días` : `Venció el ${day(item.terms.dueDate)}`}</p></>
-                    : frozen ? <><p className="text-ink/65">{disputed ? `Adeuda ${usdc(item.terms.total)}` : 'Préstamo no devuelto'}</p><p className="font-semibold">{disputed ? 'El equipo de Rendaval lo está revisando' : 'La garantía se ejecutó para cubrir la deuda'}</p></>
-                    : <><p className="text-ink/65">Devolvió {usdc(item.repayment?.amount ?? item.terms.total)}</p>{item.repayment && <p className="font-semibold">Pagado el {day(item.repayment.at)}</p>}</>}
-                </div>
-                <div>{!closed && !frozen && <button disabled={loan.busy} onClick={() => active ? void loan.repay(id) : void loan.settle(id)} className={`${active && nearest === id ? 'btn-primary' : 'min-h-12 cursor-pointer border border-line px-5 py-3 text-sm font-semibold'} w-full disabled:opacity-60`}>{running && loan.busy ? 'Comprobando…' : active ? `Devolver ${usdc(item.terms.total)}` : 'Comprobar devolución'}</button>}</div>
-              </div>
-              {active && <div aria-live="polite"><LoanHealth debt={item.terms.total} collateral={item.collateralValue} health={item.health} /></div>}
-              {active && <details className="mt-3 text-sm text-ink/65">
-                <summary className="min-h-11 cursor-pointer py-3">Simular precio del bono · versión de prueba</summary>
-                <p className="max-w-xl text-xs leading-5">Cambie el precio solo de este préstamo. Es una simulación guardada en la red de pruebas; en producción lo publicaría el emisor del bono.</p>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" aria-label="Precio respecto al valor inicial">
-                  {DEMO_PRICES.map(price => <button key={price} type="button" aria-pressed={item.price === price} disabled={loan.busy || item.price === price} onClick={() => void loan.setPrice(id, price)} className={`min-h-11 cursor-pointer border px-3 py-2 text-xs disabled:cursor-default ${item.price === price ? 'border-blue bg-offwhite text-blue' : 'border-line text-ink disabled:opacity-60'}`}>{price === 1 ? '100 % · original' : `${formatNumber(price * 100, 0)} %`}</button>)}
-                </div>
-                {running && loan.busy && <p role="status" className="mt-2 text-xs">Confirmando en la red de pruebas…</p>}
-              </details>}
-              {running && loan.repayStep >= 0 && (loan.busy || closed) && <div className="on-dark mt-5 bg-ink px-5 pb-5 text-white"><Checklist steps={REPAY_STEPS} current={loan.repayStep} done={closed} /></div>}
-              {running && loan.error && <p role="alert" className="mt-4 border-l-2 border-ink bg-offwhite p-4 text-sm leading-6">{loan.error}</p>}
-              <details className="mt-4 border-t border-line pt-2 text-sm text-ink/65"><summary className="min-h-11 cursor-pointer py-3">Ver detalle técnico</summary><ul><li><a className="inline-block py-2 underline" href={item.escrow!.url} target="_blank" rel="noreferrer">Contrato de garantía ↗</a></li>{[...item.transactions, ...(item.repayment ? [{ ...item.repayment, label: 'Reembolso' }] : [])].map(tx => <li key={tx.hash}><a className="inline-block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">{tx.label} ↗</a></li>)}</ul>{running && loan.providerMessage && <p className="break-words">{loan.providerMessage}</p>}</details>
-            </article>;
-          })}
-        </div>
-      </section>}
-    </>
-  );
+  const loan = useLoan(address, onState), state = loan.state;
+  const [showForm, setShowForm] = useState(false), [now, setNow] = useState(() => Date.now() / 1000);
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now() / 1000), 1000); return () => clearInterval(timer); }, []);
+  const urgent = state?.allLoans.find(l => l.status === 'Defaulted');
+  const preparation = state?.allLoans.find(l => l.status === 'Pending');
+  const review = state?.bondRecords.some(b => b.status === 'under_review');
+  const offer = state?.bondRecords.some(b => b.availability === 'available');
+  const next = urgent ? 'Tiene un incumplimiento declarado. Consulte el tiempo disponible y pague para recuperar sus bonos antes de la venta.' : preparation ? 'Su préstamo está en preparación. Continúe con el paso pendiente; los pasos confirmados se conservan.' : review ? 'Su declaración está en revisión. En esta prueba puede simular la aprobación para continuar.' : offer ? 'Su bono está aprobado. Revise el neto que recibirá y el total a devolver antes de preparar el préstamo.' : state?.allLoans.some(l => ['Active','Margin'].includes(l.status)) ? 'Consulte la salud y el vencimiento de sus préstamos. Al pagar, libera todos sus bonos en la misma transacción.' : 'Consulte el resultado de sus préstamos y los saldos disponibles en su cuenta.';
+  return <>
+    <VerificationStages verified pending={false} stage={state?.setup?.stage ?? (state?.loans.length ? state.loans.at(-1)?.stage : 'none')} />
+    <section className="on-dark mt-4 bg-ink p-6 text-white md:p-10" aria-busy={loan.busy}>
+      <p className="text-xs font-semibold uppercase tracking-widest text-blue-bright">Su próximo paso</p>
+      <h2 className="mt-4 font-serif text-3xl font-semibold">{!state ? 'Consultando su progreso…' : !state.bondRecords.length ? 'Declare su bono' : 'Su financiamiento'}</h2>
+      {!!state?.bondRecords.length && <><p className="mt-4 max-w-2xl leading-7">{next}</p><a href={urgent || preparation || !review && !offer ? '#loans-title' : '#bonds-title'} className="btn-primary mt-5 mr-5">{urgent ? 'Ver plazo y pago' : preparation ? 'Continuar preparación' : review ? 'Revisar declaración' : offer ? 'Revisar oferta' : 'Ver sus préstamos'}</a></>}
+      {loan.message && <p role="status" className="mt-4 max-w-2xl text-sm leading-6">{loan.message}</p>}
+      {loan.error && <p role="alert" className="mt-4 border-l-2 border-blue-bright pl-4 leading-7">{loan.error}</p>}
+      <button className="mt-3 mr-5 min-h-11 underline disabled:opacity-50" disabled={loan.busy} onClick={() => void loan.retry()}>Consultar estado actualizado</button>
+      {state && <>
+        {state.limitReached ? <p className="mt-4 leading-7">Tiene tres préstamos abiertos. Cierre uno antes de iniciar otro.</p> : !state.bondRecords.length || showForm ? <BondForm country={state.verification.country} exampleIndex={state.bondRecords.length} busy={loan.busy} register={(b,h) => void loan.register(b,h).then(ok => { if (ok) setShowForm(false); })} /> : <button className="mt-3 min-h-11 underline disabled:opacity-50" disabled={loan.busy} onClick={() => setShowForm(true)}>Declarar otro bono</button>}
+        {amount(state.claimable) > 0 && <div className="mt-6 border-t border-line pt-5"><h3 className="font-serif text-2xl">Tiene {money(amount(state.claimable))} por cobrar</h3><p className="mt-2 leading-6">Es el saldo pendiente de su empresa en el libro, no de un préstamo individual. Confirme la firma para recibirlo.</p><button className={`${button} mt-4`} disabled={loan.busy} onClick={() => void loan.sign('claim')}>Firmar y cobrar saldo</button></div>}
+      </>}
+    </section>
+    {state && <section id="bonds-title" className="mt-8" aria-label="Sus bonos"><div className="divide-y divide-line border-line">{state.bondRecords.filter(b => ['under_review','available','reserved'].includes(b.availability)).map(b => {
+      const t = terms(amount(b.face)), reserved = b.availability === 'reserved';
+      if (reserved && state.allLoans.some(l => l.bondId === b.id)) return null;
+      return <article key={b.id} className="border border-line bg-white p-6 md:p-8"><p className="text-xs uppercase tracking-widest text-blue">{b.status === 'under_review' ? 'En revisión' : reserved ? 'Preparación pendiente' : 'Bono aprobado · su oferta'}</p><h3 className="mt-3 break-words font-serif text-2xl">{b.bond.issuer}</h3><p className="mt-2 text-sm">Serie {b.bond.series} · Nominal USD {formatNumber(amount(b.face),2)}</p>{b.status === 'under_review' ? <><p className="mt-4 max-w-2xl leading-7">Declaración recibida. Falta revisar el certificado y autorizar a su empresa para recibir los bonos. En esta prueba usted simula esa aprobación; no hay revisión de un depositario real.</p><button className={`${button} mt-5`} disabled={loan.busy} onClick={() => void loan.action('approve',{bondId:b.id})}>Simular aprobación y emisión</button><p className="mt-3 text-sm">Si su cuenta aún no recibe bonos, habilítelos en «Su cuenta» y reintente.</p></> : <><Offer principal={t.loan} fee={t.custodyFee} debt={t.total} /><p className="mt-4 text-sm leading-6">Recupera todos sus bonos al pagar. El interés no disminuye por pago anticipado. A continuación prepara la garantía; luego firma el depósito y la recepción de dólares por separado.</p><button className={`${button} mt-5`} disabled={loan.busy || (state.limitReached && !reserved)} onClick={() => void loan.action('accept',{bondId:b.id})}>{reserved ? 'Reanudar preparación' : 'Preparar este préstamo'}</button>{b.priceAge !== null && b.priceAge > 86400 && <button className="ml-3 min-h-11 underline" disabled={loan.busy} onClick={() => void loan.action('price',{bondId:b.id,price:1})}>Simular renovación del precio</button>}</>}
+      <details className="mt-4 text-sm"><summary className="cursor-pointer py-3">Detalle de la declaración</summary><p className="break-all">Huella SHA-256: {b.certificateHash}</p><p className="mt-2">El certificado no se envió ni se almacenó.</p>{b.transactions.map(tx => <a key={tx.hash} className="block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">Aprobación y emisión en Stellar ↗</a>)}</details></article>;
+    })}</div></section>}
+    {!!state?.allLoans.length && <section className="mt-8" aria-labelledby="loans-title"><h2 id="loans-title" className="font-serif text-2xl">Sus préstamos</h2><div className="mt-4 divide-y divide-line border border-line bg-white">{state.allLoans.map(item => {
+      const pending = item.status === 'Pending', active = ['Active','Margin'].includes(item.status), defaulted = item.status === 'Defaulted';
+      const seconds = Math.max(0, Math.ceil((item.cureDeadline ?? 0) - now));
+      const waiting = loan.waiting?.id === item.id ? loan.waiting : null;
+      const wait = waiting ? Math.max(0,Math.ceil(waiting.until-now)) : 0;
+      return <article key={item.id} className="min-w-0 p-6 md:p-8"><p className="text-xs uppercase tracking-widest text-blue">{pending ? 'Preparación · dos firmas' : defaulted ? 'Incumplimiento declarado' : item.status === 'Repaid' ? 'Pagado · garantía liberada' : item.status === 'Liquidated' ? 'Garantía vendida' : item.status === 'WrittenOff' ? 'Garantía entregada al prestamista' : item.status === 'Cancelled' ? 'Preparación cancelada' : 'Préstamo activo'}</p><h3 className="mt-3 break-words font-serif text-2xl">{item.bond?.issuer}</h3><p className="mt-2 text-sm">Serie {item.bond?.series}</p>
+      {pending ? <><Offer principal={amount(item.amounts.principal)} fee={amount(item.amounts.fee)} debt={amount(item.amounts.debt)} /><ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3"><li className="border-t border-line pt-3">1. Firma de depósito {item.stage === 'collateral_locked' ? '✓' : '· pendiente'}</li><li className="border-t border-line pt-3">2. Preparar los dólares {item.readyToOpen ? '✓' : '· pendiente'}</li><li className="border-t border-line pt-3">3. Firma de aceptación y recepción</li></ol><p className="mt-4 leading-7">{item.stage !== 'collateral_locked' ? 'Firme para depositar los bonos en la bóveda de este préstamo. Todavía no se genera deuda.' : item.readyToOpen ? 'Los dólares están preparados. Confirme la segunda firma para aceptar la deuda y recibir el neto en su cuenta.' : 'Garantía depositada. Prepare los dólares del prestamista; después firme para aceptar la deuda y recibir el neto. Repetir la preparación recupera los pasos ya confirmados.'}</p>{!item.priceFresh && <button className="mt-4 min-h-11 underline" disabled={loan.busy} onClick={() => void loan.action('price',{contractId:item.id,price:item.price})}>Simular renovación del precio vencido</button>}<details className="mt-3 text-sm"><summary className="cursor-pointer py-3">Recuperar preparación interrumpida</summary><p>Si la autorización de la garantía quedó incompleta, reanude este paso antes de depositar.</p><button className="min-h-11 underline" disabled={loan.busy} onClick={() => void loan.action('accept',{bondId:item.bondId})}>Reanudar autorización</button></details><div className="mt-5 flex flex-wrap gap-3">{item.stage !== 'collateral_locked' ? <button className={button} disabled={loan.busy} onClick={() => void loan.sign('deposit',item.id)}>Firmar depósito · primera firma</button> : <><button className={button} disabled={loan.busy || item.readyToOpen} onClick={() => void loan.action('fund',{contractId:item.id})}>{item.readyToOpen ? 'Dólares preparados ✓' : 'Preparar dólares de prueba'}</button><button className={button} disabled={loan.busy || !item.readyToOpen} onClick={() => void loan.sign('open',item.id)}>Aceptar y recibir · segunda firma</button></>}</div></> : <div className="mt-5 grid gap-4 sm:grid-cols-2"><p>Recibió <strong>{money(amount(item.amounts.net))}</strong></p><p>{item.status === 'Repaid' ? 'Pagó' : 'Deuda del préstamo'} <strong>{money(amount(item.amounts.debt))}</strong></p></div>}
+      {(active || defaulted) && <><p className="mt-4 text-sm">Vencimiento: {new Date(item.terms.dueDate).toLocaleString('es')} · gracia de 30 segundos.</p>{!defaulted && <LoanHealth debt={item.terms.total} collateral={item.collateralValue} health={item.health} />}<p className="mt-4 text-sm">Precio publicado: USD {formatNumber(item.price,2)} por bono · {item.priceFresh ? 'vigente' : 'vencido: renueve el precio antes de continuar'}.</p>{defaulted && <p className="mt-4 border-l-2 border-blue pl-4 leading-7">{seconds ? `Dispone de ${seconds} segundos antes de habilitar la venta. Pague para recuperar sus bonos.` : 'Terminó la ventana de 60 segundos. La compra ya puede ejecutarse; aún puede intentar pagar mientras no se haya vendido la garantía.'}</p>}<div className="mt-5 flex flex-wrap gap-3"><button className={button} disabled={loan.busy} onClick={() => void loan.sign('repay',item.id)}>Firmar pago y recuperar bonos</button>{active && (item.health.level === 'risk' || item.view?.overdue) && <button className={button} disabled={loan.busy} onClick={() => void loan.action('default',{contractId:item.id})}>Declarar incumplimiento</button>}{defaulted && <button className={button} disabled={loan.busy || seconds > 0} onClick={() => void loan.action('liquidate',{contractId:item.id})}>Simular compra autorizada</button>}</div><details className="mt-5 text-sm"><summary className="cursor-pointer py-3">Simulaciones · fondos y precio de prueba</summary><p className="leading-6">El prestamista puede adelantar una sola vez el interés y la comisión para probar el pago. El precio cambia como máximo 25 % cada 30 segundos. Cada paso publica un precio real en testnet.</p><button className="my-3 min-h-11 underline" disabled={loan.busy} onClick={() => void loan.action('repay/topup',{contractId:item.id})}>Simular adelanto para pagar</button><div className="flex flex-wrap gap-2">{[1,.8,.65,.5].map(price => <button key={price} className="min-h-11 border border-line px-4 disabled:opacity-50" disabled={loan.busy || wait > 0} onClick={() => void loan.setPrice(item.id,price)}>Simular USD {formatNumber(price,2)}</button>)}</div>{waiting && <p className="mt-3">Objetivo USD {formatNumber(waiting.price,2)}. {wait ? `Próximo cambio en ${wait} segundos.` : 'Ya puede continuar hacia el precio solicitado.'}<button className="ml-2 min-h-11 underline" disabled={loan.busy || wait > 0} onClick={() => void loan.setPrice(item.id,waiting.price)}>Continuar cambio</button></p>}</details></>}
+      {item.status === 'Repaid' && <p className="mt-5 leading-7">El pago y la liberación íntegra de sus bonos ocurrieron en la misma transacción. {amount(item.deliveryBalance) > 0 ? 'La entrega a su cuenta está pendiente; puede recogerlos abajo.' : 'Sus bonos están disponibles en su cuenta.'}</p>}
+      {item.status === 'Liquidated' && item.view && <div className="mt-5 leading-7"><p>Compra y entrega de bonos confirmadas juntas. El prestamista cobró primero.</p><p>Compra: {money(amount(item.view.loan.proceeds))} · Excedente de su empresa: {money(amount(item.view.loan.surplus))} · Pérdida del prestamista: {money(amount(item.view.loan.loss))}.</p><p>El excedente se entrega a su cuenta; si quedó pendiente, aparece arriba como saldo por cobrar.</p></div>}
+      {item.status === 'WrittenOff' && <p className="mt-5">Tras 180 días de incumplimiento, la garantía se entregó al prestamista. No hay excedente para la empresa.</p>}
+      {amount(item.deliveryBalance) > 0 && <div className="mt-5"><p>Bonos pendientes en custodia auxiliar: {formatNumber(amount(item.deliveryBalance),2)}. Su cuenta debe estar habilitada y autorizada por el emisor.</p><button className={`${button} mt-3`} disabled={loan.busy} onClick={() => void loan.sign('collect',item.id)}>Firmar recogida de bonos</button></div>}
+      <Technical item={item} /></article>;
+    })}</div></section>}
+    {!!state?.claimTransactions?.length && <details className="mt-6 text-sm"><summary className="min-h-11 cursor-pointer py-3">Detalle técnico · cobros de la empresa</summary>{state.claimTransactions.map(tx => <a key={tx.hash} className="block py-2 underline" href={tx.url} target="_blank" rel="noreferrer">Cobro confirmado en Stellar ↗</a>)}</details>}
+    <details className="mt-6 border-t border-line pt-3 text-sm"><summary className="cursor-pointer py-3">Reglas de riesgo de esta prueba</summary><p className="max-w-3xl leading-7">{RISK_RULES}</p></details>
+  </>;
 }

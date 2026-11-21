@@ -8,10 +8,10 @@ const cards = [
     body: "Su tesorería mantiene RWA y necesita dólares a corto plazo.",
     points: [
       "Obtiene USDC sin vender sus RWA.",
-      "Los activos continúan devengando intereses mientras permanecen en garantía.",
-      "Al reembolsar el capital y el interés, recupera sus RWA.",
+      "Los bonos quedan separados en una bóveda propia del préstamo.",
+      "Al pagar capital e interés, libera todos sus bonos en la misma transacción.",
     ],
-    risk: "En caso de incumplimiento, la garantía se vende a un comprador autorizado por el emisor para cubrir la deuda; el remanente se le devuelve.",
+    risk: "En caso de incumplimiento, la garantía se vende a un comprador autorizado por el emisor para cubrir la deuda; el remanente se le devuelve. Puede perder toda la garantía; consulte las reglas y límites en las preguntas frecuentes.",
     dark: true,
   },
   {
@@ -19,8 +19,8 @@ const cards = [
     title: "Prestamistas que buscan rendimiento en dólares",
     body: "Aportan USDC y perciben el interés que pagan las empresas.",
     points: [
-      "Cada préstamo está respaldado por RWA inmovilizados en un escrow.",
-      "El préstamo no supera una fracción del valor de la garantía: 50 % en el ejemplo.",
+      "Cada préstamo está respaldado por RWA inmovilizados en una bóveda por préstamo.",
+      "El préstamo no supera una fracción del valor de la garantía: 50 % del nominal en esta prueba.",
       "Solo se presta a empresas verificadas.",
     ],
     risk: "El rendimiento no está garantizado. Si la venta de la garantía no cubre la deuda, la diferencia es una pérdida del prestamista; no hay póliza de seguro.",

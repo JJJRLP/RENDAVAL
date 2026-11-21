@@ -24,7 +24,7 @@ type Parsed =
   | { kind: "invalid"; message: string }
   | { kind: "valid"; value: number };
 
-type Figures = { collateral: string; loan: string; cost: string } | null;
+type Figures = { collateral: string; loan: string; net: string; cost: string } | null;
 
 /** Accepts whole amounts: "100000", "100 000" or "100.000". */
 function parseAmount(raw: string): Parsed {
@@ -63,31 +63,31 @@ function buildSteps(figures: Figures) {
     {
       name: "Garantía",
       body: figures
-        ? `Constituye en garantía bonos por ${figures.collateral} USD en un escrow. Los bonos continúan devengando intereses.`
-        : "Constituye sus bonos en garantía en un escrow. Los bonos continúan devengando intereses.",
+        ? `Declara bonos por ${figures.collateral} USD y la huella de su certificado. Tras la aprobación simulada, firma su depósito en una bóveda propia.`
+        : "Declara su bono y certificado. Tras la aprobación simulada, firma el depósito en una bóveda propia.",
     },
     {
       name: "Desembolso",
       body: figures
-        ? `Recibe ${figures.loan} USDC, equivalentes al ${LTV_PERCENT} % del valor de la garantía.`
-        : `Recibe en USDC el ${LTV_PERCENT} % del valor de la garantía.`,
+        ? `Trustless Work protege el desembolso. Con su segunda firma recibe ${figures.net} USDC netos; debe ${figures.loan} USDC de capital. La comisión es 0,3 %.`
+        : `Firma para recibir el capital menos 0,3 % de comisión. Trustless Work protege el desembolso.`,
     },
     {
       name: "Seguimiento",
-      body: "Consulta en todo momento el valor de la garantía, el saldo y el interés devengado.",
+      body: "Consulta el precio publicado por el emisor, la salud de su préstamo y el vencimiento. Las reglas de riesgo figuran en las preguntas frecuentes.",
     },
     {
       name: "Reembolso",
       body: figures
-        ? `Reembolsa ${figures.loan} USDC más ${figures.cost} USDC de interés. La garantía se libera.`
-        : "Reembolsa el capital más el interés. La garantía se libera.",
+        ? `Reembolsa ${figures.loan} USDC más ${figures.cost} USDC de interés. Todos sus bonos se liberan en la misma transacción.`
+        : "Reembolsa el capital más el interés. Todos sus bonos se liberan en la misma transacción.",
     },
   ];
 }
 
 const PARTIES = [
   { name: "Empresa", role: "Aporta la garantía" },
-  { name: "Escrow", role: "Custodia los bonos" },
+  { name: "Bóveda", role: "Guarda sus bonos" },
   { name: "Prestamista", role: "Aporta los USDC" },
 ];
 
@@ -148,7 +148,7 @@ function FlowStage({ step, name, figures }: { step: number; name: string; figure
             USDC
           </span>
           <span className="block text-sm font-semibold sm:text-base">
-            {figures?.loan ?? "—"}
+            {(step === 2 || step === 3 ? figures?.net : figures?.loan) ?? "—"}
           </span>
         </div>
 
@@ -200,7 +200,7 @@ export function HowItWorks() {
   const parsed = parseAmount(input);
   const loan = parsed.kind === "valid" ? maxLoan(parsed.value) : null;
   const cost = loan === null ? null : oneMonthCost(loan);
-  const loanDecimals = loan !== null && loan % 1 !== 0 ? 2 : 0;
+  const loanDecimals = 2;
   const sliderValue =
     parsed.kind === "valid"
       ? Math.min(Math.max(parsed.value, SLIDER_MIN), SLIDER_MAX)
@@ -209,7 +209,8 @@ export function HowItWorks() {
   const figures: Figures =
     parsed.kind === "valid" && loan !== null && cost !== null
       ? {
-          collateral: formatNumber(parsed.value),
+          collateral: formatNumber(parsed.value, 2),
+          net: formatNumber(loan - Math.floor(loan * 1e7 * .003) / 1e7, 2),
           loan: formatNumber(loan, loanDecimals),
           cost: formatNumber(cost, 2),
         }
@@ -249,11 +250,11 @@ export function HowItWorks() {
                   onChange={(event) => setInput(event.target.value)}
                   aria-invalid={parsed.kind === "invalid"}
                   aria-describedby="collateral-help"
-                  className={`min-h-12 w-full min-w-0 rounded-l-sm border bg-white px-4 py-2 text-lg ${
+                  className={`min-h-12 w-full min-w-0 border bg-white px-4 py-2 text-lg ${
                     parsed.kind === "invalid" ? "border-2 border-ink" : "border-ink/50"
                   }`}
                 />
-                <span className="flex items-center rounded-r-sm border border-l-0 border-ink/50 bg-offwhite px-4 font-medium">
+                <span className="flex items-center border border-l-0 border-ink/50 bg-offwhite px-4 font-medium">
                   USD
                 </span>
               </div>
@@ -307,7 +308,7 @@ export function HowItWorks() {
                 </div>
               </dl>
               <p className="border-t border-line px-6 py-4 text-sm text-ink/70 md:px-8">
-                Cifras ilustrativas. No constituyen una oferta.
+                Cifras ilustrativas. No constituyen una oferta. Se descuenta 0,3 % del capital al desembolsar. El interés es fijo por 30 días. La aplicación de prueba admite garantías de USD 100–400.
               </p>
 
               {/* Announced to screen readers instead of the animated figures. */}

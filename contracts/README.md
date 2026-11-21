@@ -4,7 +4,7 @@ USDC entra por un escrow real de Trustless Work cuyo receiver es la bóveda del
 préstamo. RBOND entra directamente en esa bóveda. `open` registra la deuda,
 protege los bonos y entrega USDC a la empresa en una sola invocación propia.
 No consulta ni cree las banderas de TW. La integración web está especificada en
-[INTERFAZ.md](INTERFAZ.md). El servidor usa estos contratos; las pantallas quedan para B2.
+[INTERFAZ.md](INTERFAZ.md). El servidor y la interfaz B2 usan estos contratos.
 
 ## Despliegue vigente
 

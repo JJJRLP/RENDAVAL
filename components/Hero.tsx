@@ -69,7 +69,7 @@ function FlowCard() {
 
       <figcaption className="mt-4 border-t border-white/25 pt-4 text-sm leading-6 text-white/80">
         <span className="font-semibold text-white">RWA, garantía, USDC.</span>{" "}
-        Los activos permanecen en un escrow y continúan devengando intereses.
+        Los bonos quedan en una bóveda por préstamo. Al pagar, se liberan en la misma transacción.
       </figcaption>
     </figure>
   );

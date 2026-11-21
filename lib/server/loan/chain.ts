@@ -143,16 +143,20 @@ export async function apiCall(label: string, key: Keypair, path: string, body: u
   }, true);
 }
 export async function validateSigned(signed: unknown, wallet: string, expected: Transaction) {
+  let reason = 'invalid_xdr_or_network';
   try {
-    if (typeof signed !== 'string' || signed.length > 100000) throw Error();
+    if (typeof signed !== 'string' || signed.length > 100000) { reason = 'invalid_payload_type_or_size'; throw Error(); }
     const envelope = TransactionBuilder.fromXDR(signed, Networks.TESTNET), tx = inner(envelope);
-    if (envelope instanceof FeeBumpTransaction && envelope.feeSource === wallet && BigInt(envelope.fee) > BigInt(expected.fee) + 100000n) throw Error();
-    // Exact inner transaction binds source, sequence, network, memo, fees, contract,
-    // method, ALL args, Soroban resource data, auth identities and full nested trees.
-    if (!Buffer.from(tx.hash()).equals(expected.hash()) || tx.source !== wallet || tx.operations.length !== 1 ||
-      !tx.signatures.some(s => Keypair.fromPublicKey(wallet).verify(tx.hash(), s.signature))) throw Error();
+    if (envelope instanceof FeeBumpTransaction && envelope.feeSource === wallet && BigInt(envelope.fee) > BigInt(expected.fee) + 100000n) { reason = 'fee_bump_exceeds_limit'; throw Error(); }
+    if (!Buffer.from(tx.hash()).equals(expected.hash())) { reason = 'inner_hash_mismatch_stale_or_modified_challenge'; throw Error(); }
+    if (tx.source !== wallet || tx.operations.length !== 1) { reason = 'source_or_operation_count_mismatch'; throw Error(); }
+    reason = 'missing_or_invalid_company_signature';
+    if (!tx.signatures.some(s => Keypair.fromPublicKey(wallet).verify(tx.hash(), s.signature))) throw Error();
     return envelope;
-  } catch { throw new ApiError(400, 'La firma no corresponde exactamente a la operación preparada para su empresa.'); }
+  } catch {
+    console.warn('loan_signature_rejected', { reason });
+    throw new ApiError(400, 'La firma no corresponde exactamente a la operación preparada. Prepare y firme de nuevo.');
+  }
 }
 export async function verifyCode(id: string, expectedHash: string) {
   const entry = (await rpcServer.getLedgerEntries(new Contract(id).getFootprint())).entries[0];

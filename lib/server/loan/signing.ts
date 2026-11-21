@@ -1,14 +1,20 @@
 import 'server-only';
 import { Networks, Transaction, TransactionBuilder, type xdr } from '@stellar/stellar-sdk';
 import { ApiError } from '../env';
-import { a, balance, BOND, BOOK, i, once, prepare, sym, validateSigned } from './chain';
+import { a, balance, BOND, BOOK, i, once, prepare, sym, validateSigned, read } from './chain';
 import { ownLoan, verified } from './records';
 import { get, update } from './store';
 import { loanView } from './setup';
-export type SignedAction = 'deposit' | 'open' | 'repay' | 'claim';
+import type { VaultConfig } from './types';
+export type SignedAction = 'deposit' | 'open' | 'repay' | 'claim' | 'collect';
 async function invocation(wallet: string, id: string, action: SignedAction): Promise<{ contract: string; method: string; args: xdr.ScVal[]; done?: boolean }> {
   if (action === 'claim') return { contract: BOOK, method: 'claim', args: [a(wallet)] };
   const { spec } = await ownLoan(wallet, id);
+  if (action === 'collect') {
+    const config = await read<VaultConfig>(spec.delivery, 'get_config');
+    if (config.recipient !== wallet) throw new ApiError(403, 'Los bonos no corresponden a su empresa.');
+    return { contract: spec.delivery, method: 'collect_bonds', args: [], done: await balance(BOND, spec.delivery) === 0n };
+  }
   if (action === 'deposit') return { contract: id, method: 'deposit', args: [i(spec.face)], done: await balance(BOND, id) >= spec.face };
   if (action === 'open' && !await get(`released:${id}`)) throw new ApiError(409, 'Complete el release USDC por Trustless Work antes de abrir.');
   if (action === 'open') return { contract: BOOK, method: 'open', args: [a(id), sym(spec.series), a(wallet), a(spec.lender), i(spec.face), i(spec.principal)] };

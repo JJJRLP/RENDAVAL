@@ -32,7 +32,7 @@ export function LoanHealth({ debt, collateral, health }: { debt: number; collate
         <span className="whitespace-nowrap sm:absolute sm:right-0">Límite {HEALTH_LIMIT * 100} %</span>
       </p>
       <p className="mt-2 text-xs leading-5 text-ink/55">
-        {level === 'ok' ? 'Su deuda está por debajo del nivel de aviso. Devuelva el préstamo antes del vencimiento.' : level === 'warning' ? 'Hay un aviso de margen abierto. Devuelva ahora el préstamo con la acción «Devolver» para recuperar un nivel seguro.' : 'La deuda alcanzó el límite de riesgo. La garantía puede ejecutarse. Devuelva ahora el préstamo; la ejecución aún no está disponible en esta versión de prueba.'}
+        {level === 'ok' ? 'Su deuda está por debajo del nivel de aviso. Devuelva el préstamo antes del vencimiento.' : level === 'warning' ? 'Hay un aviso de margen abierto. Devuelva ahora el préstamo con la acción «Devolver» para cerrar la deuda.' : 'La deuda alcanzó el límite de riesgo. Puede declararse el incumplimiento. Pague para recuperar sus bonos antes de que se ejecute la venta.'}
       </p>
     </div>
   );

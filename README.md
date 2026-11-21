@@ -5,10 +5,32 @@ mercado, respaldados por bonos tokenizados. MVP de hackathon sobre **Stellar
 testnet**: activos sin valor real, custodia/tokenización simuladas y proveedores
 sandbox. Next.js 16, React 19, Pollar, Didit y Trustless Work.
 
-El servidor B1 utiliza los contratos C4. La landing y las pantallas
-completas se adaptan en B2; el registro/preparación antiguos quedan deshabilitados
-con un aviso. [Interfaz de contratos](contracts/INTERFAZ.md),
-[API y recorrido del servidor](docs/notas-tecnicas.md).
+## Recorrido de la empresa
+
+1. Ingrese con Pollar y verifique su empresa con Didit; Bolivia es el país inicial,
+   pero puede elegir otro país y declarar en moneda local o USD.
+2. Declare el bono y seleccione el certificado de bloqueo. El navegador calcula
+   SHA-256; solo la huella y los datos declarados se registran públicamente.
+3. Espere la revisión. En testnet pulse **Simular aprobación y emisión**: autoriza
+   al tenedor y emite RBOND sin custodio real. Si Pollar no habilita RBOND, use
+   **Habilitar bonos con mi firma** en Su cuenta (requiere reserva XLM).
+4. Revise la oferta: por USD 100,00 nominales debe 50,00 de capital, paga 0,15 de
+   comisión de desembolso y recibe 49,85 USDC. Debe 50,3333334 USDC con interés;
+   la pantalla redondea a dos decimales. Prepare el préstamo.
+5. Firme el depósito de bonos. Prepare los dólares del prestamista de prueba:
+   Trustless Work los protege y libera a la bóveda tras comprobar la garantía.
+   Firme por segunda vez para aceptar deuda y recibir el neto atómicamente.
+6. Consulte precio publicado, salud, vencimiento y actividad Stellar por préstamo.
+   Puede simular precios por pasos de hasta 25 % cada 30 segundos.
+7. Firme el pago: todos los bonos se liberan en esa misma transacción. Puede simular
+   un adelanto de interés y comisión una vez para probar el reembolso.
+8. En incumplimiento vea la cuenta regresiva de cura y pague, o simule después la
+   compra autorizada. Se muestran precio de compra, excedente y pérdida reales del libro.
+9. Cobre créditos pendientes con una firma; recoja bonos de la custodia auxiliar si
+   su cuenta puede recibirlos. Al volver a abrir la pestaña se consulta el estado
+   del servidor; reintentar recupera etapas confirmadas. Hasta tres préstamos abiertos.
+
+[API y recuperación](docs/notas-tecnicas.md), [contratos](contracts/INTERFAZ.md).
 
 ## Arquitectura
 
@@ -103,4 +125,41 @@ No es un producto auditado ni apto para dinero real. El certificado se declara p
 hash; su revisión es una simulación explícita. Cada entrada del registro tiene tamaño máximo, pero el índice usa slots independientes
 sin vector creciente ni reservas clásicas. TTL requiere transacciones de mantenimiento
 y restauración si se deja archivar. [Informe C4](contracts/C4-REPORT.md).
-UI B2, liquidadores externos y operación comercial quedan fuera de esta fase.
+Liquidadores externos y operación comercial quedan fuera de esta demostración. La firma interactiva Pollar y su configuración RBOND requieren validación humana.
+
+## Reglas de riesgo
+
+Aviso de margen al 70 % de deuda sobre garantía; incumplimiento al 85 % o al vencer los 30 días más 30 segundos de gracia. Tras declararlo, dispone de 60 segundos para pagar antes de habilitar la venta. Un comprador aprobado por el emisor compra con 5 % de descuento sobre el mayor entre el precio vigente y el piso protegido. Pago y entrega ocurren juntos: cobra primero el prestamista, el excedente va a la empresa y el prestamista asume cualquier faltante.
+
+El precio depende del emisor y no garantiza una venta. El piso protegido puede superar el precio de mercado y demorar la compra. Tras 180 días de incumplimiento, los bonos pueden entregarse al prestamista sin excedente para la empresa. El emisor puede autorizar a la empresa deudora como compradora. El interés es fijo: pagar antes no lo reduce y pagar tarde no lo aumenta. Añadir bonos no mejora la salud del préstamo. La autorización para recibir bonos puede revocarse después del cierre; una entrega bloqueada queda en custodia auxiliar. No hay seguro ni auditoría independiente de las correcciones C4.
+
+Además, las entradas Stellar necesitan mantenimiento y restauración de TTL. La
+verificación KYB aún usa entradas clásicas de capacidad finita. Los metadatos
+son públicos y no existe custodia legal ni validación del certificado.
+
+## Verifíquelo en Stellar
+
+Los contratos vigentes figuran en la tabla de arquitectura. Activo regulado
+[RBOND](https://stellar.expert/explorer/testnet/asset/RBOND-GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6),
+[bóveda del recorrido pagado](https://stellar.expert/explorer/testnet/contract/CCMZDQGDI3HLECRQ2Q4OSSJ2WW2RAVBUHDZODT66HD7HJ3IV2UVDXBNB) y
+[escrow de desembolso Trustless Work](https://stellar.expert/explorer/testnet/contract/CCWPH5ESWJH4FUFC2NV6IBKX2TB7N6NJBSR2QSKODCFXTU5DQRMGROQ4).
+
+Recorrido completo de `scripts/evidence/c4-server.json`, finalizado el 21-11-2026:
+
+- [Declaración](https://stellar.expert/explorer/testnet/tx/aae1196a07c3ed55b8716d31744da45660f5388bcfbc26f2e794aba58108c9d2).
+- [Autorización de tenedor](https://stellar.expert/explorer/testnet/tx/93c2ccf1099a739ee2fc367e2ac42f803040760da8485abb9e76c505724e7e23).
+- [Serie](https://stellar.expert/explorer/testnet/tx/7ecf9504b51cf0e034101540548fef344ef7e0ef307de507891d16eaa15573a7).
+- [Precio inicial](https://stellar.expert/explorer/testnet/tx/a0c82475d1b0a11363a16da3006affdb57a161b86b049ea31e364eec8b39a5e2).
+- [Emisión](https://stellar.expert/explorer/testnet/tx/3d9fb25acaf12ac8fee39839581904e23d32ab80ced946fee487cafa465204ed).
+- [Primera firma: depósito](https://stellar.expert/explorer/testnet/tx/1592f4635971ddfb2d9ac2f09b64bd8b6655d4dfed8e43bde1b4a745b393370f).
+- [Creación TW](https://stellar.expert/explorer/testnet/tx/7c9f2597b38c2029ddd45f0107055834a48024b3982ac431e1d95bb6e48ba8f4).
+- [Fondeo TW](https://stellar.expert/explorer/testnet/tx/e47a3a6945c41fa783e178059eaaea66a377f46ccf950f90b07d4f25c78905e4).
+- [Hito completado](https://stellar.expert/explorer/testnet/tx/6c3a6c0e05f60e98c885614298e34dbf8ad265a3d6f559fc23f1d3e9f7e22906).
+- [Aprobación del prestamista](https://stellar.expert/explorer/testnet/tx/e64c535c1a13162e50caa84a0ce0afbc6f84b23638a2d97d8621cc3930ccfac8).
+- [Liberación a la bóveda](https://stellar.expert/explorer/testnet/tx/a54afe3b6744490f1ce8370c0cb9518c5bdebcd719e63b224891c3c782318be4).
+- [Segunda firma: deuda y desembolso](https://stellar.expert/explorer/testnet/tx/1c290604feb4f222d6eaebd57a45f860752b17c05f714e4bc0e5bacca57fa2d0).
+- [Aviso de margen](https://stellar.expert/explorer/testnet/tx/c9e4e0712834693d40627d04e819efca9e07b3eb2d2aaf052f89ea0d6fe8a165).
+- [Adelanto simulado](https://stellar.expert/explorer/testnet/tx/b3c70b8ef973a398bc5b07aa72f65dba7d0e79ee89828b2e9b353de648da25b4).
+- [Pago y devolución íntegra de bonos](https://stellar.expert/explorer/testnet/tx/f64d26a082aa802a3ecb45b34d7af751bb86fec87465bd967dd8be0f1e222a55).
+
+La segunda operación demuestra la [venta y entrega atómicas](https://stellar.expert/explorer/testnet/tx/577997a1756a68d4a58827328f0b42bf0c68f11fddceffe1fa0f4ef4163b098d), con excedente a la empresa. No se reejecutaron estos recorridos para B2.

@@ -8,11 +8,13 @@ import { accept, fund } from './setup';
 import { build, submit } from './signing';
 import { topup, setPrice, markDefault, liquidate } from './operations';
 import { json } from './store';
-export type Action = 'state' | 'register' | 'approve' | 'accept' | 'fund' | 'price' | 'default' | 'liquidate' | 'deposit/build' | 'deposit/submit' | 'open/build' | 'open/submit' | 'repay/build' | 'repay/submit' | 'repay/topup' | 'claim/build' | 'claim/submit';
+export type Action = 'collect/build' | 'collect/submit' | 'state' | 'register' | 'approve' | 'accept' | 'fund' | 'price' | 'default' | 'liquidate' | 'deposit/build' | 'deposit/submit' | 'open/build' | 'open/submit' | 'repay/build' | 'repay/submit' | 'repay/topup' | 'claim/build' | 'claim/submit';
 export async function dispatch(wallet: string, action: Action, input: Record<string, unknown> = {}) {
   await verified(wallet);
   const id = typeof input.contractId === 'string' ? input.contractId : '', bondId = typeof input.bondId === 'string' ? input.bondId : '';
   switch (action) {
+    case 'collect/build': return build(wallet, id, 'collect');
+    case 'collect/submit': return submit(wallet, id, 'collect', input.signedXdr);
     case 'state': return state(wallet);
     case 'register': return register(wallet, input);
     case 'approve': return approve(wallet, bondId);
@@ -43,6 +45,7 @@ export async function handle(request: Request, action: Action) {
     const result = await dispatch(wallet, action, input);
     return new Response(json(result), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error) {
+    if (action.endsWith('/submit')) console.warn('loan_submit_rejected', { action, status: error instanceof ApiError ? error.status : 502, reason: error instanceof ApiError ? 'validation_or_chain_condition_rejected' : 'provider_or_submission_failure' });
     return Response.json({ error: error instanceof ApiError ? error.message : 'No pudimos confirmar la operación. Consulte su estado antes de reintentar.' }, { status: error instanceof ApiError ? error.status : 502, headers: { 'Cache-Control': 'no-store' } });
   }
 }

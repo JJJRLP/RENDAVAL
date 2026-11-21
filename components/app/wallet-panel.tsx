@@ -12,7 +12,7 @@ const amount = (balance: Balance | undefined) =>
 
 /** Balances in business terms; chain details stay one click away. */
 export function WalletPanel({ address, loan }: { address: string; loan: LoanState | null }) {
-  const { balances, busy, progress, error, refresh } = useWallet(address, loan);
+  const { balances, busy, progress, error, refresh, enableBonds } = useWallet(address, loan);
   const [copyStatus, setCopyStatus] = useState("");
   async function copyAddress() {
     try {
@@ -85,6 +85,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
         </div>
       )}
 
+      {balances && !assetBalance(balances, RBOND) && !busy && <div className="mt-5 border-t border-line pt-5"><p className="text-sm leading-6">Los bonos aún no están habilitados. Si la habilitación automática no funciona, puede autorizarlos con su propia firma. Esto requiere saldo XLM para la reserva de red; la aprobación del emisor ocurre después.</p><button type="button" className="btn-primary mt-3" onClick={() => void enableBonds()}>Habilitar bonos con mi firma</button></div>}
       <details className="mt-6 border-t border-line pt-4 text-sm text-ink/70">
         <summary className="min-h-11 cursor-pointer py-2 font-semibold text-ink">Detalles técnicos de la cuenta</summary>
         <dl className="mt-2 grid gap-4">

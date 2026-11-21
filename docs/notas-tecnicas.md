@@ -1,4 +1,4 @@
-# Servidor B1 — contratos C4
+# Servidor B1 e interfaz B2 — contratos C4
 
 Solo Stellar testnet. Sin base de datos, nuevas variables ni dependencias. Se
 conservan las constancias KYB existentes. [INTERFAZ](../contracts/INTERFAZ.md)
@@ -164,9 +164,7 @@ como desconocida. `claimable` es crédito total de empresa, no atribuible a un p
 Los campos decimales `terms` y `health` solo adaptan pantallas anteriores.
 
 No existen `/disburse` ni `/settle`: se quitaron pago clásico de desembolso,
-repayment por memo, precio en manageData y liberación de bonos desde TW. El hook
-antiguo de registro/preparación muestra un aviso B2, sin inventar certificado ni
-aprobar automáticamente. Las pantallas completas son otra fase.
+repayment por memo, precio en manageData y liberación de bonos desde TW. La interfaz B2 usa bondRecords y allLoans directamente; nunca inventa un certificado ni aprueba automáticamente.
 
 ## Verificación reproducible
 
@@ -241,3 +239,35 @@ nuevo, ids y hashes están en [C4-REPORT](../contracts/C4-REPORT.md).
 [autorización](../scripts/evidence/b1-authorization.json) y
 [lista completa de archivos modificados, agregados y eliminados](../scripts/evidence/b1-files.txt).
 No se hizo commit. No se cambiaron contratos, configuración de hosting ni secretos.
+
+## Interfaz B2 y extensiones
+
+`state` añade `readyToOpen` a cada préstamo (recibo durable de release), para
+habilitar la segunda firma solo cuando terminó el fondeo. `claimTransactions` reúne los enlaces a los cobros de la empresa. La interfaz recupera
+reservas sin bóveda y autorizaciones interrumpidas con `accept`.
+
+- `collect/build`: `{contractId}`; prepara `collect_bonds` en delivery.
+- `collect/submit`: `{contractId,signedXdr}`; valida y envía el desafío exacto.
+
+Ambas requieren Pollar, KYB, propiedad del préstamo y que recipient de delivery
+sea la empresa autenticada. No cambian permisos ni contratos. El dueño recibe los
+bonos según el contrato; balance cero se considera completado. Los hashes se
+agregan a la actividad del préstamo.
+
+El rechazo de XDR registra un código técnico sin cuenta, token, documento, XDR ni
+claves: formato, comisión exterior, desafío modificado/vencido o firma inválida.
+Se conservan todas las comprobaciones del inner transaction.
+
+Si la habilitación automática Pollar falla, el cliente prepara changeTrust RBOND,
+pide signTx y lo envía a Horizon testnet. Comprueba el saldo antes de repetir y
+explica la reserva XLM. Esto no autoriza al tenedor: la aprobación del emisor sigue
+siendo un paso separado. No hay nuevas variables ni dependencias.
+
+Los errores y firmas rechazadas permiten preparar un desafío nuevo. Una respuesta
+202 se trata como pendiente, nunca como éxito. Las esperas de precio muestran el
+objetivo y un contador; «Continuar cambio» publica el siguiente paso. Al recargar
+se conserva el último precio confirmado, no una orden de precio futura.
+
+Reglas mostradas por app y FAQ desde `lib/loan/risk-copy.ts`:
+
+Aviso de margen al 70 % de deuda sobre garantía; incumplimiento al 85 % o al vencer los 30 días más 30 segundos de gracia. Tras declararlo, dispone de 60 segundos para pagar antes de habilitar la venta. Un comprador aprobado por el emisor compra con 5 % de descuento sobre el mayor entre el precio vigente y el piso protegido. Pago y entrega ocurren juntos: cobra primero el prestamista, el excedente va a la empresa y el prestamista asume cualquier faltante.
