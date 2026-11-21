@@ -4,6 +4,7 @@ import { HEALTH_LIMIT, HEALTH_WARNING, type LoanView } from '@/lib/loan/model';
 /** How much of the collateral's value the debt uses, against Rendaval's example thresholds. */
 export function LoanHealth({ debt, collateral, health }: { debt: number; collateral: number; health: LoanView['health'] }) {
   const { ratio, level } = health;
+  if (ratio === null || level === 'unknown') return <p className="mt-5 text-sm">Salud no calculable; consulte el estado del contrato.</p>;
   const percent = Math.round(ratio * 100);
   const label = level === 'ok' ? 'Saludable' : level === 'warning' ? 'Aviso de margen abierto' : 'En riesgo';
   const mark = level === 'ok' ? '✓' : level === 'warning' ? '!' : '✕';

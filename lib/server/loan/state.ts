@@ -1,69 +1,52 @@
 import 'server-only';
-import { ApiError, vaultKey } from '../env';
-import { readAttestation } from '../attestation';
-import { assetBalance, readBalances } from '../../stellar/horizon';
-import { USDC, VBOND } from '../../stellar/assets';
-import { normalizeBond, terms, loanHealth, roundUsdc, OPEN_LOAN_LIMIT, type LoanState, type LoanView, type Bond } from '../../loan/model';
-import { cleanObservedJournals, journalAccount } from './deployment-journal';
-import { historyPages, loanHistory } from './history';
-import { explorer, lenderKey, server, tw } from './network';
-import { readPrice } from './collateral-price';
-export type Escrow = { contractId: string; signer: string; amount: number; balance: number; description: string; engagementId: string; roles: Record<string, string>; trustline: { address: string; symbol: string }; milestones: { status: string; approved: boolean }[]; createdAt?: { _seconds: number }; flags: { released: boolean; resolved: boolean; disputed: boolean } };
-export async function verified(wallet: string) {
-  const entry = await readAttestation(wallet);
-  if (!entry) throw new ApiError(403, 'Verifique su empresa antes de registrar sus bonos.');
-  return { status: 'verified' as const, country: entry.country, receiptUrl: entry.receiptUrl };
-}
-export async function escrowsFor(wallet: string) {
-  const all: Escrow[] = [];
-  for (let page = 1; ; page++) {
-    const batch = await tw<Escrow[]>(`/helper/get-escrows-by-role?role=receiver&roleAddress=${wallet}&validateOnChain=true&page=${page}&pageSize=50`);
-    if (!Array.isArray(batch)) throw new ApiError(502, 'No pudimos consultar sus garantías. Reintente.');
-    all.push(...batch);
-    if (batch.length < 50) break;
-  }
-  const owned = all.filter(e => (e.engagementId === `vault-loan-${wallet}` || e.engagementId?.startsWith(`vault-loan-${wallet}:`)) && e.roles?.platformAddress === vaultKey().publicKey());
-  const vault = vaultKey().publicKey();
-  for (const e of owned) {
-    if (e.signer !== vault || e.trustline?.address !== VBOND.issuer || e.trustline.symbol !== 'VBOND' || e.roles.approver !== lenderKey().publicKey() || e.roles.receiver !== wallet || ![vault, wallet].includes(e.roles.serviceProvider) || e.roles.releaseSigner !== vault || e.roles.disputeResolver !== vault || !Number.isFinite(e.balance) || !Number.isFinite(e.amount) || e.amount < 100 || e.amount > 1000)
-      throw new ApiError(409, 'Su garantía necesita revisión del equipo de Rendaval antes de continuar.');
-  }
-  return [...new Map(owned.map(e => [e.contractId, e])).values()].sort((a, b) => (b.createdAt?._seconds ?? Number(b.engagementId.split(':')[1]) ?? 0) - (a.createdAt?._seconds ?? Number(a.engagementId.split(':')[1]) ?? 0));
-}
-export async function escrowFor(wallet: string, contractId: string) {
-  if (!/^C[A-Z2-7]{55}$/.test(contractId)) throw new ApiError(409, 'Seleccione el préstamo que desea continuar.');
-  const escrow = (await escrowsFor(wallet)).find(e => e.contractId === contractId);
-  if (!escrow) throw new ApiError(403, 'Este préstamo no corresponde a su empresa.');
-  // A disputed or resolved escrow is out of the ordinary flow; it must not block the company's other loans.
-  if (escrow.flags?.disputed || escrow.flags?.resolved) throw new ApiError(409, 'Este préstamo está en revisión del equipo de Rendaval y no admite operaciones.');
-  return escrow;
-}
-export async function state(wallet: string): Promise<LoanState> {
-  const [verification, balances, escrows, lender, pages, journal, vault] = await Promise.all([verified(wallet), readBalances(wallet), escrowsFor(wallet), server.loadAccount(lenderKey().publicKey()), historyPages(wallet), journalAccount(), server.loadAccount(vaultKey().publicKey())]);
-  const bonds = Number(assetBalance(balances, VBOND)?.balance ?? 0), usdc = Number(assetBalance(balances, USDC)?.balance ?? 0);
-  const paid = new Set(escrows.filter(e => lender.data_attr[e.contractId]).map(e => e.contractId));
-  const [history] = await Promise.all([loanHistory(wallet, escrows, paid, pages), cleanObservedJournals(wallet, escrows.length, journal)]);
-  const views: LoanView[] = escrows.map(escrow => {
-    const transactions = history.transactions.get(escrow.contractId)!;
-    const payment = transactions.find(tx => tx.label === 'Desembolso');
-    const repayment = history.repayments.get(escrow.contractId);
-    let bond: Bond | null = null;
-    try { bond = normalizeBond(JSON.parse(escrow.description)); } catch { /* Historical description is plain text. */ }
-    const price = readPrice(vault.data_attr, escrow.contractId);
-    const collateralValue = roundUsdc(escrow.amount * price);
-    return { price, collateralValue, health: loanHealth(terms(escrow.amount).total, collateralValue), bond, locked: escrow.flags.released || escrow.flags.resolved ? 0 : escrow.balance,
-      repayment: repayment ? { ...repayment, releaseStatus: escrow.flags.released ? 'released' : 'pending' } : null,
-      stage: escrow.flags.released ? 'closed' : escrow.flags.resolved ? 'liquidated' : escrow.flags.disputed ? 'disputed' : repayment ? 'repaid_release_pending' : paid.has(escrow.contractId) ? 'active' : escrow.balance >= escrow.amount ? 'collateral_locked' : 'escrow_created',
-      terms: terms(escrow.amount, payment ? Date.parse(payment.at) : Date.now()),
-      escrow: { contractId: escrow.contractId, description: escrow.description, url: explorer('contract', escrow.contractId) }, transactions };
-  });
-  const pending = views.filter(v => v.stage === 'escrow_created' || v.stage === 'collateral_locked');
-  if (pending.length > 1) throw new ApiError(409, 'Hay más de una garantía en preparación. Contacte al equipo de Rendaval.');
-  const loans = views.filter(v => !pending.includes(v));
-  const empty: LoanView = { price: 1, collateralValue: bonds, health: loanHealth(terms(bonds).total, bonds), bond: null, stage: bonds > 0 ? 'bond_registered' : 'none', terms: terms(bonds), locked: 0, escrow: null, repayment: null, transactions: [] };
-  const setup = pending[0] ?? (bonds > 0 ? empty : null);
-  const openLoans = loans.filter(v => v.stage !== 'closed' && v.stage !== 'liquidated').length;
-  const limitReached = openLoans >= OPEN_LOAN_LIMIT;
-  const focal = setup ?? loans[0] ?? empty;
-  return { ...focal, wallet, verification, bonds, usdc, locked: views.reduce((sum, v) => sum + v.locked, 0), setup, loans, openLoans, limitReached, canRegister: !setup && !limitReached && bonds === 0 };
+import { readBalances, assetBalance } from '../../stellar/horizon';
+import { RBOND, USDC } from '../../stellar/assets';
+import { vaultKey } from '../env';
+import { terms, loanHealth, type LoanView } from '../../loan/model';
+import { a, balance, BOND, BOOK, issuerKey, read, rpcServer, RULES, sym, units } from './chain';
+import { explorer } from './network';
+import { get } from './store';
+import { index, ownBond, verified } from './records';
+import { loanView } from './setup';
+import { type Config, type Series, type Spec, type VaultConfig } from './types';
+export { verified } from './records';
+export async function state(wallet: string) {
+  const walletBalances = readBalances(wallet);
+  const [verification, idx, bondBalance, dollars, config, ledger, credits] = await Promise.all([verified(wallet), index(wallet), walletBalances.then(rows => units(assetBalance(rows, RBOND)?.balance ?? '0')), walletBalances.then(rows => units(assetBalance(rows, USDC)?.balance ?? '0')), read<Config>(BOOK, 'get_config'), rpcServer.getLatestLedger(), read<bigint>(BOOK, 'claimable', [a(wallet)])]);
+  const bonds = await Promise.all(idx.bonds.map(async id => {
+    const record = await ownBond(wallet, id), approval = await get<{ hashes: string[] }>(`approved:${id}`);
+    return { ...record, status: approval ? 'approved' : 'under_review', approval, certificateStored: false };
+  }));
+  const loans = await Promise.all(idx.loans.filter(l => l.id).map(async item => {
+    const id = item.id!, spec = await read<Spec>(BOOK, 'get_vault', [a(id)]), vault = await read<VaultConfig>(id, 'get_config');
+    const view = vault.state[0] === 'Pending' ? null : await loanView(id);
+    const [series, escrow, txs, held, deliveryBalance] = await Promise.all([read<Series>(BOOK, 'get_series', [sym(spec.series)]), get<{ id: string; hash: string }>(`escrow:${id}`), get<{ hashes: string[] }>(`transactions:${wallet}:${id}`), balance(BOND, id), balance(BOND, spec.delivery)]);
+    const status = view?.loan.status[0] ?? vault.state[0];
+    const stage = status === 'Pending' ? held >= spec.face ? 'collateral_locked' : 'escrow_created' : status === 'Repaid' ? 'closed' : status === 'Liquidated' || status === 'WrittenOff' ? 'liquidated' : 'active';
+    const bond = bonds.find(b => b.id === item.bondId)!;
+    const t = terms(Number(spec.face) / 1e7);
+    const activity = (await Promise.all([id, spec.delivery, item.ref, item.bondId, spec.series].map(target => get<{ hash: string; label: string }[]>(`activity:${target}`)))).flatMap(rows => rows ?? []);
+    // Known operation keys also recover links if the response/optional activity
+    // append was lost after the receipt committed. Only this loan's keys are read.
+    const operatorLabels = [`create:${item.ref}`, `tw-deploy:${id}`, `tw-change-milestone-status:${id}`, `tw-release-funds:${id}`, `default:${id}`];
+    const otherLabels = [`approve-holder:${item.bondId}`, `series:${item.bondId}`, `initial-price:${item.bondId}`, `issue:${item.bondId}`, `authorize:${id}`, `authorize:${spec.delivery}`, `tw-fund:${id}`, `tw-approve-milestone:${id}`, `topup:${id}`, `buyer-holder:${id}`, `buyer-permit:${id}`, `liquidate:${id}`];
+    const receipts = await Promise.all([...operatorLabels, ...otherLabels].map(async label => {
+      const record = await get<{ receipt?: { hash: string } }>(`outbox:${BOOK}:${label}`, operatorLabels.includes(label) ? issuerKey() : vaultKey());
+      return record?.receipt ? [{ label, hash: record.receipt.hash }] : [];
+    }));
+    activity.push(...receipts.flat());
+    const transactions = [...new Map([...activity, ...(txs?.hashes ?? []).map(hash => ({ hash, label: 'Firma empresa' }))].map(row => [row.hash, { ...row, url: explorer('tx', row.hash), at: '' }])).values()];
+    const compat: LoanView = { bond: bond.bond, stage, price: Number(series.quote.price) / 1e7, collateralValue: view ? Number(view.value) / 1e7 : Number(spec.face * series.quote.price / 10000000n) / 1e7, health: view && view.health_bps === null ? { ratio: null, level: 'unknown' } : loanHealth(view ? Number(view.debt) / 1e7 : t.total, view ? Number(view.value) / 1e7 : t.collateral), locked: Number(held) / 1e7, terms: { ...t, ...(view ? { loan: Number(view.loan.principal) / 1e7, interest: Number(view.loan.interest) / 1e7, total: Number(view.debt) / 1e7, custodyFee: Number(view.loan.escrow_fee) / 1e7, dueDate: new Date(Number(view.loan.due) * 1000).toISOString() } : {}) }, escrow: { contractId: id, description: JSON.stringify(bond.bond), url: explorer('contract', id) }, repayment: null, transactions };
+    return { ...compat, id, bondId: item.bondId, status, spec, vault, book: BOOK, view, series, priceAge: Number(ledger.closeTime) - Number(series.quote.timestamp), priceFresh: BigInt(ledger.closeTime) <= series.quote.timestamp + config.max_price_age, healthBps: view?.health_bps ?? null, margin: status === 'Margin', cureDeadline: view?.loan.defaulted_at ? Number(view.loan.defaulted_at + config.cure_period) : null, deliveryBalance, escrowId: escrow?.id ?? null, links: { book: explorer('contract', BOOK), rules: explorer('contract', RULES), vault: explorer('contract', id), delivery: explorer('contract', spec.delivery), escrow: escrow ? explorer('contract', escrow.id) : null }, amounts: { principal: spec.principal, fee: spec.principal * 30n / 10000n, net: spec.principal - spec.principal * 30n / 10000n, debt: view?.debt ?? spec.principal + (spec.principal + 149n) / 150n } };
+  }));
+  const bondRecords = await Promise.all(bonds.map(async bond => {
+    const latest = loans.filter(l => l.bondId === bond.id).at(-1);
+    const availability = bond.status === 'under_review' ? 'under_review' : idx.loans.some(l => l.bondId === bond.id && !l.id) || latest?.status === 'Pending' ? 'reserved' : latest && ['Active', 'Margin', 'Defaulted'].includes(latest.status) ? 'pledged' : latest && ['Liquidated', 'WrittenOff'].includes(latest.status) ? 'sold' : latest && latest.deliveryBalance > 0n ? 'awaiting_delivery' : 'available';
+    const series = bond.status === 'approved' ? await read<Series>(BOOK, 'get_series', [sym(bond.series)]) : null;
+    return { ...bond, availability, seriesState: series, priceAge: series ? Number(ledger.closeTime) - Number(series.quote.timestamp) : null, transactions: (bond.approval?.hashes ?? []).map(hash => ({ hash, url: explorer('tx', hash) })), links: { book: explorer('contract', BOOK), token: explorer('contract', BOND), declaration: explorer('account', vaultKey().publicKey()) + '?filter=data' } };
+  }));
+  const openLoans = loans.filter(l => ['Pending', 'Active', 'Margin', 'Defaulted'].includes(l.status)).length + idx.loans.filter(l => !l.id).length;
+  const setup = loans.find(l => l.status === 'Pending') ?? null;
+  const focal = setup ?? loans.at(-1);
+  return { ...(focal ?? { stage: 'none', terms: terms(0), escrow: null, repayment: null, transactions: [] }), wallet, verification, bonds: Number(bondBalance) / 1e7, usdc: Number(dollars) / 1e7, locked: loans.reduce((n, l) => n + l.locked, 0), setup, loans: loans.filter(l => l.status !== 'Pending'), allLoans: loans, bondRecords, preparations: idx.loans.filter(l => !l.id), openLoans, limitReached: openLoans >= 3, canRegister: openLoans < 3, claimable: credits, book: BOOK, network: 'TESTNET', units: 'All raw contract amounts are integer strings with seven decimals', ledgerTime: Number(ledger.closeTime) };
 }

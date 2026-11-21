@@ -5,7 +5,7 @@ import {createHash,randomBytes} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {Address,Asset,Contract,Keypair,Networks,Operation,TransactionBuilder,authorizeEntry,nativeToScVal,rpc,scValToNative,StrKey} from '@stellar/stellar-sdk';
 const file='scripts/evidence/c3-testnet.json', server=new rpc.Server('https://soroban-testnet.stellar.org');
-const operator=Keypair.fromSecret(process.env.VAULT_SECRET_KEY),issuer=Keypair.fromSecret(process.env.NEW_BOND_ISSUER_SECRET_KEY),lender=Keypair.fromSecret(process.env.LENDER_SECRET_KEY);
+const operator=Keypair.fromSecret(process.env.VAULT_SECRET_KEY),issuer=Keypair.fromSecret(process.env.BOND_ISSUER_SECRET_KEY),lender=Keypair.fromSecret(process.env.LENDER_SECRET_KEY);
 const ephemeral=role=>Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY).update('rendaval-c3b-testnet-v1-'+role).digest());
 const borrower=ephemeral('borrower'),buyer=ephemeral('buyer'),keys=[operator,issuer,lender,borrower,buyer];
 const rules='CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC',oldBook='CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS';

@@ -1,13 +1,13 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePollar } from '@pollar/react';
-import { bondUsd, normalizeBond, type Bond, type LoanState } from '@/lib/loan/model';
+import { normalizeBond, type Bond, type LoanState } from '@/lib/loan/model';
 export function useLoan(address: string, onState: (state: LoanState) => void) {
   const { getClient, signTx } = usePollar();
   const [bond, setBond] = useState<Bond | null>(null);
   const [state, setState] = useState<LoanState | null>(null);
-  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [step, setStep] = useState(-1);
-  const [repayStep, setRepayStep] = useState(-1), [providerMessage, setProviderMessage] = useState('');
+  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [step] = useState(-1);
+  const [repayStep, setRepayStep] = useState(-1), [providerMessage] = useState('');
   const [operationId, setOperationId] = useState<string | null>(null);
   const lock = useRef(false), alive = useRef(true);
   const api = useCallback(async <T,>(action: string, body?: unknown): Promise<T> => {
@@ -38,52 +38,13 @@ export function useLoan(address: string, onState: (state: LoanState) => void) {
     }
     finally { lock.current = false; if (alive.current) setBusy(false); }
   }, [refresh]);
-  const release = useCallback(async (contractId: string) => {
-    setRepayStep(2);
-    const result = await api<{ status: string; providerMessage?: string }>('settle', { contractId });
-    if (alive.current) setProviderMessage(result.providerMessage ?? '');
-    const current = await refresh();
-    if (current.loans.find(l => l.escrow?.contractId === contractId)?.stage === 'closed') setRepayStep(3);
-  }, [api, refresh]);
   useEffect(() => {
     alive.current = true;
     const timer = setTimeout(() => void run(async () => { await refresh(); }), 0);
     return () => { alive.current = false; clearTimeout(timer); };
   }, [refresh, run]);
-  const register = (bond: Bond) => run(async () => {
-    setStep(-1);
-    try { localStorage.setItem(`vault:bond:${address}`, JSON.stringify(bond)); } catch { /* Escrow can resume with the on-chain balance and issuance memo. */ }
-    await api('register', bond);
-    await refresh();
-  });
-  const proceed = () => run(async () => {
-    let current = await refresh();
-    if (!current.setup) { setStep(3); return; }
-    if (current.setup.stage === 'bond_registered') {
-      setStep(0);
-      let bond: Bond | undefined;
-      try { bond = normalizeBond(JSON.parse(localStorage.getItem(`vault:bond:${address}`) || 'null')) ?? undefined; } catch { /* Optional metadata. */ }
-      // Returned collateral can differ from the original nominal after provider fees.
-      if (bond && Math.abs(bondUsd(bond) - current.bonds) > 0.000001) bond = undefined;
-      await api('accept', { bond }); current = await refresh();
-    }
-    const contractId = current.setup?.escrow?.contractId;
-    if (!contractId) throw new Error('Estamos confirmando su garantía. Vuelva a continuar.');
-    if (current.setup?.stage === 'escrow_created') {
-      setStep(1);
-      const built = await api<{ unsignedTransaction: string }>('deposit/build', { contractId });
-      const signed = await signTx(built.unsignedTransaction);
-      if (signed.status !== 'signed') throw new Error('El depósito no fue confirmado. Puede volver a intentarlo.');
-      await api('deposit/submit', { contractId, signedXdr: signed.signedXdr });
-      current = await refresh();
-    }
-    setStep(2);
-    for (let i = 0; current.setup?.stage === 'escrow_created' && i < 4; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); current = await refresh();
-    }
-    if (current.setup?.stage !== 'collateral_locked') throw new Error('Estamos confirmando su garantía. Vuelva a continuar en unos segundos.');
-    await api('disburse', { contractId }); await refresh(); setStep(3);
-  });
+  const register = (bond: Bond) => run(async () => { void bond; throw new Error('Registro con certificado y revisión disponible por API; pantalla pendiente de fase B2.'); });
+  const proceed = () => run(async () => { throw new Error('La preparación C3b requiere dos firmas; pantalla pendiente de fase B2.'); });
   const repay = (contractId: string) => run(async () => {
     let current = (await refresh()).loans.find(l => l.escrow?.contractId === contractId);
     if (current?.stage === 'active') {
@@ -97,13 +58,12 @@ export function useLoan(address: string, onState: (state: LoanState) => void) {
       }
       current = (await refresh()).loans.find(l => l.escrow?.contractId === contractId);
     }
-    if (current?.stage === 'repaid_release_pending') await release(contractId);
-    else if (current?.stage === 'closed') setRepayStep(3);
+    if (current?.stage === 'closed') setRepayStep(3);
   }, contractId);
   const setPrice = (contractId: string, price: number) => run(async () => {
     setRepayStep(-1);
     await api('price', { contractId, price });
     await refresh();
   }, contractId);
-  return { setPrice, state, bond, busy, error, step, repayStep, providerMessage, operationId, repay, settle: (contractId: string) => run(() => release(contractId), contractId), register, proceed, retry: () => run(async () => { await refresh(); }) };
+  return { setPrice, state, bond, busy, error, step, repayStep, providerMessage, operationId, repay, settle: (contractId: string) => run(async () => { await refresh(); }, contractId), register, proceed, retry: () => run(async () => { await refresh(); }) };
 }

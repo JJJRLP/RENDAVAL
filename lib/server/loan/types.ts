@@ -1,0 +1,10 @@
+import type { Bond } from '../../loan/model';
+export type BondRecord = { id: string; wallet: string; bond: Bond; certificateHash: string; face: string; series: string; createdAt: string };
+export type Reservation = { ref: string; bondId: string; id?: string };
+export type Index = { bonds: string[]; loans: Reservation[] };
+export type Spec = { series: string; borrower: string; lender: string; face: bigint; principal: bigint; delivery: string };
+export type VaultConfig = { book: string; bond: string; usdc: string; borrower: string; lender: string; delivery: string | null; recipient: string; state: string[] };
+export type Series = { token: string; changed_at: bigint; quote: { price: bigint; timestamp: bigint } };
+export type Config = { operator: string; issuer: string; publisher: string; rules: string; usdc: string; margin_bps: number; default_bps: number; max_step_bps: number; price_interval: number; max_price_age: bigint; grace_period: bigint; cure_period: bigint; discount_bps: number };
+export type View = { debt: bigint; value: bigint; health_bps: bigint | null; overdue: boolean; shortfall: bigint | null; loan: { asset: string; borrower: string; lender: string; recipient: string; face: bigint; principal: bigint; interest: bigint; escrow_fee: bigint; net_disbursement: bigint; price: bigint; price_time: bigint; due: bigint; defaulted_at: bigint; default_price: bigint; status: string[]; collateral: { balance: bigint; authorized: boolean; known: boolean }; proceeds: bigint; surplus: bigint; loss: bigint } };
+export const terminal = (status: string) => ['Repaid', 'Liquidated', 'WrittenOff'].includes(status);

@@ -3,7 +3,7 @@
 import type { LoanState } from "@/lib/loan/model";
 import { formatNumber } from "@/lib/format";
 import { useState } from "react";
-import { USDC, VBOND } from "@/lib/stellar/assets";
+import { USDC, RBOND } from "@/lib/stellar/assets";
 import { assetBalance, type Balance } from "@/lib/stellar/horizon";
 import { useWallet } from "./use-wallet";
 
@@ -24,7 +24,7 @@ export function WalletPanel({ address, loan }: { address: string; loan: LoanStat
   }
   const tiles = [
     { label: "Dólares", unit: "USDC", balance: balances ? assetBalance(balances, USDC) : undefined },
-    { label: "Bonos disponibles", unit: "USD", balance: balances ? assetBalance(balances, VBOND) : undefined },
+    { label: "Bonos disponibles", unit: "USD", balance: balances ? assetBalance(balances, RBOND) : undefined },
   ];
   const native = balances?.find((item) => item.asset_type === "native");
 
