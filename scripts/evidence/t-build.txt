@@ -1,0 +1,48 @@
+▲ Next.js 16.4.6 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 34ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 499ms
+  Running TypeScript ...
+  Finished TypeScript in 1862ms ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/27) ...
+  Generating static pages using 15 workers (6/27) 
+  Generating static pages using 15 workers (13/27) 
+  Generating static pages using 15 workers (20/27) 
+✓ Generating static pages using 15 workers (27/27) in 329ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/kyb/check
+├ ƒ /api/kyb/simulate
+├ ƒ /api/kyb/start
+├ ƒ /api/kyb/status
+├ ƒ /api/loan/accept
+├ ƒ /api/loan/approve
+├ ƒ /api/loan/claim/build
+├ ƒ /api/loan/claim/submit
+├ ƒ /api/loan/collect/build
+├ ƒ /api/loan/collect/submit
+├ ƒ /api/loan/default
+├ ƒ /api/loan/deposit/build
+├ ƒ /api/loan/deposit/submit
+├ ƒ /api/loan/fund
+├ ƒ /api/loan/liquidate
+├ ƒ /api/loan/open/build
+├ ƒ /api/loan/open/submit
+├ ƒ /api/loan/price
+├ ƒ /api/loan/register
+├ ƒ /api/loan/repay/build
+├ ƒ /api/loan/repay/submit
+├ ƒ /api/loan/repay/topup
+├ ƒ /api/loan/state
+└ ○ /app
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { usePollar } from "@pollar/react";
+import { enableWithSignature } from "@/lib/stellar/manual-trustline";
 import { TRUST_ASSETS, isClassicAddress } from "@/lib/stellar/assets";
 import { assetBalance, readBalances, type Balance } from "@/lib/stellar/horizon";
 import { confirmedTrustline, createTrustline } from "@/lib/stellar/trustlines";
 
 export function useWallet(address: string, revision?: unknown) {
-  const { getClient } = usePollar();
+  const { getClient, signTx } = usePollar();
   const [attempt, setAttempt] = useState(0);
   const [balances, setBalances] = useState<Balance[] | null>(null);
   const [busy, setBusy] = useState(true);
@@ -69,5 +70,18 @@ export function useWallet(address: string, revision?: unknown) {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [address, attempt, getClient, revision]);
 
-  return { balances, busy, progress, error, refresh: () => setAttempt((value) => value + 1) };
+  async function enableBonds() {
+    setBusy(true); setError(''); setProgress('Habilitando bonos con su firma. Confirme en su cuenta; la red puede tardar hasta 30 segundos.');
+    try {
+      const client = getClient();
+      if (client.getWallet()?.address !== address) throw new Error('Su sesión cambió. Ingrese nuevamente.');
+      const current = await readBalances(address);
+      const asset = TRUST_ASSETS.find(a => a.code === 'RBOND')!;
+      if (!assetBalance(current, asset)) await enableWithSignature(address, asset, signTx);
+      confirmedTrustline(address, asset);
+      setAttempt(value => value + 1);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se completó la habilitación. Reintente.'); }
+    finally { setBusy(false); setProgress(''); }
+  }
+  return { enableBonds, balances, busy, progress, error, refresh: () => setAttempt((value) => value + 1) };
 }

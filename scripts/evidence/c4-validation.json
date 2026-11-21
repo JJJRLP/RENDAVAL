@@ -1,0 +1,52 @@
+{
+  "verifiedAt": "2026-11-21T06:40:24.027831+00:00",
+  "network": "TESTNET",
+  "commands": {
+    "stellar contract build --manifest-path contracts/Cargo.toml": "passed",
+    "cargo test --manifest-path contracts/Cargo.toml --locked": "passed: 68 tests; no ignored tests",
+    "npm run lint": "passed; one pre-existing historical-helper unused import warning",
+    "npx tsc --noEmit": "passed",
+    "npx next build": "passed",
+    "verify-b1.ts": "passed: both journeys on final book",
+    "verify-b1-authorization.ts": "passed: 65 checks",
+    "c4-cleanup.ts": "passed: 746 entries removed; other account data preserved",
+    "c4-verify.mjs": "passed: 346 hashes, code, accounting and cleanup"
+  },
+  "retainedTests": {
+    "contracts/loan-book/src/test.rs": {
+      "before": 54,
+      "after": 61,
+      "removed": []
+    },
+    "contracts/bond-rules/src/lib.rs": {
+      "before": 5,
+      "after": 5,
+      "removed": []
+    }
+  },
+  "book": {
+    "id": "CB6VYHQXCB3EKR4Q43LNDH7Y6GZXURIUBTOCHBWPCNSACANPHKSMSSKN",
+    "sha256": "896e0b028ef293b4a0bc59a1ad668af87376ec227275d93559cf79b23fb5dc84",
+    "liveUntilLedgerSeq": 7917162
+  },
+  "registry": {
+    "id": "CAR55ERAQUCHESSOEW2UUWYAUC3PVK7LIV7MIP6IIWRNM7AV3TYVAGGB",
+    "sha256": "577bfc18425f8ffced249e0147bb07dad95f303fd43a3dbd8979ae073a3d5840",
+    "liveUntilLedgerSeq": 7916994
+  },
+  "grossLenderSpendBaseUnits": "2082215724",
+  "knownLimits": [
+    "No real 30/180-day wait or real TTL archival/restoration",
+    "Pollar identity HTTP fixture; interactive browser signing not tested",
+    "Positive blocked USDC credit covered in Rust, not in live server journey",
+    "Scale exercised natively, not with ten thousand live testnet loans",
+    "Conservative floor may exceed first default quote; overdue floor is par"
+  ],
+  "uncommitted": true,
+  "integrityChecks": {
+    "knownSecretMatchesInChangedFiles": 0,
+    "stellarSecretKeyPatternMatches": 0,
+    "componentsOrPagesChanged": false,
+    "rulesSourceChanged": false
+  }
+}

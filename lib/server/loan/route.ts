@@ -1,27 +1,51 @@
 import 'server-only';
 import { authenticate } from '../pollar';
 import { ApiError } from '../env';
-import { state, verified } from './state';
-import { register } from './register';
-import { accept } from './accept';
-import { buildDeposit, submitDeposit } from './deposit';
-import { disburse } from './disburse';
-import { topup, buildRepayment, submitRepayment } from './repayment';
-import { setPrice } from './price';
-import { settle } from './settle';
-export async function handle(request: Request, action: 'price' | 'state' | 'register' | 'accept' | 'deposit/build' | 'deposit/submit' | 'disburse' | 'repay/topup' | 'repay/build' | 'repay/submit' | 'settle') {
+import { verified } from './records';
+import { state } from './state';
+import { register, approve } from './register';
+import { accept, fund } from './setup';
+import { build, submit } from './signing';
+import { topup, setPrice, markDefault, liquidate } from './operations';
+import { json } from './store';
+export type Action = 'collect/build' | 'collect/submit' | 'state' | 'register' | 'approve' | 'accept' | 'fund' | 'price' | 'default' | 'liquidate' | 'deposit/build' | 'deposit/submit' | 'open/build' | 'open/submit' | 'repay/build' | 'repay/submit' | 'repay/topup' | 'claim/build' | 'claim/submit';
+export async function dispatch(wallet: string, action: Action, input: Record<string, unknown> = {}) {
+  await verified(wallet);
+  const id = typeof input.contractId === 'string' ? input.contractId : '', bondId = typeof input.bondId === 'string' ? input.bondId : '';
+  switch (action) {
+    case 'collect/build': return build(wallet, id, 'collect');
+    case 'collect/submit': return submit(wallet, id, 'collect', input.signedXdr);
+    case 'state': return state(wallet);
+    case 'register': return register(wallet, input);
+    case 'approve': return approve(wallet, bondId);
+    case 'accept': return accept(wallet, bondId);
+    case 'fund': return fund(wallet, id);
+    case 'price': return setPrice(wallet, id, input.price, bondId);
+    case 'default': return markDefault(wallet, id);
+    case 'liquidate': return liquidate(wallet, id);
+    case 'repay/topup': return topup(wallet, id);
+    case 'deposit/build': return build(wallet, id, 'deposit');
+    case 'deposit/submit': return submit(wallet, id, 'deposit', input.signedXdr);
+    case 'open/build': return build(wallet, id, 'open');
+    case 'open/submit': return submit(wallet, id, 'open', input.signedXdr);
+    case 'repay/build': return build(wallet, id, 'repay');
+    case 'repay/submit': return submit(wallet, id, 'repay', input.signedXdr);
+    case 'claim/build': return build(wallet, wallet, 'claim');
+    case 'claim/submit': return submit(wallet, wallet, 'claim', input.signedXdr);
+  }
+}
+export async function handle(request: Request, action: Action) {
   try {
     const wallet = await authenticate(request);
-    await verified(wallet);
     let input: Record<string, unknown> = {};
     if (action !== 'state') {
-      try { input = await request.json(); if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(); }
-      catch { throw new ApiError(400, 'La solicitud no es válida. Reintente.'); }
+      try { input = await request.json(); if (!input || typeof input !== 'object' || Array.isArray(input)) throw Error(); }
+      catch { throw new ApiError(400, 'JSON inválido.'); }
     }
-    const contractId = typeof input.contractId === 'string' ? input.contractId : '';
-    const result = action === 'price' ? await setPrice(wallet, contractId, input.price) : action === 'state' ? await state(wallet) : action === 'register' ? await register(wallet, input) : action === 'accept' ? await accept(wallet, input.bond) : action === 'deposit/build' ? await buildDeposit(wallet, contractId) : action === 'deposit/submit' ? await submitDeposit(wallet, input.signedXdr, contractId) : action === 'repay/topup' ? await topup(wallet, contractId) : action === 'repay/build' ? await buildRepayment(wallet, contractId) : action === 'repay/submit' ? await submitRepayment(wallet, input.signedXdr, contractId) : action === 'settle' ? await settle(wallet, contractId) : await disburse(wallet, contractId);
-    return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
+    const result = await dispatch(wallet, action, input);
+    return new Response(json(result), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error) {
-    return Response.json({ error: error instanceof ApiError ? error.message : 'No pudimos conectar con el servicio. Su progreso está guardado; intente nuevamente.' }, { status: error instanceof ApiError ? error.status : 502, headers: { 'Cache-Control': 'no-store' } });
+    if (action.endsWith('/submit')) console.warn('loan_submit_rejected', { action, status: error instanceof ApiError ? error.status : 502, reason: error instanceof ApiError ? 'validation_or_chain_condition_rejected' : 'provider_or_submission_failure' });
+    return Response.json({ error: error instanceof ApiError ? error.message : 'No pudimos confirmar la operación. Consulte su estado antes de reintentar.' }, { status: error instanceof ApiError ? error.status : 502, headers: { 'Cache-Control': 'no-store' } });
   }
 }

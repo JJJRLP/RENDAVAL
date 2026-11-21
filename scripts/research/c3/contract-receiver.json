@@ -1,0 +1,254 @@
+{
+  "network": "TESTNET",
+  "startedAt": "2026-11-21T04:38:47.537Z",
+  "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+  "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+  "amount": "1",
+  "salt": "997de9c54d2ec2641f446567f65b75d39473077e6e8e39c60e2cfcfb0fb918ca",
+  "steps": [
+    {
+      "label": "receiver",
+      "hash": "823ef55f5fca0a241091b2b09c8455c8225091239fb679a2e772b7b68ce57085",
+      "status": "SUCCESS",
+      "ledger": 5842458
+    },
+    {
+      "label": "deploy",
+      "hash": "2ac324157c6550111e88cbc06de6b337b53b17c722d2ab9cbbb3048c954a12a5",
+      "status": "SUCCESS",
+      "ledger": 5842461
+    },
+    {
+      "label": "fund",
+      "hash": "035e2be84c9968d70d49610137d5be162f843a7d92da0ab21ecd544ec6f5e31e",
+      "status": "SUCCESS",
+      "ledger": 5842464
+    },
+    {
+      "label": "complete",
+      "hash": "c8ab64c4598ffe851824a957c305d8545b7c74d244f9c6a029a362ba95a14a4f",
+      "status": "SUCCESS",
+      "ledger": 5842467
+    },
+    {
+      "label": "approve",
+      "hash": "3ea1f25de966e471056a1073dde90125a9b3df552b51b1faa5028a2534fddbc0",
+      "status": "SUCCESS",
+      "ledger": 5842471
+    },
+    {
+      "label": "release",
+      "hash": "e1c76f0b57412c120892b8d10ceb366a60974344c9af9fc2e3934c2708d40ebe",
+      "status": "SUCCESS",
+      "ledger": 5842473
+    },
+    {
+      "label": "cleanup",
+      "hash": "215d06692e85f070540cf689113a85ee3f67f0f29df2a6c066bfd74b479629e0",
+      "status": "SUCCESS",
+      "ledger": 5842476
+    }
+  ],
+  "receiver": "CDIDP5VJEYEUD3WOK7D4OBKGXFTSBDDPQIYKCAK5F3GTRRPW655S3LRE",
+  "balances": {
+    "at": "2026-11-21T04:40:22.792Z",
+    "receiver": "0",
+    "escrow": "0",
+    "lender": "127486970000"
+  },
+  "errors": [
+    {
+      "stage": "receiver",
+      "at": "2026-11-21T04:38:52.219Z",
+      "message": "Do not know how to serialize a BigInt"
+    },
+    {
+      "stage": "deploy",
+      "at": "2026-11-21T04:39:08.200Z",
+      "message": "Unsupported address type: CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ,[object Object]"
+    }
+  ],
+  "requests": [
+    {
+      "path": "/deployer/single-release",
+      "request": {
+        "signer": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+        "engagementId": "c3b-contract-997de9c54d2e",
+        "title": "C3b contract receiver prerequisite",
+        "description": "1 USDC testnet, recoverable contract receiver",
+        "roles": {
+          "serviceProvider": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "receiver": "CDIDP5VJEYEUD3WOK7D4OBKGXFTSBDDPQIYKCAK5F3GTRRPW655S3LRE",
+          "approver": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+          "platformAddress": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "releaseSigner": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "disputeResolver": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+        },
+        "amount": 1,
+        "platformFee": 0,
+        "milestones": [
+          {
+            "description": "Contract receiver capability test"
+          }
+        ],
+        "trustline": {
+          "address": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+          "symbol": "USDC"
+        }
+      },
+      "status": 201,
+      "message": null,
+      "built": true
+    },
+    {
+      "path": "/escrow/single-release/fund-escrow",
+      "request": {
+        "contractId": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+        "signer": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "amount": 1
+      },
+      "status": 201,
+      "message": null,
+      "built": true
+    },
+    {
+      "path": "/escrow/single-release/change-milestone-status",
+      "request": {
+        "contractId": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+        "milestoneIndex": "0",
+        "newEvidence": "Receiver fixture deployed",
+        "newStatus": "completed",
+        "serviceProvider": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+      },
+      "status": 201,
+      "message": null,
+      "built": true
+    },
+    {
+      "path": "/escrow/single-release/approve-milestone",
+      "request": {
+        "contractId": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+        "milestoneIndex": "0",
+        "approver": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7"
+      },
+      "status": 201,
+      "message": null,
+      "built": true
+    },
+    {
+      "path": "/escrow/single-release/release-funds",
+      "request": {
+        "contractId": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+        "releaseSigner": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+      },
+      "status": 201,
+      "message": null,
+      "built": true
+    }
+  ],
+  "escrow": "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+  "deployResult": [
+    "CCI6HRHDE6PU3VYKY46ABDTMDTBVH5W7U2NNW4MW2LDLXGZN4YQME2DQ",
+    {
+      "amount": "10000000",
+      "description": "1 USDC testnet, recoverable contract receiver",
+      "engagement_id": "c3b-contract-997de9c54d2e",
+      "flags": {
+        "disputed": false,
+        "released": false,
+        "resolved": false
+      },
+      "milestones": [
+        {
+          "approved": false,
+          "description": "Contract receiver capability test",
+          "evidence": "",
+          "status": "pending"
+        }
+      ],
+      "platform_fee": 0,
+      "receiver_memo": 0,
+      "roles": {
+        "approver": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "dispute_resolver": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+        "platform": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+        "receiver": "CDIDP5VJEYEUD3WOK7D4OBKGXFTSBDDPQIYKCAK5F3GTRRPW655S3LRE",
+        "release_signer": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+        "service_provider": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+      },
+      "title": "C3b contract receiver prerequisite",
+      "trustline": {
+        "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+      }
+    }
+  ],
+  "escrowState": {
+    "amount": "10000000",
+    "description": "1 USDC testnet, recoverable contract receiver",
+    "engagement_id": "c3b-contract-997de9c54d2e",
+    "flags": {
+      "disputed": false,
+      "released": true,
+      "resolved": false
+    },
+    "milestones": [
+      {
+        "approved": true,
+        "description": "Contract receiver capability test",
+        "evidence": "Receiver fixture deployed",
+        "status": "completed"
+      }
+    ],
+    "platform_fee": 0,
+    "receiver_memo": 0,
+    "roles": {
+      "approver": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+      "dispute_resolver": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "platform": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "receiver": "CDIDP5VJEYEUD3WOK7D4OBKGXFTSBDDPQIYKCAK5F3GTRRPW655S3LRE",
+      "release_signer": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+      "service_provider": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+    },
+    "title": "C3b contract receiver prerequisite",
+    "trustline": {
+      "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+    }
+  },
+  "snapshots": [
+    {
+      "stage": "fund",
+      "at": "2026-11-21T04:39:22.287Z",
+      "receiver": "0",
+      "escrow": "10000000",
+      "lender": "127477000000"
+    },
+    {
+      "stage": "complete",
+      "at": "2026-11-21T04:39:38.125Z",
+      "receiver": "0",
+      "escrow": "10000000",
+      "lender": "127477000000"
+    },
+    {
+      "stage": "approve",
+      "at": "2026-11-21T04:39:57.695Z",
+      "receiver": "0",
+      "escrow": "10000000",
+      "lender": "127477000000"
+    },
+    {
+      "stage": "release",
+      "at": "2026-11-21T04:40:08.214Z",
+      "receiver": "9970000",
+      "escrow": "0",
+      "lender": "127477000000"
+    },
+    {
+      "stage": "cleanup",
+      "at": "2026-11-21T04:40:22.792Z",
+      "receiver": "0",
+      "escrow": "0",
+      "lender": "127486970000"
+    }
+  ]
+}

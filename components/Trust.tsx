@@ -24,15 +24,15 @@ function Icon({ children }: { children: ReactNode }) {
 /** Infrastructure behind each step. Logos belong to their owners. */
 const PARTNERS = [
   { name: "Stellar", role: "Red de los bonos y los dólares", href: "https://stellar.org", logo: "/logos/stellar.svg", width: 24, height: 24, wordmark: "Stellar" },
-  { name: "Trustless Work", role: "Escrow de la garantía", href: "https://www.trustlesswork.com", logo: "/logos/trustless-work.png", width: 495, height: 434, wordmark: "Trustless Work" },
+  { name: "Trustless Work", role: "Protege el desembolso en USDC", href: "https://www.trustlesswork.com", logo: "/logos/trustless-work.png", width: 495, height: 434, wordmark: "Trustless Work" },
   { name: "Pollar", role: "Acceso, cuenta y firma", href: "https://pollar.xyz", logo: "/logos/pollar.png", width: 1200, height: 245 },
   { name: "Didit", role: "Verificación de empresas", href: "https://didit.me", logo: "/logos/didit.png", width: 400, height: 145 },
 ];
 
 const points = [
   {
-    title: "Garantía en escrow",
-    body: "Los RWA solo salen del escrow por reembolso o por ejecución tras un incumplimiento.",
+    title: "Una bóveda por préstamo",
+    body: "Al pagar, los bonos se liberan en la misma transacción. Una venta cobra al comprador y entrega la garantía juntos.",
     icon: (
       <Icon>
         <rect x="4" y="10" width="16" height="11" rx="1" />
@@ -77,7 +77,7 @@ const points = [
 export function Trust() {
   return (
     <section
-      className="on-dark bg-deep py-24 text-white md:py-32"
+      className="on-dark bg-ink py-24 text-white md:py-32"
       aria-labelledby="trust-title"
     >
       <div className="mx-auto max-w-content px-6 md:px-10">

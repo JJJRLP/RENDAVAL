@@ -1,5 +1,6 @@
 "use client";
 
+import { RISK_RULES, DEMO_NOTICE, KNOWN_LIMITS } from "@/lib/loan/risk-copy";
 import { useState } from "react";
 import { Eyebrow } from "./Eyebrow";
 import { Reveal } from "./Reveal";
@@ -16,33 +17,21 @@ const items = [
     question: "¿Qué es un RWA?",
     answer: [
       "RWA (real-world asset, activo del mundo real): un activo tradicional, como un bono, un crédito o un inmueble, representado como token en una blockchain.",
-      "El token acredita derechos sobre el activo subyacente y puede transferirse o inmovilizarse mediante contratos inteligentes.",
+      "En un producto con custodia real, el token representa derechos sobre el activo subyacente y puede transferirse o inmovilizarse mediante contratos inteligentes.",
     ],
   },
   {
     question: "¿Qué RWA se admiten?",
     answer: [
-      "Bonos tokenizados: instrumentos de deuda de emisores regulados, emitidos como tokens en la red Stellar. Mantienen su rendimiento mientras permanecen en el escrow. En el diagrama de etapas se denominan simplemente «bonos».",
+      "Bonos tokenizados: instrumentos de deuda de emisores regulados, emitidos como tokens en la red Stellar. Solo pueden recibirlos tenedores autorizados por el emisor. Se depositan en una bóveda propia de cada préstamo. En el diagrama de etapas se denominan simplemente «bonos».",
       "La lista de activos admitidos se confirma con cada empresa durante el registro.",
       "El prototipo actual opera únicamente con activos de prueba en testnet, sin valor real. No deposite activos reales.",
     ],
   },
-  {
-    question: "¿Qué ocurre en caso de incumplimiento?",
-    answer: [
-      "Hay incumplimiento si el préstamo y el interés no se reembolsan en la fecha acordada, o si la deuda supera el 85 % del valor de la garantía y la empresa no la repone. Antes de ese límite, desde el 70 %, se le pide añadir garantía o reducir el saldo.",
-      "En ese caso la garantía se ejecuta de una sola forma: los RWA se transfieren a un comprador autorizado por el emisor, que paga en USDC. El prestamista puede ser ese comprador si el emisor lo autoriza. Con ese pago se cubren el capital y el interés del prestamista, y el remanente se devuelve a la empresa. Es posible perder una parte o la totalidad de los activos depositados.",
-      "Si la venta no alcanza para cubrir la deuda, la diferencia es una pérdida del prestamista: hoy no existe una póliza de seguro que cubra estos préstamos.",
-      "En el prototipo ya funcionan el precio de cada garantía, publicado en Stellar, y el aviso de margen, con un precio que se simula desde la aplicación. La venta al comprador autorizado todavía no es automática: el préstamo se congela y lo revisa el equipo de Rendaval. Los porcentajes son de ejemplo.",
-    ],
-  },
-  {
-    question: "¿Cuál es el costo?",
-    answer: [
-      "El interés se calcula sobre el monto desembolsado y por el plazo efectivo de uso.",
-      "Las condiciones de cada préstamo se comunican por escrito antes de la constitución de la garantía.",
-    ],
-  },
+  { question: "¿Cuáles son las reglas de riesgo?", answer: [RISK_RULES] },
+  { question: "¿Qué ocurre en caso de incumplimiento?", answer: ["La venta está implementada en Stellar. Después de la ventana de pago, la aplicación permite simular la compra autorizada. Si no se puede entregar el bono, tampoco se cobra al comprador. Usted puede perder la garantía; el precio publicado no garantiza liquidez.", KNOWN_LIMITS] },
+  { question: "¿Cuál es el costo?", answer: ["El capital equivale al 50 % del nominal de los bonos. Recibe ese importe menos la comisión de desembolso de 0,3 % de Trustless Work. Debe el capital bruto más un interés fijo de 8 % anual aplicado a 30/360, redondeado hacia arriba. Pagar antes no reduce ese interés; pagar tarde no lo aumenta.", "Por 100,00 USD de garantía: capital 50,00 USDC, comisión 0,15 USDC, neto recibido 49,85 USDC y total a devolver 50,33 USDC. La operación usa siete decimales; la pantalla muestra dos."] },
+  { question: "¿Qué está simulado?", answer: [DEMO_NOTICE, "Usted declara el bono y el certificado de bloqueo: solo su huella digital se registra en Stellar. El archivo nunca sale del navegador. La aprobación se activa con una acción rotulada como simulación. El cupón del bono no se distribuye en este prototipo."] },
 ];
 
 export function Faq() {

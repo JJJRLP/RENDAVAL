@@ -1,0 +1,35 @@
+{
+  "network": "TESTNET",
+  "checkedAt": "2026-11-21T04:26:59.919Z",
+  "submitted": false,
+  "probes": [
+    {
+      "role": "receiver",
+      "address": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "status": 201,
+      "built": true,
+      "message": null
+    },
+    {
+      "role": "releaseSigner",
+      "address": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "status": 201,
+      "built": true,
+      "message": null
+    },
+    {
+      "role": "disputeResolver",
+      "address": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "status": 201,
+      "built": true,
+      "message": null
+    },
+    {
+      "role": "platformAddress",
+      "address": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+      "status": 201,
+      "built": true,
+      "message": null
+    }
+  ]
+}

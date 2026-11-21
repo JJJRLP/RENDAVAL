@@ -1,210 +1,273 @@
-# Notas técnicas de implementación
+# Servidor B1 e interfaz B2 — contratos C4
 
-Producto para empresas de cualquier país; Bolivia es el primer mercado y el país predeterminado. Detalle de cada fase del MVP. La visión general está en el [README](../README.md).
+Solo Stellar testnet. Sin base de datos, nuevas variables ni dependencias. Se
+conservan las constancias KYB existentes. [INTERFAZ](../contracts/INTERFAZ.md)
+define el ABI; [README de contratos](../contracts/README.md) documenta sus límites.
+Los contratos no se modifican ni despliegan desde el servidor.
 
-## Acceso y verificación de empresa
+## Identidad y verificación
 
-Instale las dependencias con `npm install`. Copie `.env.example` a `.env.local` y complete:
+Todas las rutas de préstamo pasan por `handle`: verifica el bearer token con
+Pollar, obtiene exclusivamente su wallet y exige una constancia `kyb:<wallet>`
+en Rendaval. Ni `wallet`, `borrower` ni un receptor enviado por el cliente eligen
+la identidad. Las constancias antiguas siguen siendo válidas (país BO si no lo
+incluyen). Didit y sus rutas mantienen su implementación.
 
-- `NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY`: clave pública de testnet de Pollar. El acceso rechaza claves que no comiencen por `pub_testnet_`.
-- `NEXT_PUBLIC_VBOND_ISSUER`: dirección pública del emisor de VBOND en testnet.
-- `POLLAR_SECRET_KEY`: clave secreta `sec_testnet_` para validar el token de acceso en cada ruta del servidor. Nunca se expone al navegador.
-- `DIDIT_API_KEY`: clave sandbox `sk_test_` de Didit; las claves de producción se rechazan.
-- `DIDIT_KYB_WORKFLOW_ID`: identificador del workflow de verificación de empresas. Revise la cobertura documental en la consola. Enviamos el país seleccionado en `expected_details.registry_country`; «Otro país» omite `expected_details`. Crear una sesión no confirma cobertura.
-- `VAULT_SECRET_KEY`: clave secreta Stellar de la cuenta de plataforma Rendaval, financiada en testnet para comisiones y reservas de entradas de datos.
+## Persistencia sin base de datos
 
-Los préstamos requieren `LENDER_SECRET_KEY`, `BOND_ISSUER_SECRET_KEY` y `TRUSTLESS_WORK_API_KEY` solo en el servidor. Configure las mismas variables en Vercel; no se usa base de datos ni almacenamiento en disco.
+`store.ts` escribe JSON comprimido en nuestro contrato `app-registry`. Cada clave
+se deriva de SHA-256(cuenta de namespace + clave lógica); el operador es el único
+escritor. `put` exige versión esperada (compare-and-swap) y escribe documento y
+hasta 16 slots atómicamente. Todos pueden leer y renovar TTL. No hay base de datos,
+lista global ni límite de 1.000 entradas clásicas. Máximo 16 KiB comprimidos por valor.
 
-Ejecute `npm run dev -- --port 3017` y abra `http://localhost:3017/app`. El origen `http://localhost:3017` debe estar en los orígenes permitidos del dashboard de Pollar (y en las URI de redirección si se solicita). Si el puerto está ocupado, elija otro puerto libre y registre también ese origen.
+El índice por empresa está ligado al **libro C4**. Su cabecera solo guarda dos
+contadores; cada bono y cada reserva/préstamo ocupa un slot independiente. Añadir
+una declaración o actualizar una reserva modifica un número constante de entradas
+independientemente del historial. Las lecturas de una empresa recorren sus slots,
+en lotes de 16; el contrato permite paginación, aunque state devuelve aún la lista
+completa de esa empresa. No recorre otras empresas. El CAS de la cabecera evita
+mezclar versiones o perder reservas concurrentes. El máximo de tres préstamos vivos
+se conserva, al igual que la reserva previa a create_vault y el salt determinista.
 
-En Pollar, habilite correo y Google, billeteras clásicas con creación inmediata, el patrocinio de trustlines y los activos USDC y VBOND. El panel consulta Horizon testnet y solicita solamente las autorizaciones faltantes. Las solicitudes pendientes se consultan de nuevo sin reenviarlas durante la sesión de la página.
+Una entrada incorrecta no da acceso a fondos ni datos de otro préstamo: ownLoan
+verifica siempre `get_vault(id).borrower`, también en state. El registro es un índice
+público escrito por el operador; la autoridad de la deuda y la propiedad es el libro.
 
-La landing permanece en `/`. La ruta `/app` contiene el acceso, los saldos y la verificación de empresa. El flujo de préstamo incluye registro, garantía, desembolso, reembolso y devolución de bonos.
+Declaración y aprobación son diferentes. `register` recibe metadatos del bono y
+SHA-256 hexadecimal de su certificado de bloqueo. **El navegador calcula el hash;
+no envía archivo, URL ni nombre de archivo.** El servidor rechaza campos extra.
+El id deriva de empresa, metadatos normalizados y hash; repetir exactamente una
+declaración recupera la misma. La declaración queda pública bajo `bond:<id>` y
+aparece `under_review` hasta completar la aprobación explícita de demostración.
+Los documentos reales no se guardan en Stellar. Esta demostración no verifica
+que un certificado corresponda a un depositario auténtico.
 
-El servidor verifica el token de Pollar y usa exclusivamente la dirección devuelta por ese servicio. Una sesión de Didit debe corresponder a esa dirección y al workflow configurado. Al aprobarse, Rendaval firma en Stellar testnet una entrada `manageData` con nombre `kyb:<dirección de empresa>` y valor `1:<país>:<identificador de sesión>` (41 bytes para ISO de dos letras, 44 para `OTHER`, menos del límite de 64). Las constancias antiguas con solo el identificador se leen como Bolivia. El país se recupera de `metadata.country` en la decisión de Didit, validado contra `lib/countries.ts`; para sesiones históricas se usa `expected_details.registry_country` o Bolivia. Las consultas posteriores leen esa constancia pública; no incluye documentos ni datos de la empresa. Cada nueva entrada requiere reserva de XLM. La constancia no almacena fecha. Las lecturas posteriores obtienen el país desde Stellar sin depender de Didit. La dirección siempre procede de Pollar; el navegador solo elige el país, que define moneda y textos.
+Las antiguas entradas `b1:*` se retiraron de las cuentas operador y emisor; las
+constancias KYB quedaron intactas. Cantidades, hashes de limpieza y capacidad restante
+en [C4-REPORT](../contracts/C4-REPORT.md) y su evidencia. Antes de lanzamiento real
+hay que migrar también las constancias a almacenamiento sin el límite clásico o a
+un servicio durable apropiado, diseñar retención de datos públicos y programar
+mantenimiento/restauración de TTL. El registro no transforma datos públicos en privados.
 
-El navegador conserva el identificador, país y enlace de la sesión pendiente por cuenta. Al volver de la verificación, consulta automáticamente hasta cinco veces con esperas de 2, 4, 8 y 16 segundos. Después ofrece una comprobación manual. Si se borra el almacenamiento antes de aprobar, será necesario iniciar otra sesión. La aprobación de prueba solo funciona con configuración sandbox y requiere autenticación y pertenencia de la sesión.
+`keep_alive(key, slots)` mantiene una cabecera y hasta 16 slots; `book.keep_alive(id)`
+mantiene el préstamo y todas sus custodias/prendas. GET/simulaciones no pagan ni
+persisten renovación. Los errores de archivo requieren restaurar, no crear un registro
+vacío que olvide deuda. Los documentos operativos por préstamo tienen límite de 16 KiB;
+los historiales de actividad extensos deberán paginarse además del índice ya dividido.
 
-Prueba real (crea una sesión sandbox y una entrada permanente en testnet para una dirección aleatoria):
+## Transacciones y recuperación
 
-```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-kyb.ts
-```
+`chain.once` mantiene un outbox durable por operación. Guarda el XDR firmado
+público, hash implícito y retorno simulado ANTES de enviarlo; nunca claves privadas.
+Usa el registro para ambos namespaces; la transacción de escritura usa Rendaval
+excepto si Rendaval es origen del pago preparado, cuando usa el emisor como origen
+y autorización Soroban del operador. Así no consume la secuencia del pago preparado. La escritura atómica elige un único sobre entre solicitudes paralelas.
+No se crea un pago nuevo por un timeout: se reenvían los mismos bytes y se consulta
+el hash. Tras éxito se conserva recibo y retorno. Horizon confirma hashes fuera de
+la retención RPC; si no entrega metadata Soroban, el retorno simulado guardado solo
+se utiliza DESPUÉS de comprobar éxito del hash exacto. Creaciones se cotejan con
+configuración de cadena antes de usarse. Una transacción fallida o ausente después
+de que Horizon haya avanzado más allá de su vencimiento puede reconstruirse.
 
-El script importa los mismos helpers del servidor y solo omite el acceso interactivo de Pollar. No guarda claves ni estado en disco. Las pruebas de producción deben usar un puerto libre y detener el proceso al terminar.
+Las firmas de empresa se preparan con la empresa como origen. El servidor firma
+las autorizaciones Soroban de operador/prestamista necesarias para `open`; la
+empresa autoriza la raíz y transferencias anidadas mediante su firma de sobre.
+`build` guarda el desafío exacto. `submit` comprueba firma testnet y hash completo
+del **inner transaction**: origen, secuencia, una sola operación, contrato,
+función, todos los argumentos, memo, recursos, identidades y árboles de autorización.
+Admite fee bump exterior sin alterar la transacción interior. Un desafío nuevo
+invalida el anterior; una pestaña con un desafío antiguo debe prepararlo otra vez.
+El ledger impide que dos sobres con la misma secuencia gasten dos veces.
 
-Referencias de contrato: [crear sesión](https://docs.didit.me/sessions-api/create-session), [sandbox y simulate](https://docs.didit.me/integration/sandbox-testing). La creación no devuelve `session_kind`; se valida `business` al consultar la decisión. El escenario simulado no sustituye una prueba humana del flujo alojado ni confirma la cobertura efectiva de Bolivia del workflow.
+## Recorrido
 
-Validación: `npm run lint` y `npm run build`. Para probar producción en otro puerto: `npm run start -- --port 3017`.
+1. Pollar configura trustlines USDC y **RBOND**; las variables conservan sus nombres
+   `NEXT_PUBLIC_VBOND_ISSUER` y `BOND_ISSUER_SECRET_KEY`, con el emisor RBOND final.
+2. Empresa verificada declara bono USD 100–400, datos locales según referencia de
+   `countries.ts`, vencimiento posterior a 30 días, cupón 0–30 %, hash de certificado.
+3. `approve`: simulación explícita de revisión por custodio. Emisor autoriza tenedor
+   por reglas, registra una serie propia del bono con XDR del Asset RBOND, publica
+   precio inicial 1 y emite nominal digital. Cada etapa tiene outbox independiente.
+   La emisión solo ocurre una vez aunque se pierda la respuesta.
+4. `accept`: reserva el bono/slot, crea bóveda y custodia de entrega, registra su id
+   en índice y autoriza ambas por reglas. Devuelve id de bóveda, no id TW.
+5. `deposit/build` y `deposit/submit`: primera firma de empresa, `vault.deposit(face)`.
+6. `fund`: verifica WASM fijado del libro y ambas custodias, configuración, términos,
+   permisos RBOND, garantía y precio fresco. Despliega escrow TW de USDC, receiver
+   bóveda, operator en roles de plataforma y lender como approver. Capital bruto,
+   platformFee cero, un hito. Verifica roles/activo/importes devueltos por API.
+   Lender fondea; operador completa hito; lender aprueba; operador libera.
+   Toda mutación TW se construye y envía por API, jamás por llamada directa al contrato.
+   Los balances reales se consultan por SAC; bruto en TW y al menos el neto en bóveda. El exceso pertenece al lender.
+7. `open/build` y `open/submit`: segunda firma de empresa, más autorizaciones de
+   operador y lender. El libro abre y entrega USDC atómicamente. Release TW por sí
+   solo nunca aparece como deuda abierta. Plazo empieza en open.
+8. `price`: una publicación por llamada, limitada por contrato a 25 % y 30 segundos.
+   También permite renovar una serie aprobada antes de abrir, si caducó el precio. Si hace falta, devuelve `waiting`, precio alcanzado, objetivo y `nextChangeAt`.
+   El cliente espera y vuelve a llamar hasta `complete`; no duerme 30 segundos en
+   una petición. Al alcanzar margen, llama `flag_margin` cuando corresponde.
+9. `repay/topup`: adelanto **de prueba** del lender una sola vez, interés más comisión
+   TW. `repay/build`/`submit` cobran deuda y devuelven bonos en la misma transacción.
+10. `default`: marca si contrato lo permite. `liquidate`: devuelve espera hasta cura,
+    prepara lender como comprador/tenedor autorizado y ejecuta venta atómica.
+    El precio esperado es max(actual, piso conservador calculado por el libro). Recuperación,
+    pérdida y excedente son los del libro, no cálculos de historial de pagos.
+11. `claim/build`/`submit`: la empresa reclama exclusivamente su crédito del libro.
+    Un excedente entregado directamente no genera crédito pendiente; claim cero
+    también es válido. `deliveryBalance` permite detectar bonos en custodia fallback.
 
+El piso se describe en README/INTERFAZ: demorar mark_default no permite reducirlo.
+Puede superar el primer precio de default. El comprador recibe solo la prenda;
+exceso RBOND vuelve a la empresa, con fallback a delivery si es necesario.
 
-## Préstamos de prueba — fase 4
+Importes de contrato usan BigInt y se serializan como cadenas enteras con siete
+decimales. Fee=floor(P*30/10000), neto=P-fee, interés=ceil(P/150), deuda=P+interés.
+Los números decimales enviados a TW están acotados al MVP, nunca son cantidades
+arbitrarias suministradas por el cliente. USDC y RBOND son activos distintos.
 
-Garantía admitida: USD 100–400; préstamo: 50 %, hasta 200 USDC. El ejemplo
-boliviano es Bs 2.784 (USD 400, referencia de demostración). Capital, interés a 30 días y total se redondean a siete
-decimales con `usdcAmount`; el pago y la oferta usan los mismos importes.
+## API para B2
 
-Cada ruta `/api/loan/*` autentica el token de Pollar y exige una empresa
-verificada. Se usan Horizon y Trustless Work de testnet, sin base de datos,
-disco persistente ni configuración adicional para Vercel. Rendaval es el
-`serviceProvider`; la empresa es `receiver` y firma el depósito y, más tarde,
-un solo pago de reembolso. El prestamista aprueba y Rendaval libera la garantía.
-La búsqueda acepta únicamente el identificador `vault-loan-<wallet>` histórico
-o `vault-loan-<wallet>:<timestamp>`, con los roles y el activo esperados.
-Los préstamos antiguos conservan sus condiciones y roles originales; el cambio
-de rol se aplica exclusivamente a nuevos contratos.
+Todas las rutas bajo `/api/loan/`; bearer Pollar requerido. GET solo `state`; resto
+POST JSON. Errores `{error}`: 400 formato/firma, 401 sesión, 403 KYB/pertenencia,
+409 conflicto/condición de contrato, 502 proveedor. 202 indica hash pendiente;
+consultar estado y reintentar, nunca asumir que no se movieron fondos. Respuestas
+sin caché. Duración máxima declarada 300 s para operaciones con varios pasos.
 
-`POST /api/loan/repay/topup` aporta una sola vez el interés de prueba por contrato
-(el interés propio de cada préstamo), mediante pago y marcador atómicos en el prestamista.
-`repay/build` prepara el pago exacto con memo hash por contrato; `repay/submit`
-valida la firma testnet y la operación. El estado reconoce el reembolso leyendo
-transacciones exitosas en Horizon. `settle` marca, aprueba y libera, omitiendo
-pasos ya confirmados en cadena. La respuesta conocida de Trustless Work
-“Escrow already in dispute” en `release-funds` se devuelve como HTTP 200,
-`release_pending`; se muestra solo en detalles técnicos. El pago queda recibido
-y los bonos protegidos, con el botón “Comprobar devolución” de cada préstamo.
-No se invoca el contrato con otra dirección de comisiones.
+| Ruta | Entrada | Salida principal |
+| --- | --- | --- |
+| `state` | ninguna | `bondRecords`, `preparations`, `allLoans`, `claimable`, índice de UI provisional |
+| `register` | `{bond:{issuer,series,nominal,currency,coupon,maturity},certificateHash}` | id, serie interna, face, `under_review`, simulation |
+| `approve` | `{bondId}` | approved, hashes, simulation |
+| `accept` | `{bondId}` | contractId (bóveda), delivery, hashes |
+| `deposit/build` | `{contractId}` | unsignedTransaction o completed |
+| `deposit/submit` | `{contractId,signedXdr}` | hash, action |
+| `fund` | `{contractId}` | ready_to_open, escrowId, hashes; reintentos recuperan etapas |
+| `open/build` | `{contractId}` | unsignedTransaction |
+| `open/submit` | `{contractId,signedXdr}` | hash |
+| `price` | `{contractId,price}` o `{bondId,price}`; objetivo decimal (0,1] | complete/waiting, price, target, nextChangeAt, hashes |
+| `repay/topup` | `{contractId}` | hash, amount decimal, simulation, etiqueta de adelanto |
+| `repay/build` | `{contractId}` | unsignedTransaction o completed/repaid |
+| `repay/submit` | `{contractId,signedXdr}` | hash |
+| `default` | `{contractId}` | Defaulted, hash, cureDeadline |
+| `liquidate` | `{contractId}` | waiting/retryAfter/cureDeadline o Liquidated/hash/buyer |
+| `claim/build` | `{}` | unsignedTransaction de claim(wallet Pollar) |
+| `claim/submit` | `{signedXdr}` | hash |
 
-Al liberar, el saldo efectivamente devuelto (menos la eventual comisión del proveedor) vuelve a ofrecerse como garantía. El préstamo cerrado permanece en «Sus préstamos».
+`allLoans` contiene también Pending; `loans` excluye preparaciones para mantener
+compilación de pantallas. Cada registro trae `spec`, `vault`, `view` entero del libro,
+status, `amounts` bruto/fee/neto/deuda, serie/precio, edad/frescura, `healthBps` nullable,
+margin, cureDeadline, deliveryBalance y enlaces a libro/reglas/bóveda/delivery/TW.
+`view.loan` conserva cantidades recibidas, vencimiento, default, proceeds, surplus,
+loss, recipient y collateral conocido/autorizado/balance. Salud null se presenta
+como desconocida. `claimable` es crédito total de empresa, no atribuible a un préstamo.
+Los campos decimales `terms` y `health` solo adaptan pantallas anteriores.
 
-El diario de despliegue conserva el XDR firmado para serializar aceptaciones
-paralelas. Sus entradas se eliminan al observar el contrato activo en cadena;
-la ausencia del diario no impide consultar el préstamo. Para limpiar entradas
-históricas, sin despliegues en curso:
+No existen `/disburse` ni `/settle`: se quitaron pago clásico de desembolso,
+repayment por memo, precio en manageData y liberación de bonos desde TW. La interfaz B2 usa bondRecords y allLoans directamente; nunca inventa un certificado ni aprueba automáticamente.
 
-```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/clean-journal.ts
-```
-
-Prueba integral (crea una empresa fresca y tres préstamos de 200, 150 y 100 USDC; devuelve cada uno más el interés subvencionado; la tesorería termina con el mismo USDC):
-
-```sh
-node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-loan.ts
-```
-
-Los marcadores de desembolso/ayuda y las constancias KYB permanecen como entradas
-por préstamo/empresa. El diario voluminoso ya no se acumula. La búsqueda del pago
-recorre el historial de la empresa; para historiales grandes será necesario un
-indexador para mantener las consultas dentro del tiempo máximo de Vercel.
-La prueba automática omite solo el login interactivo; firma con una clave fresca
-en memoria. El recorrido real con Pollar requiere la comprobación humana.
-
-
-## Varios préstamos por empresa
-
-`GET /api/loan/state` devuelve `setup` (bono disponible o garantía aún no desembolsada),
-`loans` (préstamos desembolsados, más recientes primero), `canRegister`, `openLoans`
-y `limitReached`. Se permite registrar si el saldo disponible de VBOND es cero,
-no hay preparación pendiente y hay menos de tres préstamos abiertos. Activos y
-pagados con devolución pendiente cuentan para el límite; cerrados no cuentan.
-Los campos superiores de etapa y condiciones representan la preparación o el
-último préstamo; `locked` suma las garantías de todos los contratos sin liberar.
-
-Depósito, desembolso, ayuda de interés, reembolso y liquidación requieren
-`contractId` en el cuerpo JSON. El servidor vuelve a buscarlo entre los contratos
-propios de la empresa, comprobando engagement, roles y activo. Un contrato ajeno
-se rechaza con 403; una referencia ausente con 409. Los roles históricos de
-serviceProvider (empresa o Rendaval) se admiten sin modificar el contrato.
-
-El diario usa una generación por empresa (cantidad de contratos ya registrados),
-por lo que una aceptación posterior no reutiliza el XDR de una anterior. Los
-reintentos de la misma generación conservan el XDR firmado y limpian únicamente
-esa generación después de observar el contrato. Los marcadores de desembolso y
-ayuda siguen siendo atómicos y exclusivos por contrato. La ayuda aporta el interés
-propio una vez, sin confundir el capital de otros préstamos con interés disponible.
-
-El estado consulta saldos, roles y prestamista en paralelo, y escanea una sola vez
-el historial de la empresa y una sola vez el del prestamista para todos los contratos.
-Cada plazo empieza en la fecha de su propio desembolso y cada reembolso se reconoce
-por su memo hash y pago exacto. No hay caché de autoridad ni base de datos.
-
-La interfaz conserva el bloque de preparación y agrega «Sus préstamos» antes de
-«Su cuenta». Cada fila tiene su propia acción, progreso, error y enlaces. Un bloqueo
-compartido impide iniciar dos operaciones de préstamo a la vez; una recarga reconstruye
-el progreso desde la red. La devolución pendiente se comprueba con el botón de su fila.
-
-## Países, monedas y compatibilidad (issue #9)
-
-`lib/countries.ts` comparte entre cliente y servidor los países BO, AR, BR, CL, CO,
-MX y PE, más `OTHER` («Otro país», USD). Los códigos de los países son ISO;
-`OTHER` es una opción interna y nunca se envía como país de registro a Didit.
-Los tipos de cambio son referencias fijas de demostración, nunca cotizaciones.
-La empresa elige moneda local o USD; el servidor obtiene la referencia del módulo,
-no acepta un tipo de cambio enviado por el navegador. Un VBOND sigue representando
-USD 1 de garantía, con 50 % de financiamiento, 8 % anual y 30 días.
-
-Los nuevos bonos guardan `nominal` y `currency` en el JSON de descripción del
-escrow. `normalizeBond` admite JSON históricos con `nominalBs` como BOB sin aplicar
-los límites o fechas de registro actuales. Las descripciones de texto históricas
-se muestran en la moneda del país de la empresa y en USD a partir del importe del
-contrato. Si faltan los datos locales antes de crear un contrato, la descripción es
-un texto con el valor en USD; no se recuperan datos originales del emisor.
-Las constancias antiguas (sin país) admiten cualquier referencia no vacía, porque
-los scripts de prueba escribieron valores que no son identificadores de Didit.
-Los identificadores, memos de reembolso y activos existentes no cambian.
-
-Comprobación real de sandbox: creación con país PE devolvió 201 y decisión 200;
-la decisión incluyó `expected_details.registry_country: PE`, `metadata.country: PE`
-y mantuvo `vendor_data` y `session_kind: business`. Con los helpers finales, PE y
-`OTHER` conservaron su país después de la aprobación simulada. Horizon devolvió
-200 y las diez constancias históricas se leyeron como Bolivia, con sus préstamos.
-Se escribieron dos constancias de prueba (PE y `OTHER`) con cuentas nuevas; no se
-crearon préstamos. Esto comprueba la persistencia
-de la selección, no la cobertura documental del flujo alojado.
-
-Pruebas locales de compatibilidad (sin red ni transacciones):
-
-```sh
-node --conditions=react-server --import tsx scripts/check-country-compatibility.ts
-```
-
-Cubren las ocho opciones, monedas locales y USD, extremos y rechazos de límites,
-bonos históricos de USD 1.000 ya vencidos, constancias antiguas y nuevas, la omisión
-de `expected_details` para `OTHER` y el rechazo de sesiones de otra cuenta.
-
-
-## Precio de garantía y aviso de margen — fase 1
-
-`POST /api/loan/price` usa el mismo manejador autenticado de Pollar y la constancia
-KYB que las demás operaciones. El helper vuelve a comprobar engagement, roles,
-activo y pertenencia con `escrowFor`; rechaza garantías sin desembolso, pagadas,
-liberadas, disputadas o resueltas. La dirección del cuerpo nunca se usa.
-
-Rendaval firma en testnet una entrada `price:<contractId>` en su cuenta
-`VAULT_SECRET_KEY`: el nombre ocupa 62 bytes y conserva el identificador completo,
-sin colisiones ni cambios a los identificadores existentes. El valor UTF-8 es
-`1:<fracción decimal>` (por ejemplo `1:0.65`); el primer campo versiona el formato.
-La ausencia significa 1. Volver a 1 elimina la entrada y libera su reserva y cupo.
-El lector admite fracciones positivas hasta 1 con siete decimales; el control y
-la ruta de simulación solo permiten 1, 0.8, 0.65 y 0.5. Una entrada malformada
-produce un error de lectura, sin ocultar el riesgo con un precio predeterminado.
-
-El estado carga la cuenta de Rendaval una vez en paralelo con las demás cuentas,
-no por préstamo. Cada `LoanView` incluye `price`, `collateralValue` (valor nominal
-por precio, redondeado a siete decimales) y `health` (ratio y nivel). La deuda
-conserva el capital más interés acordados. Los niveles son saludable por debajo
-de 0.7, aviso desde 0.7 y riesgo desde 0.85. El control está plegado después de la
-salud y del botón de devolución. No ejecuta ni aporta garantía.
-
-Comprobación sin red, incluidas pertenencia, roles históricos, etapas, ruta
-autenticada, aislamiento de precios y eliminación idempotente:
+## Verificación reproducible
 
 ```sh
-node --conditions=react-server --import tsx scripts/check-loan-health.ts
+npm run lint
+npx tsc --noEmit
+npx next build
+node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-b1.ts
+node --env-file=.env.local --conditions=react-server --import tsx scripts/verify-b1-authorization.ts
 ```
 
-Las escrituras reintentan conflictos de secuencia de Rendaval y vuelven a validar
-la etapa. Como en los otros flujos basados en Horizon y Trustless Work, la lectura
-de etapa y la escritura clásica no son atómicas entre cuentas/contratos; una
-operación de devolución concurrente puede finalizar entre ambas. El precio no
-modifica las condiciones ni inicia una ejecución automática.
+El primer script importa `dispatch` y los mismos servicios del servidor. Usa una
+empresa Friendbot derivada solo en memoria, recuperable con las claves existentes,
+Didit sandbox real y dos bonos de USD 100. No despliega contratos. Conserva pasos y
+hashes públicos en `scripts/evidence/c4-server.json`, nunca secretos ni XDR firmado
+en evidencia. Reejecutar una corrida completa no repite desembolsos. La segunda
+prueba llama `handle` con una respuesta HTTP Pollar fixture: no modifica producción
+ni añade bypass. Usa cadena real para KYB, pertenencia y preparación de firma.
 
-Verificación real de esta fase: mediante los helpers, sobre el préstamo activo
-`CDBEZE6372NOLV442UYXHFU4LLTM35IBH3UFEL4OWVXJRESYN35I6YLG`, Horizon confirmó
-0.8 / saludable, 0.65 / aviso y 0.5 / riesgo; el estado conservó los precios de
-los otros préstamos de la empresa. Otra empresa verificada recibió 403. Se
-restauró el precio a 1 y se comprobó la ausencia de la entrada (transacción
-`c229e7505438ffab019b9f69cf4784acc23739e800555e4baf8d6332b6f8c3ca`). No se
-crearon préstamos ni se movieron USDC. No se probó el login interactivo de Pollar
-ni la interfaz en un navegador real; la autorización de la ruta se comprobó con
-fixtures offline y el helper con proveedores reales.
+Pollar en navegador requiere prueba humana: el SDK debe firmar el XDR interior
+sin modificar recursos, fee, auth ni secuencia. Un fee bump exterior se acepta.
+Si Pollar reconstruye el XDR o cambia la estrategia de autorización, se rechaza
+con 400 y habrá que adaptar la integración tras observar su respuesta real. La
+prueba automática no demuestra login humano ni esa firma del SDK.
+
+No se simulan fechas futuras del ledger. Se espera la cura real de 60 segundos;
+no se esperan los 30 días de plazo ni 180 de write_off. Contratos archivados por
+TTL producen error explícito y requieren restauración, no se recrean deudas.
+Enviar keep_alive periódicamente evita ese archivo; una simulación no basta.
+Cancelación/refund extraordinario y retiro manual de delivery se describen en
+INTERFAZ pero todavía no tienen rutas B1. No hay UI de liquidadores externos;
+`mark_default` sigue siendo permissionless en cadena y liquidate admite cualquier
+comprador autorizado a nivel de contrato, sin cambiar el servidor de esta demo.
+
+## Resultado vigente C4
+
+68 pruebas Rust y 65 verificaciones de autorización aprobadas. Ambos recorridos
+reales usan el libro y registro C4; ids, hashes, transferencias y límites en
+[C4-REPORT](../contracts/C4-REPORT.md). Gasto bruto global: 208,2215724 USDC,
+incluidos probe y prueba intermedia. Se retiraron 746 entradas clásicas b1,
+conservando 19 KYB; Rendaval admite 977 subentradas adicionales bajo el límite actual.
+El índice incorrecto de prueba no permite fund ni state sobre otra empresa.
+
+## Resultado histórico B1 — antes del reemplazo C4
+
+Los siguientes importes pertenecen al libro anterior. Resultados vigentes, piso
+nuevo, ids y hashes están en [C4-REPORT](../contracts/C4-REPORT.md).
+
+- Dos préstamos reales de 50 USDC, cada uno con 100 RBOND. TW entregó 49,85 USDC
+  por préstamo y cobró 0,15: comisión total **0,30 USDC**.
+- Primer préstamo: margen a precio 0,65, recuperación a 1, adelanto de prueba de
+  0,4833334 USDC, deuda pagada 50,3333334 y los 100 RBOND devueltos. [Repay](https://stellar.expert/explorer/testnet/tx/4348400e62f3ad5bb0a5b9fe1a49b0fb6154f81600632d56ac8aad270edb7090).
+- Segundo: default a precio 0,5625, respuesta waiting durante cura de 60 segundos,
+  compra por lender de 53,4375 USDC y entrega de 100 RBOND en el mismo hash.
+  Excedente **3,1041666 USDC** recibido directamente por empresa; pérdida cero.
+  [Liquidación](https://stellar.expert/explorer/testnet/tx/6cd9f82ccd9714a8f1359692dc3d90c93f4f7f4126fe3d00911aaed37ff63aae).
+- Claim confirmado, crédito pendiente cero. En esta corrida el excedente se pagó
+  directamente: **no se comprobó un claim de crédito positivo bloqueado**.
+- Salida bruta del lender, incluida su compra y el adelanto: **153,9208334 USDC**,
+  inferior al máximo autorizado de 400. El script verifica presupuesto antes de
+  cada desembolso nuevo. La empresa termina con 100 RBOND y 52,9541666 USDC.
+- 63 comprobaciones de autorización aprobadas: token ausente, empresa sin KYB,
+  bono/préstamo ajenos, estado aislado, certificado/campos inyectados, función,
+  contrato, cantidad, receptor, operación adicional, firma ajena/mainnet, árbol
+  Soroban manipulado, fee bump válido y replay sin doble movimiento.
+- Hubo un timeout real de Horizon al guardar un outbox durante la preparación del
+  comprador. La corrida se reanudó desde cadena sin repetir fondeo TW ni pagos.
+- `npm run lint`, `npx tsc --noEmit`, `npx next build` aprobados. Lint conserva una
+  advertencia previa de import no usado en `scripts/research/c3/contract-receiver.mjs`.
+
+[Evidencia del recorrido](../scripts/evidence/b1-testnet.json),
+[autorización](../scripts/evidence/b1-authorization.json) y
+[lista completa de archivos modificados, agregados y eliminados](../scripts/evidence/b1-files.txt).
+No se hizo commit. No se cambiaron contratos, configuración de hosting ni secretos.
+
+## Interfaz B2 y extensiones
+
+`state` añade `readyToOpen` a cada préstamo (recibo durable de release), para
+habilitar la segunda firma solo cuando terminó el fondeo. `claimTransactions` reúne los enlaces a los cobros de la empresa. La interfaz recupera
+reservas sin bóveda y autorizaciones interrumpidas con `accept`.
+
+- `collect/build`: `{contractId}`; prepara `collect_bonds` en delivery.
+- `collect/submit`: `{contractId,signedXdr}`; valida y envía el desafío exacto.
+
+Ambas requieren Pollar, KYB, propiedad del préstamo y que recipient de delivery
+sea la empresa autenticada. No cambian permisos ni contratos. El dueño recibe los
+bonos según el contrato; balance cero se considera completado. Los hashes se
+agregan a la actividad del préstamo.
+
+El rechazo de XDR registra un código técnico sin cuenta, token, documento, XDR ni
+claves: formato, comisión exterior, desafío modificado/vencido o firma inválida.
+Se conservan todas las comprobaciones del inner transaction.
+
+Si la habilitación automática Pollar falla, el cliente prepara changeTrust RBOND,
+pide signTx y lo envía a Horizon testnet. Comprueba el saldo antes de repetir y
+explica la reserva XLM. Esto no autoriza al tenedor: la aprobación del emisor sigue
+siendo un paso separado. No hay nuevas variables ni dependencias.
+
+Los errores y firmas rechazadas permiten preparar un desafío nuevo. Una respuesta
+202 se trata como pendiente, nunca como éxito. Las esperas de precio muestran el
+objetivo y un contador; «Continuar cambio» publica el siguiente paso. Al recargar
+se conserva el último precio confirmado, no una orden de precio futura.
+
+Reglas mostradas por app y FAQ desde `lib/loan/risk-copy.ts`:
+
+Aviso de margen al 70 % de deuda sobre garantía; incumplimiento al 85 % o al vencer los 30 días más 30 segundos de gracia. Tras declararlo, dispone de 60 segundos para pagar antes de habilitar la venta. Un comprador aprobado por el emisor compra con 5 % de descuento sobre el mayor entre el precio vigente y el piso protegido. Pago y entrega ocurren juntos: cobra primero el prestamista, el excedente va a la empresa y el prestamista asume cualquier faltante.

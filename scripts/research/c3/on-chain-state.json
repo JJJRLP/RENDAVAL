@@ -1,0 +1,97 @@
+{
+  "network": "TESTNET",
+  "checkedAt": "2026-11-21T04:30:24.318Z",
+  "submitted": false,
+  "reads": [
+    {
+      "id": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+      "method": "get_config",
+      "ledger": 5842356,
+      "state": {
+        "book": "CA57AQCW24723MQ6IKR5YKZAMMKKDX5DIMC25UVYBWZHIWXTYTRHSSVS",
+        "issuer": "GBDNNFSL6OJOLEXNGAQ6IKF4CSF4GT742SQCQMM7ETASVZ3SR33XRKA6",
+        "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+      }
+    },
+    {
+      "id": "CCLLGSFJ2TOS22SH644XPL4Z7HLZJRPSJBFQII3VXT6T6745NUZ5HUKC",
+      "method": "live_pledges",
+      "ledger": 5842356,
+      "state": "0"
+    },
+    {
+      "id": "CDALLEYS4JWSXA7CC2SASY2TZ5AWSNRMCPDU55A5NELEWLM4FOKT3253",
+      "method": "get_escrow",
+      "ledger": 5842356,
+      "state": {
+        "amount": "200000000",
+        "description": "isolated research",
+        "engagement_id": "research-usdc-staged-1795232853444",
+        "flags": {
+          "disputed": false,
+          "released": true,
+          "resolved": false
+        },
+        "milestones": [
+          {
+            "approved": true,
+            "description": "Collateral",
+            "evidence": "Collateral lock confirmed",
+            "status": "completed"
+          }
+        ],
+        "platform_fee": 0,
+        "receiver_memo": 0,
+        "roles": {
+          "approver": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+          "dispute_resolver": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "platform": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "receiver": "GBXE4CZ7HEIVGNW5BYAH2BVVM3TNG5SESKKI2QULRYNIHYOJCNUQCOIH",
+          "release_signer": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "service_provider": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+        },
+        "title": "USDC testnet",
+        "trustline": {
+          "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+        }
+      }
+    },
+    {
+      "id": "CAD22WTYGHVCBUUHVNPWZCKD4I7VNK4Z6ZFWBXNQIQNVZJHZLERP6C6T",
+      "method": "get_escrow",
+      "ledger": 5842357,
+      "state": {
+        "amount": "200000000",
+        "description": "research",
+        "engagement_id": "research-usdc-fast-1795232777089",
+        "flags": {
+          "disputed": false,
+          "released": false,
+          "resolved": true
+        },
+        "milestones": [
+          {
+            "approved": false,
+            "description": "Collateral",
+            "evidence": "Collateral confirmed",
+            "status": "completed"
+          }
+        ],
+        "platform_fee": 0,
+        "receiver_memo": 0,
+        "roles": {
+          "approver": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+          "dispute_resolver": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "platform": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "receiver": "GBLMLYDE3AYF6NEAA5AQ3YUQEH5J4WTXSGEEXJJMD7RYT6B3BYILJIYA",
+          "release_signer": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+          "service_provider": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5"
+        },
+        "title": "USDC testnet",
+        "trustline": {
+          "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+        }
+      }
+    }
+  ]
+}

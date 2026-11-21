@@ -1,0 +1,7 @@
+{
+  "phase": "C3b",
+  "network": "TESTNET",
+  "activeEvidence": "c3-testnet.json",
+  "verification": "c3-verification.json",
+  "historicalC2": "archive/c2/loan-book-testnet.json"
+}

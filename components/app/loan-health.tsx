@@ -4,6 +4,7 @@ import { HEALTH_LIMIT, HEALTH_WARNING, type LoanView } from '@/lib/loan/model';
 /** How much of the collateral's value the debt uses, against Rendaval's example thresholds. */
 export function LoanHealth({ debt, collateral, health }: { debt: number; collateral: number; health: LoanView['health'] }) {
   const { ratio, level } = health;
+  if (ratio === null || level === 'unknown') return <p className="mt-5 text-sm">Salud no calculable; consulte el estado del contrato.</p>;
   const percent = Math.round(ratio * 100);
   const label = level === 'ok' ? 'Saludable' : level === 'warning' ? 'Aviso de margen abierto' : 'En riesgo';
   const mark = level === 'ok' ? '✓' : level === 'warning' ? '!' : '✕';
@@ -31,7 +32,7 @@ export function LoanHealth({ debt, collateral, health }: { debt: number; collate
         <span className="whitespace-nowrap sm:absolute sm:right-0">Límite {HEALTH_LIMIT * 100} %</span>
       </p>
       <p className="mt-2 text-xs leading-5 text-ink/55">
-        {level === 'ok' ? 'Su deuda está por debajo del nivel de aviso. Devuelva el préstamo antes del vencimiento.' : level === 'warning' ? 'Hay un aviso de margen abierto. Devuelva ahora el préstamo con la acción «Devolver» para recuperar un nivel seguro.' : 'La deuda alcanzó el límite de riesgo. La garantía puede ejecutarse. Devuelva ahora el préstamo; la ejecución aún no está disponible en esta versión de prueba.'}
+        {level === 'ok' ? 'Su deuda está por debajo del nivel de aviso. Pague y recupere sus bonos antes del vencimiento.' : level === 'warning' ? 'Hay un aviso de margen abierto. Use «Firmar pago y recuperar bonos» para cerrar la deuda.' : 'La deuda alcanzó el límite de riesgo. Puede declararse el incumplimiento. Use «Firmar pago y recuperar bonos» antes de que se ejecute la venta.'}
       </p>
     </div>
   );

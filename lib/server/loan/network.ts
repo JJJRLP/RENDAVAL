@@ -1,10 +1,10 @@
 import 'server-only';
-import { Asset, Horizon, Keypair, Networks, TransactionBuilder } from '@stellar/stellar-sdk';
+import { Asset, Horizon, Keypair, Networks } from '@stellar/stellar-sdk';
 import { ApiError, required } from '../env';
-import { HORIZON_URL, USDC, VBOND } from '../../stellar/assets';
+import { HORIZON_URL, USDC, RBOND } from '../../stellar/assets';
 export const server = new Horizon.Server(HORIZON_URL);
 export const networkPassphrase = Networks.TESTNET;
-export const bondAsset = () => new Asset(VBOND.code, VBOND.issuer);
+export const bondAsset = () => new Asset(RBOND.code, RBOND.issuer);
 export const dollarAsset = () => new Asset(USDC.code, USDC.issuer);
 export const lenderKey = () => Keypair.fromSecret(required('LENDER_SECRET_KEY'));
 export const explorer = (kind: string, id: string) => `https://stellar.expert/explorer/testnet/${kind}/${id}`;
@@ -24,11 +24,6 @@ export async function tw<T>(path: string, body?: unknown): Promise<T> {
     throw new ProviderError(response.status, detail.replace(/\bS[A-Z2-7]{55}\b/g, '[REDACTED]').split(required('TRUSTLESS_WORK_API_KEY')).join('[REDACTED]').slice(0, 1500));
   }
   return response.json() as Promise<T>;
-}
-export async function send(signedXdr: string) {
-  const tx = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
-  const result = await tw<{ contractId?: string }>('/helper/send-transaction', { signedXdr });
-  return { ...result, hash: Buffer.from(tx.hash()).toString('hex') };
 }
 export function badSequence(error: unknown) {
   return (error as { response?: { data?: { extras?: { result_codes?: { transaction?: string } } } } }).response?.data?.extras?.result_codes?.transaction === 'tx_bad_seq';

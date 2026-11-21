@@ -1,0 +1,171 @@
+{
+  "started": "2026-11-21",
+  "before": "12639.0382613",
+  "commands": [
+    {
+      "args": [
+        "scripts/verify-b1.ts",
+        "--phase-t"
+      ],
+      "code": 0,
+      "at": "2026-11-21T07:38:00.078Z",
+      "gross": "156.7382389"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/t-balance.ts"
+      ],
+      "code": 1,
+      "at": "2026-11-21T08:13:59.245Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/t-balance.ts"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:14:10.518Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/verify-b1.ts"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:14:18.242Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/verify-b1.ts",
+        "--phase-t"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:14:24.891Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/verify-b1-authorization.ts"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:15:26.935Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/verify-b1-authorization.ts",
+        "--phase-t"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:16:29.824Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/verify-t.ts"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:16:32.915Z"
+    },
+    {
+      "args": [
+        "--env-file=.env.local",
+        "--conditions=react-server",
+        "--import",
+        "tsx",
+        "scripts/t-balance.ts",
+        "--after"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:16:34.138Z"
+    },
+    {
+      "args": [
+        "scripts/report-t.mjs"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:16:34.182Z"
+    },
+    {
+      "args": [
+        "scripts/verify-t.ts"
+      ],
+      "code": 0,
+      "at": "2026-11-21T08:18:34.992Z",
+      "scope": "Includes cancelled compatibility terms check"
+    }
+  ],
+  "notes": [
+    "Initial lender balance read from USDC SAC before any phase T transaction.",
+    "First concurrent authorization attempt returned 202 while fresh journey was writing. Subsequent writers run sequentially."
+  ],
+  "incidents": [
+    {
+      "action": "claim/build in original authorization script",
+      "status": 202,
+      "hash": "0c3eeaf7faca16e18f6ad6320922b7b8083cc9a7dad0161812d1143f196af079",
+      "message": "Confirmaci\u00f3n pendiente del registro",
+      "context": "Authorization and fresh journey were initially running concurrently; rerun sequentially required."
+    },
+    {
+      "action": "t-balance.ts startup",
+      "error": "Top-level await is not supported by tsx CJS output in this package",
+      "fixed": "Wrapped balance read in async main; rerun passed",
+      "fundsMoved": false
+    }
+  ],
+  "validation": {
+    "lint": {
+      "exitCode": 0,
+      "log": "t-lint.txt",
+      "warnings": "One pre-existing unused import in scripts/research/c3/contract-receiver.mjs"
+    },
+    "typescript": {
+      "exitCode": 0,
+      "log": "t-typescript.txt"
+    },
+    "build": {
+      "exitCode": 0,
+      "log": "t-build.txt"
+    },
+    "diffCheck": {
+      "exitCode": 0
+    },
+    "secretScan": {
+      "passed": true,
+      "files": 22
+    }
+  },
+  "after": "12638.2882613",
+  "finished": "2026-11-21T08:16:34.116Z",
+  "summary": {
+    "passed": 200,
+    "failed": 0,
+    "pendingGroups": 5,
+    "grossUSDC": "378.4715724",
+    "netUSDC": "0.7500000"
+  }
+}

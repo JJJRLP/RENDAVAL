@@ -1,0 +1,260 @@
+{
+  "testedAt": "2026-11-21T05:42:42.314Z",
+  "mode": "real chain; Pollar HTTP fixture only",
+  "owner": "GBTHOGUK3SFBMRV3DDIW2YOL22CUS7YNNAY3HPVHOCPPAINZB36UD2H6",
+  "other": "GATHWGCKVTC4HEJPIFMVEXNMSDHOMEW2EMZRYDVQDLCHGQT4U7TMYPVP",
+  "results": [
+    {
+      "test": "state: missing token",
+      "status": 401
+    },
+    {
+      "test": "register: missing token",
+      "status": 401
+    },
+    {
+      "test": "approve: missing token",
+      "status": 401
+    },
+    {
+      "test": "accept: missing token",
+      "status": 401
+    },
+    {
+      "test": "fund: missing token",
+      "status": 401
+    },
+    {
+      "test": "price: missing token",
+      "status": 401
+    },
+    {
+      "test": "default: missing token",
+      "status": 401
+    },
+    {
+      "test": "liquidate: missing token",
+      "status": 401
+    },
+    {
+      "test": "deposit/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "deposit/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "open/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "open/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "repay/topup: missing token",
+      "status": 401
+    },
+    {
+      "test": "repay/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "repay/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "claim/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "claim/submit: missing token",
+      "status": 401
+    },
+    {
+      "test": "approve: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "accept: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "fund: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "price: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "default: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "liquidate: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "deposit/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "deposit/submit: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "open/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "open/submit: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "repay/topup: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "repay/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "repay/submit: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "state only lists Pollar wallet, ignores requested owner",
+      "status": 200
+    },
+    {
+      "test": "state: unverified",
+      "status": 403
+    },
+    {
+      "test": "register: unverified",
+      "status": 403
+    },
+    {
+      "test": "approve: unverified",
+      "status": 403
+    },
+    {
+      "test": "accept: unverified",
+      "status": 403
+    },
+    {
+      "test": "fund: unverified",
+      "status": 403
+    },
+    {
+      "test": "price: unverified",
+      "status": 403
+    },
+    {
+      "test": "default: unverified",
+      "status": 403
+    },
+    {
+      "test": "liquidate: unverified",
+      "status": 403
+    },
+    {
+      "test": "deposit/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "deposit/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "open/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "open/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "repay/topup: unverified",
+      "status": 403
+    },
+    {
+      "test": "repay/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "repay/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "claim/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "claim/submit: unverified",
+      "status": 403
+    },
+    {
+      "test": "exact company signature",
+      "status": "accepted"
+    },
+    {
+      "test": "fee bump preserves exact company transaction",
+      "status": "accepted"
+    },
+    {
+      "test": "wrong contract",
+      "status": 400
+    },
+    {
+      "test": "wrong function",
+      "status": 400
+    },
+    {
+      "test": "wrong amount",
+      "status": 400
+    },
+    {
+      "test": "wrong recipient",
+      "status": 400
+    },
+    {
+      "test": "extra operation",
+      "status": 400
+    },
+    {
+      "test": "mainnet signature",
+      "status": 400
+    },
+    {
+      "test": "injected nested Soroban authorization",
+      "status": 400
+    },
+    {
+      "test": "wrong signature",
+      "status": 400
+    },
+    {
+      "test": "claim cannot redirect company credit",
+      "status": 400
+    },
+    {
+      "test": "document/wallet injection rejected",
+      "status": 400
+    },
+    {
+      "test": "deposit: successful transaction replay after closure",
+      "status": 200
+    },
+    {
+      "test": "open: successful transaction replay after closure",
+      "status": 200
+    },
+    {
+      "test": "repay: successful transaction replay after closure",
+      "status": 200
+    }
+  ]
+}

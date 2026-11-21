@@ -1,0 +1,10 @@
+
+> vault-landing@0.1.0 lint
+> eslint
+
+
+/home/oydual3/Vault-worktrees/mvp-loan/scripts/research/c3/contract-receiver.mjs
+  6:90  warning  'nativeToScVal' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
