@@ -5,7 +5,7 @@ use soroban_sdk::{
 };
 
 pub const SCALE: i128 = 10_000_000;
-pub const MAX_SERIES: u32 = 64;
+pub const MAX_LISTED_SERIES: u32 = 64;
 const TERM: u64 = 30 * 86400;
 // 120 days at five seconds per ledger. Persistent entries can be restored, never recreated.
 const TTL: u32 = 120 * 17280;
@@ -25,6 +25,8 @@ pub enum Error {
     PriceStep = 9,
     StalePrice = 10,
     Capacity = 11,
+    Collateral = 12,
+    CollateralRead = 13,
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -49,7 +51,21 @@ pub struct Config {
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Series {
+    pub token: Address,
+    pub quote: PriceData,
+}
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Collateral {
+    pub balance: i128,
+    pub authorized: bool,
+    pub known: bool,
+}
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Loan {
+    pub collateral: Collateral,
     pub asset: Symbol,
     pub price_time: u64,
     pub borrower: Address,
@@ -72,6 +88,7 @@ pub struct View {
     pub value: i128,
     pub health_bps: i128,
     pub overdue: bool,
+    pub shortfall: Option<i128>,
 }
 #[contracttype]
 #[derive(Clone)]
@@ -106,9 +123,15 @@ pub struct MarginChanged {
 }
 #[contractevent(topics = ["series"])]
 pub struct SeriesRegistered {
+    pub token: Address,
     #[topic]
     pub series: Symbol,
     pub timestamp: u64,
+}
+#[contractevent(topics = ["listed"])]
+pub struct SeriesListed {
+    #[topic]
+    pub series: Symbol,
 }
 #[contractevent(topics = ["price"])]
 pub struct PriceChanged {
@@ -190,7 +213,9 @@ fn loan(e: &Env, id: &Address) -> Result<Loan, Error> {
     let mut l: Loan = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
     if !closed(&l) {
         bump(e, &k);
-        let p = quote(e, &l.asset)?;
+        let series = series(e, &l.asset)?;
+        let p = series.quote;
+        l.collateral = collateral(e, &series.token, id);
         l.price = p.price;
         l.price_time = p.timestamp;
         // Reconcile this loan only, never walk the holders of a series.
@@ -216,17 +241,42 @@ fn save(e: &Env, id: &Address, l: &Loan) {
 fn closed(l: &Loan) -> bool {
     l.status == Status::Repaid || l.status == Status::Liquidated
 }
-fn quote(e: &Env, name: &Symbol) -> Result<PriceData, Error> {
+fn series(e: &Env, name: &Symbol) -> Result<Series, Error> {
     let k = Key::Series(name.clone());
     let p = e.storage().persistent().get(&k).ok_or(Error::Missing)?;
     bump(e, &k);
     Ok(p)
 }
+fn quote(e: &Env, name: &Symbol) -> Result<PriceData, Error> {
+    Ok(series(e, name)?.quote)
+}
+// Only this loan's token is called. Recoverable invocation/type failures are
+// unknown, never an invented balance. Host resource exhaustion still aborts
+// this transaction, not independent transactions for other series.
+fn collateral(e: &Env, token: &Address, id: &Address) -> Collateral {
+    let balance = token::Client::new(e, token).try_balance(id);
+    let authorized = token::StellarAssetClient::new(e, token).try_authorized(id);
+    match (balance, authorized) {
+        (Ok(Ok(balance)), Ok(Ok(authorized))) if balance >= 0 => Collateral {
+            balance,
+            authorized,
+            known: true,
+        },
+        _ => Collateral {
+            balance: 0,
+            authorized: false,
+            known: false,
+        },
+    }
+}
+fn impaired(l: &Loan) -> bool {
+    l.collateral.known && (!l.collateral.authorized || l.collateral.balance < l.face)
+}
 fn debt(l: &Loan) -> Result<i128, Error> {
     add(l.principal, l.interest)
 }
 fn value(l: &Loan) -> Result<i128, Error> {
-    Ok(mul(l.face, l.price)? / SCALE)
+    Ok(mul(l.face.min(l.collateral.balance), l.price)? / SCALE)
 }
 fn above(l: &Loan, bps: u32) -> Result<bool, Error> {
     Ok(mul(debt(l)?, 10000)? >= mul(value(l)?, bps as i128)?)
@@ -361,8 +411,17 @@ impl LoanBook {
         }
         // 8% * 30/360 = 1/150, rounded up to the smallest USDC unit.
         let interest = add(principal, 149)? / 150;
-        let p = quote(&e, &series)?;
+        let registered = self::series(&e, &series)?;
+        let p = registered.quote;
+        let collateral = collateral(&e, &registered.token, &id);
+        if !collateral.known {
+            return Err(Error::CollateralRead);
+        }
+        if !collateral.authorized || collateral.balance < face {
+            return Err(Error::Collateral);
+        }
         let l = Loan {
+            collateral,
             asset: series,
             price_time: p.timestamp,
             borrower,
@@ -394,32 +453,56 @@ impl LoanBook {
         Opened { id, loan: l }.publish(&e);
         Ok(())
     }
-    // Fixed capacity per oracle instance: every supported series fits in assets().
-    // Names and membership are permanent; no slot reuse can reset a price guard.
-    pub fn register_series(e: Env, series: Symbol) -> Result<(), Error> {
+    // Registration never loads the catalogue; names and token bindings are permanent.
+    pub fn register_series(e: Env, series: Symbol, token: Address) -> Result<(), Error> {
         config(&e).issuer.require_auth();
+        if token.to_string().to_bytes().get(0) != Some(b'C') {
+            return Err(Error::Invalid);
+        }
         let k = Key::Series(series.clone());
         if e.storage().persistent().has(&k) {
             return Err(Error::Exists);
         }
-        let mut list = assets(&e);
-        if list.len() >= MAX_SERIES {
-            return Err(Error::Capacity);
-        }
-        let p = PriceData {
-            price: SCALE,
-            timestamp: e.ledger().timestamp(),
-        };
-        list.push_back(Asset::Other(series.clone()));
-        e.storage().persistent().set(&Key::Assets, &list);
-        bump(&e, &Key::Assets);
-        e.storage().persistent().set(&k, &p);
+        let timestamp = e.ledger().timestamp();
+        e.storage().persistent().set(
+            &k,
+            &Series {
+                token: token.clone(),
+                quote: PriceData {
+                    price: SCALE,
+                    timestamp,
+                },
+            },
+        );
         bump(&e, &k);
         SeriesRegistered {
             series,
-            timestamp: p.timestamp,
+            token,
+            timestamp,
         }
         .publish(&e);
+        Ok(())
+    }
+    pub fn get_series(e: Env, name: Symbol) -> Result<Series, Error> {
+        config(&e);
+        series(&e, &name)
+    }
+    // Deliberate issuer publication, not an enumeration of all registered series.
+    pub fn list_series(e: Env, series: Symbol) -> Result<(), Error> {
+        config(&e).issuer.require_auth();
+        quote(&e, &series)?;
+        let mut list = assets(&e);
+        let asset = Asset::Other(series.clone());
+        if list.contains(&asset) {
+            return Ok(());
+        }
+        if list.len() >= MAX_LISTED_SERIES {
+            return Err(Error::Capacity);
+        }
+        list.push_back(asset);
+        e.storage().persistent().set(&Key::Assets, &list);
+        bump(&e, &Key::Assets);
+        SeriesListed { series }.publish(&e);
         Ok(())
     }
     pub fn publish_price(e: Env, series: Symbol, price: i128) -> Result<(), Error> {
@@ -441,10 +524,11 @@ impl LoanBook {
         if old.price == price && old.timestamp == timestamp {
             return Ok(());
         }
-        e.storage().persistent().set(
-            &Key::Series(series.clone()),
-            &PriceData { price, timestamp },
-        );
+        let mut registered = self::series(&e, &series)?;
+        registered.quote = PriceData { price, timestamp };
+        e.storage()
+            .persistent()
+            .set(&Key::Series(series.clone()), &registered);
         PriceChanged {
             series,
             price,
@@ -457,6 +541,9 @@ impl LoanBook {
         let c = config(&e);
         let mut l = loan(&e, &id)?;
         live(&l)?;
+        if !l.collateral.known {
+            return Err(Error::CollateralRead);
+        }
         fresh(&e, &l, &c)?;
         if !above(&l, c.margin_bps)? {
             return Err(Error::Healthy);
@@ -476,7 +563,10 @@ impl LoanBook {
             return Ok(());
         }
         live(&l)?;
-        if e.ledger().timestamp() <= l.due {
+        if !impaired(&l) && e.ledger().timestamp() <= l.due {
+            if !l.collateral.known {
+                return Err(Error::CollateralRead);
+            }
             fresh(&e, &l, &c)?;
             if !above(&l, c.default_bps)? {
                 return Err(Error::Healthy);
@@ -526,6 +616,12 @@ impl LoanBook {
         if expected_price != l.price {
             return Err(Error::PriceChanged);
         }
+        if !l.collateral.known {
+            return Err(Error::CollateralRead);
+        }
+        if !l.collateral.authorized {
+            return Err(Error::Collateral);
+        }
         fresh(&e, &l, &c)?;
         let proceeds = mul(value(&l)?, (10000 - c.discount_bps) as i128)? / 10000;
         let debt = debt(&l)?;
@@ -550,6 +646,11 @@ impl LoanBook {
         let d = debt(&l)?;
         let v = value(&l)?;
         Ok(View {
+            shortfall: if l.collateral.known {
+                Some((l.face - l.collateral.balance.min(l.face)).max(0))
+            } else {
+                None
+            },
             debt: d,
             value: v,
             health_bps: if v == 0 {

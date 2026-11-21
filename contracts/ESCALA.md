@@ -1,9 +1,9 @@
-# Escala del libro de préstamos — A3
+# Escala del libro de préstamos — A4
 
-Revisión del 20 de noviembre de 2026. El problema era de diseño, no de falta de
-gas: cada apertura añadía un activo a un único vector y volvía a escribirlo.
-Separar cada préstamo en su propia entrada ya era correcto; faltaba hacer lo
-mismo con las cotizaciones y poner un límite explícito a su catálogo.
+Revisión del 20 de noviembre de 2026. Una entrada por préstamo y otra por serie:
+ni abrir ni registrar ni publicar un precio recorre lo que ya existe. El límite
+de 64 corresponde solamente al catálogo elegido por el emisor para SEP-40.
+Cada visitante puede tener una serie propia sin agotar esta instancia.
 
 ## Límites comprobados y fuentes
 
@@ -56,142 +56,121 @@ Una simulación sola no mantiene vivo el estado.
 La guía oficial de [estrategias de almacenamiento](https://developers.stellar.org/docs/build/guides/storage/storage-strategies)
 recomienda una clave por entidad para poblaciones crecientes, catálogos con
 límite para conjuntos pequeños e índices de eventos fuera del contrato cuando
-se necesita enumerar. Eso es lo que aplica A3. No se intenta devolver un millón
+se necesita enumerar. Eso es lo que aplica A4. No se intenta devolver un millón
 de préstamos en una llamada ni renovar toda la cartera a la vez.
 
-## Auditoría del diseño anterior
+## Diseño A4
 
-N es el número histórico de préstamos y B el de compradores registrados,
-incluidos los revocados. O(1) significa trabajo acotado por llamada, no precio
-fijo en XLM: cambian alquiler, restauraciones, autorizaciones y tarifas.
-A 10.000 y 1.000.000 los costes de llamadas individuales que se indican son
-hipotéticos: la apertura deja de funcionar mucho antes.
+`Loan(id)` guarda el préstamo y su última foto de garantía. `Series(nombre)`
+guarda token inmutable y último precio. `Assets` guarda hasta 64 nombres
+**publicados deliberadamente** mediante list_series. Registrar una serie no
+lee ni escribe Assets: no hay contador, lista global ni límite de series.
+El catálogo no es la lista de todos los precios disponibles; todas las series
+se consultan por nombre con las tres funciones de precio SEP-40.
 
-| Estado o función anterior | 10 préstamos | 10.000 préstamos | 1.000.000 préstamos | Conservación, pagador y primer fallo |
-| --- | --- | --- | --- | --- |
-| Config en instance; constructor, get_config | Una configuración; O(1) | Igual | Igual | Toda invocación carga la instancia. Pagador mantiene código/instancia. Sin fallo por N. |
-| Assets; open, assets | Vector de 10; O(N) | Vector imposible | Vector imposible | Activos Other con nombre BOND_ + 8 hex: unos 52 bytes por elemento; ~520 KB / ~52 MB. Choca con 64 KiB alrededor de 1.200 activos, antes de 10.000. Renta y escritura crecen; todas las aperturas compiten por la misma entrada. |
-| Asset(nombre) → id | 10 entradas | 10.000 | 1.000.000 | Una por préstamo para volver a encontrar su precio. Persisten también tras cierre; lectores pagan su renovación. |
-| Loan(id); get_loan, get_price | 10 entradas, consulta O(1) | 10.000, O(1) | 1.000.000, O(1) | Precio duplicado por préstamo. Hasta las consultas de cerrados renuevan 120 días; el pagador financia historia innecesariamente viva. |
-| Buyer; set_buyer, is_buyer | B entradas; O(1) | B; O(1) | B; O(1) | Incluso false se guardaba y renovaba. Si B crece con N, crece la renta agregada, no el trabajo individual. |
-| publish_price | Una escritura de préstamo | Igual por llamada; 10.000 llamadas para precio común | Igual; 1.000.000 llamadas para precio común | Emisor paga por duplicar una noticia de una misma serie; actualización parcial entre holders. |
-| flag_margin, mark_default | Un préstamo; O(1) | O(1) individual | O(1) individual | No había barrido implícito; conservar. El llamante paga renovación. Vigilar toda la cartera cuesta O(N) fuera del contrato. |
-| repay | Un préstamo y transferencia; O(1) | O(1) | O(1) | Prestatario/fuente paga. Guarda registro completo y futuros accesos seguían renovándolo. |
-| liquidate | Un préstamo, permiso y hasta dos pagos; O(1) | O(1) | O(1) | Comprador/fuente paga. Misma retención del préstamo cerrado. Balances compartidos del SAC siguen limitando concurrencia. |
-| base, decimals, resolution | Constante | Constante | Constante | Sin crecimiento ni renta propia. |
-| lastprice, price, prices | Alias + préstamo; O(1) | O(1) | O(1) | Renovaban ambas entradas; solo un dato histórico. No resuelven la enumeración imposible. |
-| Eventos | O(1) por transición | O(N) histórico externo | O(N) histórico externo | No son storage consultable desde el contrato ni una base de datos RPC eterna. Hace falta ingestión. |
+El demo registra una serie exclusiva por bono y nunca la lista. Así una caída
+afecta solo ese préstamo y el visitante 65 no necesita otra instancia ni una
+base de datos de asignaciones. Los nombres no se borran ni reutilizan; registrar
+un nombre existente no puede reiniciar su precio o cambiar su token.
 
-Además del tamaño, el vector era un punto de escritura compartido: paginar su
-lectura no habría eliminado el coste de cada open. Los umbrales y cantidades
-usan productos comprobados; una cartera grande no aumenta su tamaño entero.
-El índice de nombres u32 también era finito, aunque el límite físico llegaba
-muchísimo antes. Nadie puede mantener un millón de préstamos en una sola
-transacción, aunque individualmente cada entrada sea pequeña.
+N es el número histórico de préstamos, S el de series y B el de permisos activos.
+O(1) significa trabajo acotado, no comisión fija: tarifas, autorizaciones,
+rentas y restauraciones pueden variar. No se ha ejecutado un millón de operaciones
+en testnet; las columnas grandes describen el diseño.
 
-## Decisión A3
-
-- `Loan(id)` sigue siendo una entrada persistente independiente, sin listas de
-  préstamos ni por usuario ni globales. `open` recibe `series`, lee su precio
-  fresco y exige capital <= 50 % del nominal y del valor actual. No lee ni
-  escribe el catálogo. El operador y el prestamista autorizan y desembolsan
-  dentro de la misma invocación.
-- `Series(nombre)` guarda una sola PriceData. El emisor registra la serie a
-  100 % y publica después con paso máximo y vigencia. Todos sus préstamos
-  abiertos ven el mismo dato. Publicar no recorre holders. Margin se reconcilia
-  por préstamo al consultarlo/tocarlo; Defaulted nunca se limpia por precio.
-  El evento de serie permite al indexador recalcular salud sin eventos masivos.
-- `Assets` contiene **hasta 64 series por instancia, durante toda su vida**.
-  Incluso nombres de 32 caracteres caben holgadamente. Es un catálogo completo
-  para SEP-40, nunca una primera página engañosa. Los nombres no se reciclan,
-  no se eliminan y no se reinicia el precio. Al llenarse, las series nuevas van
-  a otra instancia; las existentes admiten más préstamos. El límite es una
-  decisión de servicio visible (`Capacity`), no un fallo inesperado de recursos.
-- En el demo, cada bono de visitante recibe una serie exclusiva. Un cambio suyo
-  no afecta a otro visitante. Con 64 bonos históricos por instancia el backend
-  debe aprovisionar otra y guardar `(contractId, series, loanId)`. No se promete
-  un catálogo global SEP-40 ilimitado. Un millón de series exclusivas exigiría
-  15.625 instancias; para bonos reales muchos préstamos comparten la misma serie.
-- Cerrados conservan el registro y precio final, sin renovar su TTL en lecturas
-  ni reintentos. Al agotarse lo ya pagado, se archivan sin gasto de mantenimiento
-  de Rendaval. No significa cero bytes históricos ni consultas futuras gratis:
-  quien necesite restaurarlos paga. Esta prueba persistente evita reutilizar un
-  escrow y repetir el desembolso. Se revocan compradores eliminando su entrada.
-
-| Estado / operación A3 | 10 préstamos | 10.000 | 1.000.000 |
+| Estado / operación | 10 préstamos | 10.000 | 1.000.000 |
 | --- | --- | --- | --- |
-| Loan(id) | 10 entradas | 10.000 | 1.000.000; independientes, cerrados archivables |
-| Config + código | Constante | Constante | Constante por instancia |
-| Series y Assets | S entradas + catálogo, S <= 64 | Igual para las mismas series | Igual para las mismas series |
-| Buyer | B permisos vigentes | B | B; sin entradas false |
-| open, get_loan, get_price, flag_margin, mark_default, repay, liquidate | O(1) | O(1) | O(1); rentas y throughput agregados crecen con actividad |
-| register_series, assets | O(S), S <= 64 | Igual | Igual; otras instancias si hay más series |
-| publish_price, lastprice, price, prices | O(1) | O(1) | O(1) por serie; sin alias por préstamo |
-| constructor, get_config, set_buyer, is_buyer, base, decimals, resolution | O(1) | O(1) | O(1) |
-| Indexar/buscar fuera de cadena | 10 registros | 10.000 | 1.000.000; índices paginados, almacenamiento externo |
+| Loan(id) | 10 entradas | 10.000 | 1.000.000; independientes y archivables |
+| Series(nombre) | S entradas independientes | S | S; sin límite global de aplicación |
+| Assets | Hasta 64 nombres | Igual | Igual, solo los elegidos por el emisor |
+| Config + código | Constante | Igual | Igual |
+| Buyer | B permisos activos | B | B; revocar elimina la entrada |
+| open, get_loan, flag_margin, mark_default, repay, liquidate | O(1) | O(1) | O(1), más llamadas al token de esa serie |
+| register_series, get_series, publish_price, lecturas SEP-40 por nombre | O(1) | O(1) | O(1) |
+| list_series, assets | O(C), C <= 64 | Igual | Igual |
+| Buscar toda la cartera fuera del contrato | O(N) | O(N) | O(N), requiere fuente histórica |
 
-Cada open añade solo su Loan; la transferencia añade el coste normal del SAC.
-El prestamista que origina paga esa operación y su renta inicial. Las
-interacciones de abiertos renuevan solo préstamo y serie usados; el emisor paga
-publicaciones y el operador puede enviar mantenimiento por id si no hay tráfico.
-La instancia/código se mantienen con las invocaciones que usan configuración.
-Lecturas SEP-40 mantienen la serie consultada, no los préstamos. Nadie renueva
-cerrados en masa. No se garantiza una cifra fija de TPS: un único prestamista,
-su secuencia de cuenta y sus saldos USDC siguen siendo recursos compartidos.
+open lee la serie y consulta balance(id) y authorized(id) en su token. Exige
+saldo >= nominal y autorización, además del LTV y precio fresco. Las demás
+operaciones sobre abiertos también leen esa garantía: no hay barrido de cartera.
+El valor utiliza min(saldo, nominal), por lo que un saldo enorme de un token
+hostil no agranda los productos aritméticos. Un faltante o congelación permite
+default sin condición de precio o fecha. Liquidar cobra por lo existente y
+exige autorización; pagar permite cerrar aunque haya faltante o congelación.
 
-Se rechazó: mover el vector a instance (mismo límite y carga en cada llamada),
-paginar un vector único (misma escritura creciente), un activo por préstamo
-(dato económico equivocado), un catálogo sin límite aun por serie (solo pospone
-el fallo), borrar préstamos cerrados (pierde unicidad y reintentos), temporal
-para deudas/precios (pérdida de seguridad al caducar), y un registro sofisticado
-de slots reciclables (contadores de holders y nuevos casos de seguridad).
-Los 64 nombres permanentes permiten una implementación pequeña y predecible;
-la contrapartida es administrar varias instancias cuando hagan falta.
+La semántica de autorización y clawback de balances de contrato está definida
+en [CAP-46-6](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0046-06.md).
+La prueba real crea un activo clásico nuevo con autorización obligatoria,
+revocación y clawback. No modifica el activo del producto ni consulta Trustless
+Work. Verificar saldo no acredita propiedad del escrow ni entrega futura.
 
-## Descubrimiento y evidencia
+Las llamadas try_* capturan errores recuperables y tipos inesperados. Un saldo
+negativo también es inválido. Se muestra known=false y shortfall=None, no un
+faltante inventado. No se permite abrir ni liquidar con lectura desconocida.
+No se consulta el token desde registro, catálogo, publicación ni SEP-40.
+Una falla o consumo excesivo de recursos afecta a la transacción que llama ese
+token, no a transacciones independientes de otras series. try_* no recupera
+agotamiento del presupuesto del host. El emisor sigue siendo responsable de
+vincular un SAC auténtico y unidades correctas: un contrato arbitrario puede
+mentir. No se introduce un registro global de tokens ni un barrido que propague
+sus fallos.
 
-La web debe indexar `open` por contrato, id, borrower, lender y serie; mantener
-la última transición y guardar recibos de cierre. Los eventos incluyen esos
-datos. Usar `(red, contrato, event.id)` para deduplicar, guardar cursor y ledger
-confirmado, paginar, reanudar con solapamiento y detectar huecos de retención.
-El evento `price` afecta todos los abiertos de esa serie en el índice, sin
-reescribirlos en Soroban. Otra aplicación puede construir su propio índice.
-Otro protocolo que opere on-chain necesita que le pasen ids concretos.
+## Conservación y descubrimiento
+
+Toda interacción mantiene solo las entradas usadas y la instancia/código.
+La serie persiste para no reiniciar la guarda de paso máximo. Los cerrados
+conservan la foto final, unicidad y reintentos seguros, sin consultar serie o
+token ni renovar Loan. Pueden archivarse cuando expire lo ya pagado; no significa
+cero bytes históricos o restauración gratuita. No hay mantenimiento de cerrados
+a cargo de Rendaval. La llamada de cierre puede renovar al cargar el abierto.
+
+Los eventos permiten un índice opcional: open contiene id, borrower, lender y
+serie; price identifica la serie compartida, y default/repay/liquidate guardan
+la foto relevante. Un clawback o congelación externo no emite evento del libro.
+Para salud actual se consulta get_loan. Otra aplicación puede indexar por
+(red, contrato, event.id), conservar cursor y ledger, y recuperar huecos.
 
 [getEvents](https://developers.stellar.org/docs/data/apis/rpc/api-reference/methods/getEvents)
-retiene una ventana configurable (valor predeterminado documentado: 120.960
-ledgers, unos siete días); `getHealth` permite conocer la disponible. No basta
-consultar los últimos eventos al abrir el navegador. Ingerir desde despliegue,
-respaldar la base y conservar transacciones/recibos; para huecos antiguos hace
-falta una fuente histórica. No se implementa ese servicio en esta fase.
+tiene retención limitada; no es una lista histórica durable. La web sin base
+de datos puede leer directamente préstamos cuyo id obtenga del flujo de escrow
+en cadena o del usuario. Esta fase no construye descubrimiento histórico por
+usuario. No hace falta un mapa de instancias para las series del demo y assets
+no debe utilizarse como lista de visitantes.
 
-La prueba de escala abre 10.001 préstamos reales en el host de pruebas, con un
-SAC y pagos, y compara recursos con 10, 100, 1.000 y 10.000 ya existentes. Se
-reinicia el host desde snapshot para medir una transacción con caché limpia:
-reutilizar indefinidamente el host de tests también mide su caché acumulada,
-que no representa el footprint de una transacción real. La prueba comprueba
-lecturas, escrituras, bytes, eventos, renta, CPU y memoria. Es medición nativa,
-no un millón de transacciones en red ni una promesa de comisiones exactas.
-Las [muestras nativas](../scripts/evidence/loan-book-scale.json) tienen
-326.717 instrucciones, 51.860 bytes de memoria, 11 entradas leídas en memoria,
-5 escritas y 1.216 bytes escritos en los tres puntos posteriores a la base.
-La ejecución testnet y el hash del WASM están en la evidencia pública enlazada
-desde README: 30 hashes y los tres recorridos completos. Las aperturas reales
-tuvieron footprint de 5 entradas de lectura y 4 de escritura, aproximadamente
-1,97 millones de instrucciones y 940–944 bytes escritos. Los nombres de serie
-tienen distinta longitud; esos valores y las tarifas no son constantes
-universales. No se publicaron 10.000 préstamos en testnet. El reloj de freshness, mora y TTL se prueba localmente.
+## Pruebas y evidencia
 
-## Antes de mainnet
+Se conserva la prueba que abre 10.001 préstamos con pagos y compara recursos
+con 10, 100, 1.000 y 10.000 ya existentes. Se añade una prueba que registra más
+de 1.024 series y compara con 64, 128 y 1.024 existentes. Usa nombres de igual
+longitud, hosts nuevos desde snapshots y caché acotada, sin desactivar límites.
+Ambas comparan CPU, memoria, entradas, bytes, eventos y renta persistente.
+Son mediciones nativas: no estimaciones de comisiones ni throughput de red.
+Los números actuales están en [loan-book-scale.json](../scripts/evidence/loan-book-scale.json).
 
-Auditoría independiente; claves con custodia y rotación; operación del índice y
-sus copias; alertas de precios, TTL y defaults; política para instancias llenas
-y descubrimiento de series; pruebas de carga WASM y restauraciones reales;
-medición de concurrencia del SAC y cuentas de origen; revisión de parámetros
-y rentas en mainnet. El límite de paso no impide varios pasos consecutivos ni
-valida el precio económico. Un emisor puede publicar valores incorrectos.
+Las pruebas también cubren catálogo lleno con registro aún permitido, precio
+de series no listadas, vínculo inmutable, saldo insuficiente al abrir,
+congelación, salud con saldo real, default sin frescura por garantía, rechazo de
+default sano, lectura fallida aislada, pago con faltante y cierre sin lecturas
+posteriores del token. Conservan firmas, atomicidad, umbrales, cura, descuento,
+reparto y pérdidas, reintentos, SEP-40 y TTL.
 
-El contrato no tiene bonos, no comprueba el escrow y no llama a Trustless Work.
-La entrega de garantía sigue requiriendo un flujo externo autorizado; hoy no
-hay atomicidad entre entrega del bono y pago de liquidación. No hay aportes de
-garantía, amortización parcial, gracia adicional ni actualización del WASM.
+[La evidencia testnet](../scripts/evidence/loan-book-testnet.json) identifica
+la instancia vigente, hash del WASM y todas las transacciones enviadas. Incluye
+recursos simulados de open y cinco recorridos: liquidación con descuento, pago
+normal, cura tras default por precio, clawback seguido de default y pago, y
+congelación seguida de default y pago. El comprador solo paga USDC: el libro
+no entrega bonos. El script devuelve los fondos recuperables al prestamista.
+
+## Límites pendientes
+
+No hay atomicidad entre pago de liquidación y entrega externa del bono. No se
+verifican las condiciones de salida del escrow. Precio y token son decisiones
+del emisor; la guarda de paso no impide varios pasos consecutivos ni garantiza
+un precio económico correcto. No hay actualización del contrato, amortización
+parcial ni compensación por clawback.
+
+Antes de mainnet: auditoría independiente, custodia y rotación de claves,
+alertas de precios/garantía/TTL, fuentes históricas para búsquedas, pruebas WASM
+de carga y restauración real, y revisión de límites y rentas de la red. La demo
+no espera días para probar mora o archivo: esas fronteras se prueban con reloj
+controlado en Rust. No prueba Pollar en navegador ni la entrega vía escrow.

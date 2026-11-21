@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { Address, Asset, Contract, Keypair, Networks, Operation,
-  StrKey, TransactionBuilder, authorizeEntry, nativeToScVal, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+  TransactionBuilder, authorizeEntry, nativeToScVal, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 
 const RPC = 'https://soroban-testnet.stellar.org';
 const server = new rpc.Server(RPC);
@@ -16,11 +16,15 @@ const lender = key('LENDER_SECRET_KEY');
 const issuer = key('BOND_ISSUER_SECRET_KEY');
 const borrower = Keypair.random();
 const buyer = Keypair.random();
+const bondIssuer = Keypair.random();
+const bondAsset = new Asset('A4BOND', bondIssuer.publicKey());
+const bondToken = bondAsset.contractId(Networks.TESTNET);
 const a = s => new Address(s).toScVal();
 const i = n => nativeToScVal(BigInt(n), { type: 'i128' });
 const sym = s => nativeToScVal(s, { type: 'symbol' });
 const u = n => nativeToScVal(n, { type: 'u32' });
 const evidence = { network: 'testnet', sdk: '29.0.1', started: new Date().toISOString(), transactions: [],
+  bondIssuer: bondIssuer.publicKey(), bondToken, bondAsset: bondAsset.toString(),
   borrower: borrower.publicKey(), buyer: buyer.publicKey(), lender: lender.publicKey(), issuer: issuer.publicKey(), operator: vault.publicKey(), parameters: { maxStepBps: 2500, maxPriceAge: 86400, discountBps: 500 } };
 const evidencePath = process.env.LOAN_BOOK_EVIDENCE;
 const json = v => JSON.stringify(v, (_, x) => typeof x === 'bigint' ? x.toString() : x, 2);
@@ -129,16 +133,32 @@ try {
   }), 'deploy_initialize');
   book = scValToNative(deployed); evidence.contractId = book; console.log(`contract: ${book}`);
   await fresh(borrower, 'borrower'); await fresh(buyer, 'buyer'); prepared = true;
-  const id1 = StrKey.encodeContract(randomBytes(32)), id2 = StrKey.encodeContract(randomBytes(32));
-  const id3 = StrKey.encodeContract(randomBytes(32));
-  evidence.loanIds = [id1, id2, id3];
-  const series = new Map([[id1, 'DEMO_LIQ'], [id2, 'DEMO_REPAY'], [id3, 'DEMO_CURE']]);
+  await fresh(bondIssuer, 'bond_issuer');
+  await submit(bondIssuer, Operation.setOptions({ setFlags: 1 | 2 | 8 }), 'bond_issuer_flags', false);
+  await submit(vault, Operation.createStellarAssetContract({ asset: bondAsset }), 'deploy_bond_sac');
+  // Existing live contracts stand in for escrows. Their code is never invoked.
+  const id1 = book, id2 = USDC, id3 = bondToken;
+  const escrow = async label => scValToNative(await submit(vault, Operation.createCustomContract({
+    address: new Address(vault.publicKey()), wasmHash: hash, salt: randomBytes(32),
+    constructorArgs: [a(vault.publicKey()), a(issuer.publicKey()), a(USDC), u(7000), u(8500), u(2500), nativeToScVal(86400n, { type: 'u64' }), u(500)]
+  }), label));
+  const id4 = await escrow('deploy_clawback_holder');
+  const id5 = await escrow('deploy_freeze_holder');
+  evidence.loanIds = [id1, id2, id3, id4, id5];
+  const series = new Map([[id1, 'DEMO_LIQ'], [id2, 'DEMO_REPAY'], [id3, 'DEMO_CURE'], [id4, 'DEMO_CLAW'], [id5, 'DEMO_FREEZE']]);
+  const bond = (method, args, label) => submit(bondIssuer, new Contract(bondToken).call(method, ...args), label);
+  for (const [id, name] of series) {
+    await bond('set_authorized', [a(id), nativeToScVal(true)], 'authorize_' + name);
+    await bond('mint', [a(id), i(1_000_000_000)], 'deposit_' + name);
+  }
   evidence.series = Object.fromEntries(series);
-  for (const name of series.values()) await invoke(issuer, 'register_series', [sym(name)], `register_${name}`);
-  assert.equal((await read(book, 'assets', [])).length, 3);
-  const open = async (id, label) => {
-    reserve(500_000_000n);
-    await invoke(lender, 'open', [a(id), sym(series.get(id)), a(borrower.publicKey()), a(lender.publicKey()), i(1_000_000_000), i(500_000_000)], label);
+  for (const name of series.values()) await invoke(issuer, 'register_series', [sym(name), a(bondToken)], `register_${name}`);
+  assert.equal((await read(book, 'assets', [])).length, 0);
+  await invoke(issuer, 'list_series', [sym('DEMO_LIQ')], 'list_liquidation_series');
+  assert.equal((await read(book, 'assets', [])).length, 1);
+  const open = async (id, label, principal = 500_000_000n) => {
+    reserve(principal);
+    await invoke(lender, 'open', [a(id), sym(series.get(id)), a(borrower.publicKey()), a(lender.publicKey()), i(1_000_000_000), i(principal)], label);
   };
   await open(id1, 'open_liquidation_loan');
   await invoke(issuer, 'publish_price', [sym(series.get(id1)), i(8_000_000)], 'price_80');
@@ -178,15 +198,42 @@ try {
   await invoke(borrower, 'repay', [a(id3)], 'cure');
   const cured = await read(book, 'get_loan', [a(id3)]);
   assert.equal(cured.loan.status[0], 'Repaid');
+  await open(id4, 'open_clawback_loan');
+  await bond('clawback', [a(id4), i(800_000_000)], 'clawback_collateral');
+  const short = await read(book, 'get_loan', [a(id4)]);
+  assert.equal(short.shortfall, 800_000_000n);
+  assert.equal(short.value, 200_000_000n);
+  await invoke(buyer, 'mark_default', [a(id4)], 'flag_clawback_default');
+  const clawDefault = await read(book, 'get_loan', [a(id4)]);
+  assert.equal(clawDefault.loan.status[0], 'Defaulted');
+  await payment(lender, borrower, clawDefault.loan.interest, 'fund_clawback_interest');
+  await invoke(borrower, 'repay', [a(id4)], 'repay_after_clawback');
+  const clawRepaid = await read(book, 'get_loan', [a(id4)]);
+  assert.equal(clawRepaid.loan.status[0], 'Repaid');
+  assert.equal(clawRepaid.shortfall, 800_000_000n);
+  assert.equal(clawRepaid.loan.surplus, 0n);
+  await open(id5, 'open_freeze_loan', 10_000_000n);
+  await bond('set_authorized', [a(id5), nativeToScVal(false)], 'freeze_collateral');
+  await invoke(buyer, 'mark_default', [a(id5)], 'flag_freeze_default');
+  const frozen = await read(book, 'get_loan', [a(id5)]);
+  assert.equal(frozen.loan.status[0], 'Defaulted');
+  assert.equal(frozen.loan.collateral.authorized, false);
+  assert.equal(frozen.shortfall, 0n);
+  await payment(lender, borrower, frozen.loan.interest, 'fund_freeze_interest');
+  await invoke(borrower, 'repay', [a(id5)], 'repay_while_frozen');
+  const freezeRepaid = await read(book, 'get_loan', [a(id5)]);
+  assert.equal(freezeRepaid.loan.status[0], 'Repaid');
+  evidence.collateralChecks = { short, clawDefault, clawRepaid, frozen, freezeRepaid };
   const oracleAsset = nativeToScVal(['Other', first.loan.asset], { type: ['symbol', 'symbol'] });
   const quote = await read(book, 'lastprice', [oracleAsset]);
   assert.equal(quote.price, first.loan.price);
   assert.equal(quote.timestamp, first.loan.price_time);
   evidence.oracleQuote = quote;
-  evidence.loans = [first, repaid, cured]; evidence.grossLenderSpend = spent;
+  evidence.loans = [first, repaid, cured, clawRepaid, freezeRepaid]; evidence.grossLenderSpend = spent;
   evidence.storage = await verifyStorage(book, evidence.loanIds, evidence.wasmSha256);
   evidence.completed = true;
 } catch {
+  console.log('Failed action:', evidence.lastAction);
   evidence.failure = 'Run failed; inspect the last public transaction hash. Do not blindly rerun.';
   process.exitCode = 1;
 } finally {

@@ -1,52 +1,61 @@
-# Libro de préstamos Rendaval — A3
+# Libro de préstamos Rendaval — A4
 
 Contrato Soroban propio para Stellar **testnet**. Registra préstamos y ejecuta
-sus pagos USDC: capital máximo del 50 % del nominal y del valor actual, interés
-fijo del 8 % anual, 30 días, año de 360 días. El operador y el prestamista
-firman el desembolso atómico. Solo el emisor publica precios y autoriza
-compradores; cualquiera puede marcar margen o incumplimiento cuando corresponde.
-La empresa puede curar pagando toda la deuda hasta la liquidación.
+pagos USDC: capital máximo del 50 % del nominal y del valor actual, interés
+fijo del 8 % anual, 30 días y año de 360 días. Operador y prestamista autorizan
+el desembolso atómico. Solo el emisor publica precios y autoriza compradores;
+cualquiera puede marcar margen o default si se cumplen sus condiciones. La
+empresa puede curar pagando toda la deuda hasta la liquidación.
 
-El precio pertenece a una **serie de bonos** y lo comparten sus préstamos.
-Cada préstamo tiene una entrada independiente: abrir otro no carga ni reescribe
-la cartera. SEP-40 enumera un catálogo completo de hasta 64 series por instancia.
-En el demo cada bono puede tener su propia serie para aislar su simulación;
-al llenar el catálogo se aprovisiona otra instancia. Los nombres no se reciclan.
+Cada serie tiene un token inmutable y un precio compartido. **Registrar series
+no tiene límite global ni toca una lista creciente**. list_series permite al
+emisor publicar hasta 64 en el catálogo SEP-40; todas, incluso las no listadas,
+se leen por nombre. El demo crea una serie por visitante sin listarla: no hace
+falta otra instancia ni una base de datos que asigne préstamos a instancias.
 
-Los préstamos cerrados conservan su foto final y la protección contra apertura
-duplicada, pero dejan de renovar TTL. Pueden archivarse sin mantenimiento
-periódico; quien quiera restaurarlos paga. La web necesita indexar eventos,
-porque el contrato no guarda listas de préstamos y el RPC no conserva toda la
-historia indefinidamente.
+El libro consulta balance y autorización del escrow en el token de la serie.
+No abre sin garantía suficiente y autorizada. La salud usa el saldo real hasta
+el nominal. Faltante o congelación permiten default sin esperar precio fresco
+ni vencimiento. Liquidar cobra con descuento por lo que queda y exige que esté
+autorizado. Repay permite cerrar aunque falten bonos o estén congelados; guarda
+la foto final y no promete compensar ni devolver garantía.
 
-- [ESCALA.md](ESCALA.md): límites vigentes con fuentes, auditoría a 10, 10.000 y
-  1.000.000 préstamos, costes y decisiones de diseño.
-- [INTERFAZ.md](INTERFAZ.md): especificación para la fase web: argumentos,
-  unidades, firmas, errores, transiciones, SEP-40, eventos y restauraciones.
-- [Evidencia testnet](../scripts/evidence/loan-book-testnet.json): instancia,
-  WASM, hashes y resultados públicos del recorrido real.
+Un error recuperable del token aparece como garantía no verificable; nunca se
+inventa un faltante. Ninguna llamada recorre tokens de otras series. Un token
+hostil puede agotar recursos en su propia transacción; el emisor debe vincular
+SAC auténticos. [INTERFAZ.md](INTERFAZ.md) detalla estas condiciones.
+
+Los cerrados conservan su foto y la protección contra apertura duplicada, sin
+renovar Loan ni consultar tokens. Pueden archivarse sin mantenimiento periódico;
+restaurarlos sigue costando. No existe list_loans. La web sin base de datos lee
+por id obtenido de su flujo en cadena o del usuario; un buscador histórico global
+necesitaría una fuente adicional. assets no es un índice de visitantes.
+
+- [ESCALA.md](ESCALA.md): límites, almacenamiento, costes y límites de las pruebas.
+- [INTERFAZ.md](INTERFAZ.md): especificación para la web, tipos, firmas y errores.
+- [Evidencia testnet](../scripts/evidence/loan-book-testnet.json): instancia, WASM,
+  hashes y resultados públicos.
+- [Escala nativa](../scripts/evidence/loan-book-scale.json): mediciones locales.
 
 ## Instancia y alcance
 
 Instancia testnet:
-`CAF6FEECQ4OBWCSQDPKF62DUVJJJOQ6OXRIRJPKPMM4IKGKHERKIMBR2`.
-Despliegue nuevo, sin migración, sin dependencias de instancias anteriores.
-El contrato no es actualizable. Las evidencias de despliegues sustituidos se
-retiraron del repositorio.
+`CCIZPDJSPMUEH65IUK5MXOS4CNWN4XDNRRMWLIC3LAE4G6ELNQQK6CBC`.
+Despliegue nuevo, no actualizable, sin migración. La evidencia anterior se
+sustituye por la de esta instancia.
 
-Los bonos permanecen en Trustless Work. Este contrato **no comprueba ni mueve
-la garantía** y no llama al escrow. Operador y prestamista deben verificarla
-antes de firmar. La liquidación aquí reparte USDC; no acredita entrega de bonos.
-La fase web debe coordinar esa entrega externa y sus comisiones. Hoy no hay
-atomicidad entre pago y entrega externa. No sustituye Pollar ni Didit.
+Las funciones del libro **no reciben ni mueven bonos** y no llaman Trustless Work. Verifica
+saldo y autorización en el token, no titularidad ni reglas de salida del escrow.
+La liquidación reparte USDC pero no acredita entrega de bonos; pago y entrega
+externa todavía no son atómicos. No sustituye Pollar ni Didit.
 
-No se modificaron `app/`, `components/` ni `lib/`. La aplicación existente
-seguirá usando su flujo anterior hasta la integración de esta interfaz.
+No se modifican app/, components/ o lib/. La aplicación mantiene su flujo
+anterior hasta integrar esta interfaz.
 
 ## Compilar y probar
 
-Rust con target `wasm32v1-none`, Soroban SDK **29.0.1** fijado en Cargo.lock,
-Stellar CLI **30.0.1**. Testnet informa protocolo 30, compatible con el WASM.
+Rust con target wasm32v1-none, Soroban SDK **29.0.1** fijado en Cargo.lock y
+Stellar CLI **30.0.1**. La red de la prueba informa protocolo 30.
 
 ```sh
 cargo test --manifest-path contracts/Cargo.toml --locked
@@ -54,17 +63,16 @@ stellar contract build --manifest-path contracts/loan-book/Cargo.toml
 npx next build
 ```
 
-En este entorno, Cargo usa `CARGO_HOME=/tmp/rendaval-cargo` y la CLI está en
-`/tmp/rendaval-cli/stellar`. Usar `stellar contract build` para preparar también
-las secciones de especificación del WASM. Los artefactos/snapshots están
-excluidos de git; Next.js no ejecuta Rust.
+En este entorno se usa CARGO_HOME=/tmp/rendaval-cargo y la CLI está en
+/tmp/rendaval-cli/stellar. stellar contract build incluye la especificación del
+contrato en el WASM. Artefactos y snapshots están excluidos de git.
 
-Las pruebas conservan las reglas anteriores y añaden cotización compartida,
-aislación de series, capacidad de catálogo, LTV/frescura de apertura y no
-renovación de cerrados. La prueba de escala abre 10.001 préstamos con pagos y
-compara recursos de aperturas con 10, 100, 1.000 y 10.000 ya existentes. Tarda
-aproximadamente dos minutos en este entorno. Mide host nativo, no throughput de
-red ni latencia WASM; mantiene activos los límites del SDK.
+Se conservan las pruebas económicas, firmas, atomicidad, reintentos, SEP-40 y
+TTL. Se añaden registro de más de 1.024 series a coste constante, catálogo
+separado, saldo insuficiente, congelación, faltante, salud real, fallos del token
+sin afectar otra serie y fotos finales tras pagar con garantía dañada. La prueba
+de apertura conserva 10.001 préstamos y mide con 10, 100, 1.000 y 10.000 previos.
+Son mediciones del host nativo, no throughput ni comisiones de red.
 
 ## Demostración reproducible
 
@@ -73,37 +81,41 @@ LOAN_BOOK_EVIDENCE=scripts/evidence/loan-book-testnet.json \
   node --env-file=.env.local scripts/loan-book-testnet.mjs
 ```
 
-Cada ejecución despliega otra instancia; no ejecutar para una mera lectura.
-El script usa exclusivamente testnet, comprueba el SAC USDC, sube el WASM y
-despliega con constructor atómico. Lee `VAULT_SECRET_KEY`, `LENDER_SECRET_KEY`
-y `BOND_ISSUER_SECRET_KEY` sin imprimir ni guardar secretos. Crea prestatario y
-comprador con Friendbot, manteniendo sus claves únicamente en memoria. Usa
-ids ficticios de escrow; no invoca Trustless Work.
+Cada ejecución despliega una instancia nueva: no ejecutar para una mera lectura.
+Solo testnet. Usa las claves de operador, prestamista y publicador de .env.local
+sin imprimirlas ni guardarlas. Prestatario, comprador y emisor del bono son
+cuentas efímeras de Friendbot con claves exclusivamente en memoria. El activo
+nuevo A4BOND tiene autorización obligatoria, revocación y clawback habilitados.
+No se altera VBOND ni su emisor. Direcciones de contratos reales sustituyen a
+escrows para esta prueba: libro, USDC, SAC del bono y dos contratos auxiliares.
+Solo se usan como direcciones tenedoras; no se invoca su lógica de escrow.
+No se llama Trustless Work ni a sus contratos.
 
-Registra tres series y abre tres préstamos de 50 USDC: liquidación a 55 % con
-descuento del 5 % y excedente, devolución normal, y cura por devolución completa
-después de default a 50 %. Verifica estados, reparto, aislamiento de precios,
-SEP-40, saldos, WASM desplegado y TTL. Devuelve saldos USDC recuperables y revoca
-al comprador. El gasto bruto del prestamista está limitado por código a 300
-USDC; el recorrido completo usa 202,9166668 USDC y recupera el saldo inicial.
+El script recorre liquidación a 55 % con descuento del 5 %, devolución normal,
+cura tras default por precio, clawback de 80 sobre nominal 100 seguido de default
+y devolución, y congelación seguida de default y devolución sin descongelar.
+Usa cinco series, lista solo una para demostrar la separación y consulta una
+no listada por SEP-40. Registra cada hash antes de enviar y consulta ese hash
+para confirmar, sin reconstruir pagos ante resultados ambiguos. Comprueba WASM,
+TTL, saldos y fotos finales; devuelve USDC recuperables y revoca al comprador.
 
-La evidencia registra todos los hashes enviados y estado/ledger de confirmación
-para las transacciones propias, además de los hashes devueltos por Friendbot.
-Incluye recursos simulados de open. No reconstruye un pago después de un
-resultado ambiguo: consulta su hash. Si se interrumpe el proceso, se pierden las
-claves efímeras; no volver a ejecutar a ciegas después de un resultado desconocido.
+El tope de gasto bruto del prestamista está fijado en 300 USDC. Las claves
+efímeras se pierden al salir: no volver a ejecutar a ciegas tras un resultado
+desconocido. La evidencia contiene datos públicos, no claves.
 
-La pérdida en liquidación, vencimiento, fronteras de frescura y avance de TTL
-se comprueban con reloj/saldos controlados en Rust. La demostración real no
-espera días para verificar archivo ni usa Pollar en navegador. Ver ESCALA.md
-para el trabajo pendiente antes de mainnet.
+No se verifica entrega del bono, Pollar en navegador ni archivo/restauración
+tras días reales. Mora, freshness, pérdida por liquidación y TTL se comprueban
+en Rust con reloj y saldos controlados. Ver ESCALA.md antes de cualquier uso
+en mainnet.
 
-## Resultado verificado
+## Resultado de esta ejecución
 
-Ejecución del 20 de noviembre de 2026 (21 de noviembre UTC): 30 hashes,
-Liquidated / Repaid / Repaid, gasto bruto 202,9166668 USDC y saldo del prestamista
-12.749 → 12.749 USDC. El WASM desplegado coincide con el compilado (20.387 bytes).
-`cargo test`: 20 pruebas aprobadas. `npx next build`: aprobado.
-Los [recursos nativos de escala](../scripts/evidence/loan-book-scale.json) y la
-[evidencia de red](../scripts/evidence/loan-book-testnet.json) distinguen medición
-local de simulación y transacciones confirmadas.
+21 de noviembre de 2026 UTC: **59 hashes**, cinco préstamos cerrados
+(Liquidated / Repaid / Repaid / Repaid / Repaid). Gasto bruto del prestamista:
+**254,2566669 USDC**, por debajo del tope; saldo inicial y final:
+**12.749 USDC**. El WASM confirmado coincide con el compilado (23.149 bytes).
+
+**27 pruebas Rust aprobadas**, ejecutadas en grupos, incluida la de 10.001
+préstamos; npx next build aprobado. La evidencia anterior de contrato y recursos
+se sustituyó. Las simulaciones de open en testnet utilizaron siete entradas de
+solo lectura y cuatro de escritura; los recursos exactos están en el JSON.

@@ -1,55 +1,95 @@
 {
-  "test": "opening_cost_is_independent_of_ten_thousand_existing_loans",
+  "phase": "A4",
   "sdk": "29.0.1",
-  "mode": "native SDK host, fresh snapshot-backed host at measurement points; not Wasm or network fee estimates",
-  "loansOpened": 10001,
-  "baselineExistingLoans": 10,
-  "comparison": "all samples equal baseline for instructions, memory, entry counts, bytes written, event bytes and persistent rent",
-  "samples": [
-    {
-      "existingLoans": 100,
-      "instructions": 326717,
-      "mem_bytes": 51860,
-      "disk_read_entries": 0,
-      "memory_read_entries": 11,
-      "write_entries": 5,
-      "disk_read_bytes": 0,
-      "write_bytes": 1216,
-      "contract_events_size_bytes": 868,
-      "persistent_rent_ledger_bytes": 1956026880,
-      "persistent_entry_rent_bumps": 5,
-      "temporary_rent_ledger_bytes": 298612656,
-      "temporary_entry_rent_bumps": 2
-    },
-    {
-      "existingLoans": 1000,
-      "instructions": 326717,
-      "mem_bytes": 51860,
-      "disk_read_entries": 0,
-      "memory_read_entries": 11,
-      "write_entries": 5,
-      "disk_read_bytes": 0,
-      "write_bytes": 1216,
-      "contract_events_size_bytes": 868,
-      "persistent_rent_ledger_bytes": 1956026880,
-      "persistent_entry_rent_bumps": 5,
-      "temporary_rent_ledger_bytes": 298612656,
-      "temporary_entry_rent_bumps": 2
-    },
-    {
-      "existingLoans": 10000,
-      "instructions": 326717,
-      "mem_bytes": 51860,
-      "disk_read_entries": 0,
-      "memory_read_entries": 11,
-      "write_entries": 5,
-      "disk_read_bytes": 0,
-      "write_bytes": 1216,
-      "contract_events_size_bytes": 868,
-      "persistent_rent_ledger_bytes": 1956026880,
-      "persistent_entry_rent_bumps": 5,
-      "temporary_rent_ledger_bytes": 298612656,
-      "temporary_entry_rent_bumps": 2
-    }
-  ]
+  "mode": "Native SDK host with fresh snapshot-backed host at measurement points; not Wasm/network fees",
+  "comparison": "All samples equal their baseline for instructions, memory, entry counts, bytes written, event bytes and persistent rent",
+  "opening": {
+    "test": "opening_cost_is_independent_of_ten_thousand_existing_loans",
+    "loansOpened": 10001,
+    "baselineExistingLoans": 10,
+    "samples": [
+      {
+        "existingLoans": 100,
+        "instructions": 449047,
+        "mem_bytes": 73570,
+        "disk_read_entries": 0,
+        "memory_read_entries": 12,
+        "write_entries": 5,
+        "disk_read_bytes": 0,
+        "write_bytes": 1336,
+        "contract_events_size_bytes": 988,
+        "persistent_rent_ledger_bytes": 2322432000,
+        "persistent_entry_rent_bumps": 4,
+        "temporary_rent_ledger_bytes": 298612656,
+        "temporary_entry_rent_bumps": 2
+      },
+      {
+        "existingLoans": 1000,
+        "instructions": 449047,
+        "mem_bytes": 73570,
+        "disk_read_entries": 0,
+        "memory_read_entries": 12,
+        "write_entries": 5,
+        "disk_read_bytes": 0,
+        "write_bytes": 1336,
+        "contract_events_size_bytes": 988,
+        "persistent_rent_ledger_bytes": 2322432000,
+        "persistent_entry_rent_bumps": 4,
+        "temporary_rent_ledger_bytes": 298612656,
+        "temporary_entry_rent_bumps": 2
+      },
+      {
+        "existingLoans": 10000,
+        "instructions": 449047,
+        "mem_bytes": 73570,
+        "disk_read_entries": 0,
+        "memory_read_entries": 12,
+        "write_entries": 5,
+        "disk_read_bytes": 0,
+        "write_bytes": 1336,
+        "contract_events_size_bytes": 988,
+        "persistent_rent_ledger_bytes": 2322432000,
+        "persistent_entry_rent_bumps": 4,
+        "temporary_rent_ledger_bytes": 298612656,
+        "temporary_entry_rent_bumps": 2
+      }
+    ]
+  },
+  "registration": {
+    "test": "series_registration_cost_is_constant_and_unlisted_quotes_work",
+    "totalSeries": 1026,
+    "baselineExistingDemoSeries": 64,
+    "samples": [
+      {
+        "existingDemoSeries": 128,
+        "instructions": 82368,
+        "mem_bytes": 14156,
+        "disk_read_entries": 0,
+        "memory_read_entries": 5,
+        "write_entries": 2,
+        "disk_read_bytes": 0,
+        "write_bytes": 360,
+        "contract_events_size_bytes": 208,
+        "persistent_rent_ledger_bytes": 597196800,
+        "persistent_entry_rent_bumps": 1,
+        "temporary_rent_ledger_bytes": 149306328,
+        "temporary_entry_rent_bumps": 1
+      },
+      {
+        "existingDemoSeries": 1024,
+        "instructions": 82368,
+        "mem_bytes": 14156,
+        "disk_read_entries": 0,
+        "memory_read_entries": 5,
+        "write_entries": 2,
+        "disk_read_bytes": 0,
+        "write_bytes": 360,
+        "contract_events_size_bytes": 208,
+        "persistent_rent_ledger_bytes": 597196800,
+        "persistent_entry_rent_bumps": 1,
+        "temporary_rent_ledger_bytes": 149306328,
+        "temporary_entry_rent_bumps": 1
+      }
+    ]
+  }
 }

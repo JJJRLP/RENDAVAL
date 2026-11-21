@@ -1,187 +1,362 @@
 {
   "network": "testnet",
   "sdk": "29.0.1",
-  "started": "2026-11-21T02:18:09.637Z",
+  "started": "2026-11-21T02:38:17.610Z",
   "transactions": [
     {
       "label": "upload_wasm",
-      "hash": "0996b7b81a4279a11c90888990eb64872b18a94f696d8f1568f0c17b364991a6",
+      "hash": "c063a2c1aca6988559ef3b17a4cd6ca44db89228d2cae45c8bb20004a8286c60",
       "status": "SUCCESS",
-      "ledger": 5840771
+      "ledger": 5841012
     },
     {
       "label": "deploy_initialize",
-      "hash": "fcd61d96dbe5d906afbaa59297fd4f081db6673a806e8df60f5a3ea238480e1f",
+      "hash": "0835c59a01f97569c5bc4a64d9a5b28ad68874271fdb92faf7673eeb42553115",
       "status": "SUCCESS",
-      "ledger": 5840772
+      "ledger": 5841013
     },
     {
       "label": "friendbot_borrower",
-      "hash": "36de5d912b0841074843b1dc87991b648f9353cbc0ff5bbd7e9b7f691bf9c89b"
+      "hash": "1a58caf7099fb66fdaa1d1c9b67fe646c4474006ab123c48fd68df3cb1450d81"
     },
     {
       "label": "trustline_borrower",
-      "hash": "1b2d82ee53dc3b58a5aa65b9f02d33e28fd395e590685c5e37dc7988dadd6f71",
+      "hash": "68091c5a36dd00f5f211b8e666caa512b5a301108792f491cd8e0c53713269d9",
       "status": "SUCCESS",
-      "ledger": 5840774
+      "ledger": 5841015
     },
     {
       "label": "friendbot_buyer",
-      "hash": "258a3c58563e9c468192d656d67278a080996eb05ffb8d06b7c5cb1d528b25d8"
+      "hash": "db2fff958107b504d85cdc8820ed98c3ceba6d9ee649752ecbab3b403cb8fb80"
     },
     {
       "label": "trustline_buyer",
-      "hash": "c7398a76b1b269f60e211ecf4e9c541e6c624548c0387af885a184beafdcc4ec",
+      "hash": "b9f6f875db5daf219494e4fc035e7f8a1434291fa4617a5ddcfefdb283ed45b6",
       "status": "SUCCESS",
-      "ledger": 5840776
+      "ledger": 5841017
+    },
+    {
+      "label": "friendbot_bond_issuer",
+      "hash": "376ce7e9ba568488a0834453c6d107b0544889bacab760f1d29685ff646563c4"
+    },
+    {
+      "label": "trustline_bond_issuer",
+      "hash": "4c909bd2eca37c96a3572cdd10f8d688cd9a915b5fcb453cda6c8228caf312a7",
+      "status": "SUCCESS",
+      "ledger": 5841019
+    },
+    {
+      "label": "bond_issuer_flags",
+      "hash": "f4cd7c392689c5244b98762722efb9ae0b112efec001e89a4a74854cac25f095",
+      "status": "SUCCESS",
+      "ledger": 5841020
+    },
+    {
+      "label": "deploy_bond_sac",
+      "hash": "a5ab1a8bccb58b0f3943417bf4784e62bf43eeb8436f7e336b4b502021ecf943",
+      "status": "SUCCESS",
+      "ledger": 5841021
+    },
+    {
+      "label": "deploy_clawback_holder",
+      "hash": "d99a30fc4db0e312d6fc1d9713789e7fe5c8f11e810107a7130a8e49740c6f92",
+      "status": "SUCCESS",
+      "ledger": 5841022
+    },
+    {
+      "label": "deploy_freeze_holder",
+      "hash": "9a7e5899e987e10d78a0c5f32cd1b3a09f38029156249059aa6df410a807f6fc",
+      "status": "SUCCESS",
+      "ledger": 5841023
+    },
+    {
+      "label": "authorize_DEMO_LIQ",
+      "hash": "4e2ce93a280598af93cb387b61b8926208ef3e6fcac8b654d0f9faebdbef7ae2",
+      "status": "SUCCESS",
+      "ledger": 5841024
+    },
+    {
+      "label": "deposit_DEMO_LIQ",
+      "hash": "9b2446e1858226d752a9a954120d68d0b6ab45dded6130849e367c43102b6e41",
+      "status": "SUCCESS",
+      "ledger": 5841025
+    },
+    {
+      "label": "authorize_DEMO_REPAY",
+      "hash": "393bf9abe79e9edaf5a6077caf66511cbdbcef7bfe1e9116845230b0085c7e3b",
+      "status": "SUCCESS",
+      "ledger": 5841026
+    },
+    {
+      "label": "deposit_DEMO_REPAY",
+      "hash": "d8bdccebdb10141097de245dbb7287bd256a3f77187f17e3a69f79d67bdaee74",
+      "status": "SUCCESS",
+      "ledger": 5841027
+    },
+    {
+      "label": "authorize_DEMO_CURE",
+      "hash": "582e045b12221f7e6d61703674ed36fefdf86ba70889dfd76605317801d5e929",
+      "status": "SUCCESS",
+      "ledger": 5841028
+    },
+    {
+      "label": "deposit_DEMO_CURE",
+      "hash": "c306d1727de9c7c93f76ffb879d570cc901b548fdf901157601500cadee446a8",
+      "status": "SUCCESS",
+      "ledger": 5841029
+    },
+    {
+      "label": "authorize_DEMO_CLAW",
+      "hash": "b3e3cbd177dd2edfacd69274aa106e9e4ff48cefcb486408c8c3d2be7d72277e",
+      "status": "SUCCESS",
+      "ledger": 5841030
+    },
+    {
+      "label": "deposit_DEMO_CLAW",
+      "hash": "f3e8e1662cffa9ee940cdbefc54f12f326162a8a5df8276c721c0072ae11ad70",
+      "status": "SUCCESS",
+      "ledger": 5841031
+    },
+    {
+      "label": "authorize_DEMO_FREEZE",
+      "hash": "b7a9b333a1768ea3406297ca5e7cbd2b48f5b3337e5f684bb7e515b6b2aa6869",
+      "status": "SUCCESS",
+      "ledger": 5841032
+    },
+    {
+      "label": "deposit_DEMO_FREEZE",
+      "hash": "17f2312e80183ed38c6bd776a21b2e6f0f5dfc280107906fdbd13c738846dfa8",
+      "status": "SUCCESS",
+      "ledger": 5841033
     },
     {
       "label": "register_DEMO_LIQ",
-      "hash": "884615edfd25a009cc472f5d9ddf9ec557753c77f2780fbdea4ba3fa4e7d21f4",
+      "hash": "c1c8901aeb06bd9276fb3e2bc3057af78121532ec15e4d49ffa21d4ebd1a27d9",
       "status": "SUCCESS",
-      "ledger": 5840777
+      "ledger": 5841034
     },
     {
       "label": "register_DEMO_REPAY",
-      "hash": "69aac741223b075b3de3d5020d34977ae74d1c8ca7cc821e0d076a7a532f0e9d",
+      "hash": "5a659896a338cd3888e24289c64d01cd6408b6e025cef605b7df5571f1082a19",
       "status": "SUCCESS",
-      "ledger": 5840778
+      "ledger": 5841035
     },
     {
       "label": "register_DEMO_CURE",
-      "hash": "8f44bb43252b306662fe0e04f7ff2bbcd92154280060805323097944766fc374",
+      "hash": "17dfb8f3b26f2987b514672b34ebf22c3aaa7bc0fdf02357e1f03d23a5e7a56e",
       "status": "SUCCESS",
-      "ledger": 5840779
+      "ledger": 5841036
+    },
+    {
+      "label": "register_DEMO_CLAW",
+      "hash": "00c9f70d22ddc1532bb378ef84d60bbbbd247b9f2ce81863aebcc6a70b1dfc3d",
+      "status": "SUCCESS",
+      "ledger": 5841037
+    },
+    {
+      "label": "register_DEMO_FREEZE",
+      "hash": "14d22672d0c2c3cfdb15eea90b5a546db6a62858a0535eb75daa904db2506b22",
+      "status": "SUCCESS",
+      "ledger": 5841038
+    },
+    {
+      "label": "list_liquidation_series",
+      "hash": "8e3de6f68d5d0f0eb9ef282efbd46593ea697b31be13f71d8b5373d1db005973",
+      "status": "SUCCESS",
+      "ledger": 5841039
     },
     {
       "label": "open_liquidation_loan",
-      "hash": "11349f1e10ce7e3f1b79005df67269c44303af5a9dee4bae57cb3fa1a2de56be",
+      "hash": "b41594a4d54056607c96d5f53152bd45b1c39292fe3731f14957a117e5776a5e",
       "status": "SUCCESS",
-      "ledger": 5840780
+      "ledger": 5841040
     },
     {
       "label": "price_80",
-      "hash": "af72c766fa714b679a6326198db86eefaf1c5b574672b57cac5fbcf148ba493d",
+      "hash": "718f21ede6d8a2e5bbd5a76300ec7bc67596a534d66da5f0932b2437034486ec",
       "status": "SUCCESS",
-      "ledger": 5840781
+      "ledger": 5841041
     },
     {
       "label": "price_margin",
-      "hash": "4e8cb51799c5e92dcd8ffcacae97112e941ac64d3880786307f12a802e86f6e2",
+      "hash": "fa7015022858499ea538ff27f5fa20cad33e678c2fc7a33b3b868159832435ba",
       "status": "SUCCESS",
-      "ledger": 5840782
+      "ledger": 5841042
     },
     {
       "label": "flag_margin",
-      "hash": "f3b353bc112220530d2b5581ba70435b5fcbac087c53a60949a4f110affad614",
+      "hash": "32cad01f04dcae1899f9bfd0bcb8af0291154617300d6b3bee87e5fcf5dfd4bf",
       "status": "SUCCESS",
-      "ledger": 5840783
+      "ledger": 5841043
     },
     {
       "label": "price_default",
-      "hash": "53f6a6ca1b74abc67fcf9b9805eb0ccc6d95336c039a4fb529d70d5756522f3f",
+      "hash": "4b6a746ec980addaa392667ee636d5fbb1030d5b0dfa0f79185268e69e394c99",
       "status": "SUCCESS",
-      "ledger": 5840784
+      "ledger": 5841044
     },
     {
       "label": "mark_default",
-      "hash": "fd9790d729f6cd624768994d75fcf2a474782006226c1e96920a45d42f129449",
+      "hash": "031adec0ab9157c0b251fc350ad199722af2c2f5cff35b3bcfd0ba09348bf086",
       "status": "SUCCESS",
-      "ledger": 5840785
+      "ledger": 5841045
     },
     {
       "label": "authorize_buyer",
-      "hash": "4472ba12e246eee0a7fbf7aa3a71bfc0cebb00db5bfa07ca2ff4b0288ce26ab7",
+      "hash": "2cdb14e8b157359c718d0f3545aade2a75e0588eaa059924f2c5af6b9e6d39bd",
       "status": "SUCCESS",
-      "ledger": 5840786
+      "ledger": 5841046
     },
     {
       "label": "fund_buyer",
-      "hash": "ebe9fe8250ae592f4b7f3f266e25c5ec44c31e7bd8caedb69c7057992f0c6d87",
+      "hash": "cae8bceb4977b32c7025c6cc161a1077424b4e2a9ce6fa90ae44f720f83c1c65",
       "status": "SUCCESS",
-      "ledger": 5840787
+      "ledger": 5841047
     },
     {
       "label": "liquidate",
-      "hash": "9ce621dbd8d2cc84b9e630ccca9ba84321919191d3d3e09a1b6ee1c5bd269dd2",
+      "hash": "cf55518f1f676259c2a427ff1cf4b5aa85b14354d65dd185fca4d7afefa02444",
       "status": "SUCCESS",
-      "ledger": 5840788
+      "ledger": 5841048
     },
     {
       "label": "return_first_loan_funds",
-      "hash": "97e75cb749b5e9a9de0e7035b907d664fd75cea867edd93f589bd199800e0e55",
+      "hash": "dde6ba771987ce280e1e22979eca68507cd1b3d421b9ac967bfb044ba5efaee6",
       "status": "SUCCESS",
-      "ledger": 5840789
+      "ledger": 5841049
     },
     {
       "label": "open_repayment_loan",
-      "hash": "ff910b145e9659ed1b6abbb2518df50f3e0f10e0e658a49c8253afe75c74c6f9",
+      "hash": "de3d1345f2be6741410de5d6b6fb75616de44b29cafdefe5ce10436e0d1ecbe3",
       "status": "SUCCESS",
-      "ledger": 5840790
+      "ledger": 5841050
     },
     {
       "label": "fund_demo_interest",
-      "hash": "384057408d9e15fdfde639dc588a399e18feb1572babf30dcfeb731538dcf1e7",
+      "hash": "5225beef48b99a4d144d91f54e6ff96898549a18610f89d257dd61dc01834492",
       "status": "SUCCESS",
-      "ledger": 5840791
+      "ledger": 5841051
     },
     {
       "label": "repay",
-      "hash": "0b63d5f2998dbde8806dc836915549670a88e733f8c8172298312ec4085ee240",
+      "hash": "0b0e348a11bd4647a3ee0981482db1e789e3fe2137ca9bf2bb2a4318fe6f12ed",
       "status": "SUCCESS",
-      "ledger": 5840792
+      "ledger": 5841052
     },
     {
       "label": "open_cure_loan",
-      "hash": "5afe544c5f409ea6f5aeb8716e2fe0f18b675ac9ef6c527efeeb64357db384a8",
+      "hash": "d55af58f8e943260d2579dfe85d1168d761973a464f17c125e028d0da4a304eb",
       "status": "SUCCESS",
-      "ledger": 5840793
+      "ledger": 5841053
     },
     {
       "label": "cure_price_8000000",
-      "hash": "94986f5c6867ca4ebd4501ef877cd778e4dfb91702a0a1ad5df4ae15a3e081c8",
+      "hash": "c8aeab3ff1a570d44a4e2f2a6a52088c2f6683253004ddadb1688350fcce19ca",
       "status": "SUCCESS",
-      "ledger": 5840794
+      "ledger": 5841054
     },
     {
       "label": "cure_price_6500000",
-      "hash": "80efea5cb89840bcbd3125b7c5a52768afe6f5c5b7e3248906fe0446170735ce",
+      "hash": "69c5f31e07320cc814a3509cd48d69f31c94bfebb29bf5f694bc342725bc021b",
       "status": "SUCCESS",
-      "ledger": 5840795
+      "ledger": 5841055
     },
     {
       "label": "cure_price_5000000",
-      "hash": "dfeb3fa35cc658844618e36d21343bcdebf1050c92ebec7babfaf9ace3c0fb46",
+      "hash": "b29412e48e199cce3fd5a99b1cbdf9842beb51ebbe3371ca507154651a7d6010",
       "status": "SUCCESS",
-      "ledger": 5840796
+      "ledger": 5841056
     },
     {
       "label": "default_before_cure",
-      "hash": "034e50cc721dac1cab945e4e3edbaf297f9e17b468d0fb396cf373badfa5352f",
+      "hash": "36108d8485dafeea554623785ff848351159893a36d02f8c286fec251030db41",
       "status": "SUCCESS",
-      "ledger": 5840797
+      "ledger": 5841057
     },
     {
       "label": "fund_cure_interest",
-      "hash": "cb5f44cc88b866cdc1aff165b4552945978572b58fc7803227a13fb621439f53",
+      "hash": "a619199363e323f9a11eaec0b1077879882a4c5c402562fb50a97f6463c4e1e6",
       "status": "SUCCESS",
-      "ledger": 5840798
+      "ledger": 5841058
     },
     {
       "label": "cure",
-      "hash": "ac3586c46da2f5fef20f5ee4b27cfd6d8fcd8f05f55dd28cd5579f7bc3dbede9",
+      "hash": "a8893d944d027b64d80da867db3c001b73c4abac36995e079d780c5d12ddd0c8",
       "status": "SUCCESS",
-      "ledger": 5840799
+      "ledger": 5841059
+    },
+    {
+      "label": "open_clawback_loan",
+      "hash": "4bf144e97bbae50043ffb9f956b9ab3548d0e10834684d4d834e691a54336208",
+      "status": "SUCCESS",
+      "ledger": 5841060
+    },
+    {
+      "label": "clawback_collateral",
+      "hash": "4738a1e2983c20aded310f2a14d414ab912a49e98d75527beeaf74c2ec133482",
+      "status": "SUCCESS",
+      "ledger": 5841061
+    },
+    {
+      "label": "flag_clawback_default",
+      "hash": "39f13cb4e01ff2bd6071990c45f61b1a5d793b650187600d1aeee6abc77f8f4f",
+      "status": "SUCCESS",
+      "ledger": 5841062
+    },
+    {
+      "label": "fund_clawback_interest",
+      "hash": "0bbba83b30a61f62b94cedc2b63882d806b2c872d6cc36781adc44f3939a18c8",
+      "status": "SUCCESS",
+      "ledger": 5841063
+    },
+    {
+      "label": "repay_after_clawback",
+      "hash": "e395a2d1a3e5edf10e8e8e30b188503c59f2bfb49aab1c6d9b951356aed18955",
+      "status": "SUCCESS",
+      "ledger": 5841064
+    },
+    {
+      "label": "open_freeze_loan",
+      "hash": "a9f905b5d643bc05bdb25087e0e9c78ec8dadc494330ed3e4cce67c756629875",
+      "status": "SUCCESS",
+      "ledger": 5841065
+    },
+    {
+      "label": "freeze_collateral",
+      "hash": "6c8eb39f84473e01eb1b5048f15a86999263e0f287633916541dd7a1f42c298f",
+      "status": "SUCCESS",
+      "ledger": 5841066
+    },
+    {
+      "label": "flag_freeze_default",
+      "hash": "707e7804e25d576b9240aa12b82a11889cb99c47dc4e0360ea5d5be8aeb0dd6a",
+      "status": "SUCCESS",
+      "ledger": 5841067
+    },
+    {
+      "label": "fund_freeze_interest",
+      "hash": "eba93051259ef5e050ccaae914cc02e1b23358d1f1544068ef586bd53353046a",
+      "status": "SUCCESS",
+      "ledger": 5841068
+    },
+    {
+      "label": "repay_while_frozen",
+      "hash": "a233dc2ab0467ecccb4ac36b7641c6f33685add3c7ece3b7bb70d52f40372e98",
+      "status": "SUCCESS",
+      "ledger": 5841069
     },
     {
       "label": "revoke_demo_buyer",
-      "hash": "e3ee88c89ee226b24113c7bec1d6669817fe438ac3ff1befe1acf3373a566e34",
+      "hash": "b8a404d387d084cd2dcb91b6c300eb0f6f4f9fc0caa1e32304be32750792e299",
       "status": "SUCCESS",
-      "ledger": 5840800
+      "ledger": 5841070
     }
   ],
-  "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
-  "buyer": "GBVYHJUBWOEJLIHURYQV2XO7PSE4YUKE2QZJ2M5J3V765TFHWZ4WEOLZ",
+  "bondIssuer": "GBK5AFHKJBGCKVR4VYXIGI5JQOJ5RLXPSOSKDSEZ37BSFOCEOGIZ7LAI",
+  "bondToken": "CA5Z5JYCCWEFRRVLWZRSE3MMW5CY7DZC7IM6KGXDYM3S45H5OLFJXRTI",
+  "bondAsset": "A4BOND:GBK5AFHKJBGCKVR4VYXIGI5JQOJ5RLXPSOSKDSEZ37BSFOCEOGIZ7LAI",
+  "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+  "buyer": "GDOH57RMU3ONMMFYEQLCA7KUFCF744WFLBDZTUWEPNZNLOWQPSVMHKNC",
   "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
   "issuer": "GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT",
   "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
@@ -192,52 +367,221 @@
   },
   "protocol": 30,
   "initialLenderUsdc": "127490000000",
-  "wasmSha256": "60496693b60ce09eb2d3c24ccf6e2f05443241e838c7538304fe12085bda409c",
+  "wasmSha256": "3746dc4621ca40be6e47be0a618233d592b7da6867547e9b8d59d5f2838d23dc",
   "lastAction": "revoke_demo_buyer",
-  "contractId": "CAF6FEECQ4OBWCSQDPKF62DUVJJJOQ6OXRIRJPKPMM4IKGKHERKIMBR2",
+  "contractId": "CCIZPDJSPMUEH65IUK5MXOS4CNWN4XDNRRMWLIC3LAE4G6ELNQQK6CBC",
   "loanIds": [
-    "CCYACOHBMRJ2RGO3LSBUNQ3RSFHWHHCS5O635RHSQSSNOEMFHOU62PKS",
-    "CAY2VOYF5IN6STFIRPYBFFQVAZQTYPPGJS3ZW6LPOEOHWEAOKZYVDL46",
-    "CALYBOEWT563THLSHGTAQDSQ3XGS7R4Z6MBWNDMZFDIPQD4D33QHDTEY"
+    "CCIZPDJSPMUEH65IUK5MXOS4CNWN4XDNRRMWLIC3LAE4G6ELNQQK6CBC",
+    "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+    "CA5Z5JYCCWEFRRVLWZRSE3MMW5CY7DZC7IM6KGXDYM3S45H5OLFJXRTI",
+    "CCUGTSJU2HZFR6ZKAIAYNPLM2WIBGJUGAA3VKT53CD24B52J6YWOPJLS",
+    "CBA3JLBB7Z4SWQEEY4PYTU2BKOB5OPL4PYHU3NNOXLRVVL3ERI2OFSP7"
   ],
   "series": {
-    "CCYACOHBMRJ2RGO3LSBUNQ3RSFHWHHCS5O635RHSQSSNOEMFHOU62PKS": "DEMO_LIQ",
-    "CAY2VOYF5IN6STFIRPYBFFQVAZQTYPPGJS3ZW6LPOEOHWEAOKZYVDL46": "DEMO_REPAY",
-    "CALYBOEWT563THLSHGTAQDSQ3XGS7R4Z6MBWNDMZFDIPQD4D33QHDTEY": "DEMO_CURE"
+    "CCIZPDJSPMUEH65IUK5MXOS4CNWN4XDNRRMWLIC3LAE4G6ELNQQK6CBC": "DEMO_LIQ",
+    "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA": "DEMO_REPAY",
+    "CA5Z5JYCCWEFRRVLWZRSE3MMW5CY7DZC7IM6KGXDYM3S45H5OLFJXRTI": "DEMO_CURE",
+    "CCUGTSJU2HZFR6ZKAIAYNPLM2WIBGJUGAA3VKT53CD24B52J6YWOPJLS": "DEMO_CLAW",
+    "CBA3JLBB7Z4SWQEEY4PYTU2BKOB5OPL4PYHU3NNOXLRVVL3ERI2OFSP7": "DEMO_FREEZE"
   },
   "openResources": [
     {
       "label": "open_liquidation_loan",
-      "minResourceFee": "1550971",
-      "instructions": 1968434,
+      "minResourceFee": "1836496",
+      "instructions": 2205185,
       "diskReadBytes": 376,
-      "writeBytes": 940,
-      "readOnlyEntries": 5,
+      "writeBytes": 1060,
+      "readOnlyEntries": 7,
       "readWriteEntries": 4
     },
     {
       "label": "open_repayment_loan",
-      "minResourceFee": "1559890",
-      "instructions": 1977938,
+      "minResourceFee": "1845508",
+      "instructions": 2214686,
       "diskReadBytes": 376,
-      "writeBytes": 944,
-      "readOnlyEntries": 5,
+      "writeBytes": 1064,
+      "readOnlyEntries": 7,
       "readWriteEntries": 4
     },
     {
       "label": "open_cure_loan",
-      "minResourceFee": "1559888",
-      "instructions": 1970521,
+      "minResourceFee": "1845506",
+      "instructions": 2207268,
       "diskReadBytes": 376,
-      "writeBytes": 944,
-      "readOnlyEntries": 5,
+      "writeBytes": 1064,
+      "readOnlyEntries": 7,
+      "readWriteEntries": 4
+    },
+    {
+      "label": "open_clawback_loan",
+      "minResourceFee": "1845506",
+      "instructions": 2207268,
+      "diskReadBytes": 376,
+      "writeBytes": 1064,
+      "readOnlyEntries": 7,
+      "readWriteEntries": 4
+    },
+    {
+      "label": "open_freeze_loan",
+      "minResourceFee": "1845508",
+      "instructions": 2214686,
+      "diskReadBytes": 376,
+      "writeBytes": 1064,
+      "readOnlyEntries": 7,
       "readWriteEntries": 4
     }
   ],
   "isolatedSeriesVerified": true,
+  "collateralChecks": {
+    "short": {
+      "debt": "503333334",
+      "health_bps": "25166",
+      "loan": {
+        "asset": "DEMO_CLAW",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "200000000",
+          "known": true
+        },
+        "due": "1797820941",
+        "face": "1000000000",
+        "interest": "3333334",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228826",
+        "principal": "500000000",
+        "proceeds": "0",
+        "status": [
+          "Active"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "800000000",
+      "value": "200000000"
+    },
+    "clawDefault": {
+      "debt": "503333334",
+      "health_bps": "25166",
+      "loan": {
+        "asset": "DEMO_CLAW",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "200000000",
+          "known": true
+        },
+        "due": "1797820941",
+        "face": "1000000000",
+        "interest": "3333334",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228826",
+        "principal": "500000000",
+        "proceeds": "0",
+        "status": [
+          "Defaulted"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "800000000",
+      "value": "200000000"
+    },
+    "clawRepaid": {
+      "debt": "503333334",
+      "health_bps": "25166",
+      "loan": {
+        "asset": "DEMO_CLAW",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "200000000",
+          "known": true
+        },
+        "due": "1797820941",
+        "face": "1000000000",
+        "interest": "3333334",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228826",
+        "principal": "500000000",
+        "proceeds": "0",
+        "status": [
+          "Repaid"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "800000000",
+      "value": "200000000"
+    },
+    "frozen": {
+      "debt": "10066667",
+      "health_bps": "100",
+      "loan": {
+        "asset": "DEMO_FREEZE",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": false,
+          "balance": "1000000000",
+          "known": true
+        },
+        "due": "1797820966",
+        "face": "1000000000",
+        "interest": "66667",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228831",
+        "principal": "10000000",
+        "proceeds": "0",
+        "status": [
+          "Defaulted"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "0",
+      "value": "1000000000"
+    },
+    "freezeRepaid": {
+      "debt": "10066667",
+      "health_bps": "100",
+      "loan": {
+        "asset": "DEMO_FREEZE",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": false,
+          "balance": "1000000000",
+          "known": true
+        },
+        "due": "1797820966",
+        "face": "1000000000",
+        "interest": "66667",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228831",
+        "principal": "10000000",
+        "proceeds": "0",
+        "status": [
+          "Repaid"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "0",
+      "value": "1000000000"
+    }
+  },
   "oracleQuote": {
     "price": "5500000",
-    "timestamp": "1795227561"
+    "timestamp": "1795228861"
   },
   "loans": [
     {
@@ -245,14 +589,19 @@
       "health_bps": "9151",
       "loan": {
         "asset": "DEMO_LIQ",
-        "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
-        "due": "1797819541",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "1000000000",
+          "known": true
+        },
+        "due": "1797820841",
         "face": "1000000000",
         "interest": "3333334",
         "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
         "loss": "0",
         "price": "5500000",
-        "price_time": "1795227561",
+        "price_time": "1795228861",
         "principal": "500000000",
         "proceeds": "522500000",
         "status": [
@@ -261,6 +610,7 @@
         "surplus": "19166666"
       },
       "overdue": false,
+      "shortfall": "0",
       "value": "550000000"
     },
     {
@@ -268,14 +618,19 @@
       "health_bps": "5033",
       "loan": {
         "asset": "DEMO_REPAY",
-        "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
-        "due": "1797819591",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "1000000000",
+          "known": true
+        },
+        "due": "1797820891",
         "face": "1000000000",
         "interest": "3333334",
         "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
         "loss": "0",
         "price": "10000000",
-        "price_time": "1795227531",
+        "price_time": "1795228816",
         "principal": "500000000",
         "proceeds": "0",
         "status": [
@@ -284,6 +639,7 @@
         "surplus": "0"
       },
       "overdue": false,
+      "shortfall": "0",
       "value": "1000000000"
     },
     {
@@ -291,14 +647,19 @@
       "health_bps": "10066",
       "loan": {
         "asset": "DEMO_CURE",
-        "borrower": "GALTBZXLS7OL4IPL6KOOFS2SADPPOCKI5KR3WZQKF64NLJDA3KZTIFQW",
-        "due": "1797819606",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "1000000000",
+          "known": true
+        },
+        "due": "1797820906",
         "face": "1000000000",
         "interest": "3333334",
         "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
         "loss": "0",
         "price": "5000000",
-        "price_time": "1795227621",
+        "price_time": "1795228921",
         "principal": "500000000",
         "proceeds": "0",
         "status": [
@@ -307,19 +668,80 @@
         "surplus": "0"
       },
       "overdue": false,
+      "shortfall": "0",
       "value": "500000000"
+    },
+    {
+      "debt": "503333334",
+      "health_bps": "25166",
+      "loan": {
+        "asset": "DEMO_CLAW",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": true,
+          "balance": "200000000",
+          "known": true
+        },
+        "due": "1797820941",
+        "face": "1000000000",
+        "interest": "3333334",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228826",
+        "principal": "500000000",
+        "proceeds": "0",
+        "status": [
+          "Repaid"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "800000000",
+      "value": "200000000"
+    },
+    {
+      "debt": "10066667",
+      "health_bps": "100",
+      "loan": {
+        "asset": "DEMO_FREEZE",
+        "borrower": "GA6B5HP2NJC6URPF7MECWNFOVFCIVFYNLVPTULS2BF3VXVOIKED5MUZA",
+        "collateral": {
+          "authorized": false,
+          "balance": "1000000000",
+          "known": true
+        },
+        "due": "1797820966",
+        "face": "1000000000",
+        "interest": "66667",
+        "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+        "loss": "0",
+        "price": "10000000",
+        "price_time": "1795228831",
+        "principal": "10000000",
+        "proceeds": "0",
+        "status": [
+          "Repaid"
+        ],
+        "surplus": "0"
+      },
+      "overdue": false,
+      "shortfall": "0",
+      "value": "1000000000"
     }
   ],
-  "grossLenderSpend": "2029166668",
+  "grossLenderSpend": "2542566669",
   "storage": {
-    "latestLedger": 5840799,
+    "latestLedger": 5841069,
     "remainingLedgers": [
-      2073573,
+      2073544,
+      2073571,
       2073581,
+      2073584,
       2073591,
-      2073594
+      2073596
     ],
-    "deployedWasmSha256": "60496693b60ce09eb2d3c24ccf6e2f05443241e838c7538304fe12085bda409c"
+    "deployedWasmSha256": "3746dc4621ca40be6e47be0a618233d592b7da6867547e9b8d59d5f2838d23dc"
   },
   "completed": true,
   "finalLenderUsdc": "127490000000"
