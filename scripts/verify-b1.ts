@@ -1,3 +1,4 @@
+import { evidenceFile, campaignSeed } from './t-config.mjs';
 // Real provider/testnet journey through server services. Pollar login alone is replaced by an in-memory company key.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -11,11 +12,12 @@ import { server, bondAsset, dollarAsset } from '../lib/server/loan/network';
 import { a, balance, BOND, BOOK, decimal, read, rpcServer, UNIT, USD } from '../lib/server/loan/chain';
 import { json } from '../lib/server/loan/store';
 import { observeTransactions } from '../lib/server/loan/audit';
-const file = 'scripts/evidence/c4-server.json';
+const phaseT = process.argv.includes('--phase-t');
+const file = phaseT ? evidenceFile('journeys') : 'scripts/evidence/c4-server.json';
 const prior = JSON.parse(readFileSync('scripts/evidence/archive/c4/first-book-server.json', 'utf8'));
 const priorSpend = Object.values(prior.budget as Record<string, string>).reduce((n, v) => n + BigInt(v), 10000001n); // includes uneven TW probe
 
-const company = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-company-v2').digest());
+const company = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update(phaseT ? campaignSeed('rendaval-phase-t-company-v1') : 'rendaval-c4-company-v2').digest());
 const wallet = company.publicKey();
 type Evidence = { wallet: string; transactions: { label: string; hash: string }[]; steps: Record<string, unknown>; completed?: string; grossLenderSpend: string; budget?: Record<string, string> };
 const e: Evidence = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { wallet, transactions: [], steps: {}, grossLenderSpend: '0' };
@@ -47,7 +49,7 @@ async function spend<T>(label: string, amount: bigint, fn: () => Promise<T>) {
   e.budget ??= {};
   e.budget[label] ??= amount.toString();
   const gross = Object.values(e.budget).reduce((sum, value) => sum + BigInt(value), 0n);
-  assert(gross + priorSpend <= 400n * UNIT, 'Lender budget exceeded before submission');
+  assert(gross + (phaseT ? 0n : priorSpend) <= 400n * UNIT, 'Lender budget exceeded before submission');
   e.grossLenderSpend = decimal(gross); save();
   return fn();
 }
@@ -100,7 +102,7 @@ async function main() {
     const liquidated = e.steps['liquidated-final'] as { loan: { principal: string; proceeds: string } };
     const topup = e.steps.topup as { amount: string };
     const gross = BigInt(repaid.loan.principal) + BigInt(liquidated.loan.principal) + BigInt(Math.round(Number(topup.amount) * 1e7)) + BigInt(liquidated.loan.proceeds);
-    assert(gross + priorSpend <= 400n * UNIT); e.grossLenderSpend = decimal(gross);
+    assert(gross + (phaseT ? 0n : priorSpend) <= 400n * UNIT); e.grossLenderSpend = decimal(gross);
     await verifyAtomicTransfers();
     e.steps.finalState = await dispatch(wallet, 'state'); save();
     console.log('Already complete; refreshed final state. Gross lender spend:', e.grossLenderSpend); return;

@@ -1,3 +1,4 @@
+import { evidenceFile, campaignSeed } from './t-config.mjs';
 // Calls real route handlers. Only the Pollar verification HTTP response is substituted.
 // Chain ownership/KYB reads and transaction construction remain real testnet calls.
 import assert from 'node:assert/strict';
@@ -12,14 +13,16 @@ import { observeTransactions } from '../lib/server/loan/audit';
 import { get, update } from '../lib/server/loan/store';
 import { indexKey } from '../lib/server/loan/records';
 import type { Index } from '../lib/server/loan/types';
-const evidence = JSON.parse(readFileSync('scripts/evidence/c4-server.json', 'utf8'));
-const owner = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-company-v2').digest());
+const phaseT = process.argv.includes('--phase-t');
+const evidence = JSON.parse(readFileSync(phaseT ? evidenceFile('journeys') : 'scripts/evidence/c4-server.json', 'utf8'));
+const output = phaseT ? evidenceFile('authorization') : 'scripts/evidence/c4-authorization.json';
+const owner = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update(phaseT ? campaignSeed('rendaval-phase-t-company-v1') : 'rendaval-c4-company-v2').digest());
 const attacker = Keypair.fromRawEd25519Seed(createHash('sha256').update(process.env.VAULT_SECRET_KEY!).update('rendaval-c4-other-v1').digest());
 const id = evidence.steps['repaid-accept'].contractId, bondId = evidence.steps['repaid-declare'].id;
 const results: { test: string; status: number | string }[] = [];
-const transactions: { label: string; hash: string }[] = existsSync('scripts/evidence/c4-authorization.json') ? JSON.parse(readFileSync('scripts/evidence/c4-authorization.json', 'utf8')).transactions ?? [] : [];
+const transactions: { label: string; hash: string }[] = existsSync(output) ? JSON.parse(readFileSync(output, 'utf8')).transactions ?? [] : [];
 function save(completed = false) {
-  writeFileSync('scripts/evidence/c4-authorization.json', JSON.stringify({ testedAt: new Date().toISOString(), mode: 'real chain; Pollar HTTP fixture only', completed, owner: owner.publicKey(), other: attacker.publicKey(), results, transactions }, null, 2) + '\n');
+  writeFileSync(output, JSON.stringify({ testedAt: new Date().toISOString(), mode: 'real chain; Pollar HTTP fixture only', completed, owner: owner.publicKey(), other: attacker.publicKey(), results, transactions }, null, 2) + '\n');
 }
 function record(label: string, hash: string) {
   if (!transactions.some(t => t.hash === hash)) transactions.push({ label, hash });
@@ -36,7 +39,13 @@ globalThis.fetch = async (input, init) => {
   return originalFetch(input, init);
 };
 async function route(action: Action, body: Record<string, unknown>, auth = true) {
-  return handle(new Request('http://localhost/api/loan/' + action, { method: action === 'state' ? 'GET' : 'POST', headers: { ...(auth ? { Authorization: 'Bearer test-fixture-token' } : {}), 'Content-Type': 'application/json' }, ...(action === 'state' ? {} : { body: JSON.stringify(body) }) }), action);
+  const response = await handle(new Request('http://localhost/api/loan/' + action, { method: action === 'state' ? 'GET' : 'POST', headers: { ...(auth ? { Authorization: 'Bearer test-fixture-token' } : {}), 'Content-Type': 'application/json' }, ...(action === 'state' ? {} : { body: JSON.stringify(body) }) }), action);
+  if (response.status >= 400) {
+    const body = await response.clone().json();
+    assert.equal(typeof body.error, 'string');
+    assert(!/HostError|Error\(Contract|Diagnostic|Wasm|Synthetic/.test(body.error), body.error);
+  }
+  return response;
 }
 async function main() {
   try { await server.loadAccount(attacker.publicKey()); } catch {
@@ -44,7 +53,7 @@ async function main() {
   }
   const attestation = await attest(attacker.publicKey(), 'c4-auth-negative');
   if ('txHash' in attestation) record('attacker-attestation', attestation.txHash);
-  const targeted: Action[] = ['approve', 'accept', 'fund', 'price', 'default', 'liquidate', 'deposit/build', 'deposit/submit', 'open/build', 'open/submit', 'repay/topup', 'repay/build', 'repay/submit'];
+  const targeted: Action[] = ['collect/build', 'collect/submit', 'approve', 'accept', 'fund', 'price', 'default', 'liquidate', 'deposit/build', 'deposit/submit', 'open/build', 'open/submit', 'repay/topup', 'repay/build', 'repay/submit'];
   const all: Action[] = ['state', 'register', ...targeted, 'claim/build', 'claim/submit'];
   for (const action of all) {
     const r = await route(action, {}, false); assert.equal(r.status, 401, action); results.push({ test: action + ': missing token', status: r.status });

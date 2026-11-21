@@ -3,12 +3,12 @@ import { readBalances, assetBalance } from '../../stellar/horizon';
 import { RBOND, USDC } from '../../stellar/assets';
 import { ApiError, vaultKey } from '../env';
 import { terms, loanHealth, type LoanView } from '../../loan/model';
-import { a, balance, BOND, BOOK, issuerKey, read, rpcServer, RULES, sym, units } from './chain';
+import { a, balance, BOND, BOOK, issuerKey, read, readClosedLoan, rpcServer, RULES, sym, units } from './chain';
 import { explorer } from './network';
 import { get, REGISTRY } from './store';
 import { index, ownBond, verified } from './records';
 import { loanView } from './setup';
-import { type Config, type Series, type Spec, type VaultConfig } from './types';
+import { type Config, type Series, type Spec, type VaultConfig, type View } from './types';
 export { verified } from './records';
 export async function state(wallet: string) {
   const walletBalances = readBalances(wallet);
@@ -21,12 +21,12 @@ export async function state(wallet: string) {
     const id = item.id!, spec = await read<Spec>(BOOK, 'get_vault', [a(id)]);
     if (spec.borrower !== wallet) throw new ApiError(403, 'La bóveda pertenece a otra empresa.');
     const vault = await read<VaultConfig>(id, 'get_config');
-    const view = vault.state[0] === 'Pending' ? null : await loanView(id);
+    const view = vault.state[0] === 'Pending' ? null : vault.state[0] === 'Closed' ? await readClosedLoan<View>(id) : await loanView(id);
     const [series, escrow, txs, held, deliveryBalance] = await Promise.all([read<Series>(BOOK, 'get_series', [sym(spec.series)]), get<{ id: string; hash: string }>(`escrow:${id}`), get<{ hashes: string[] }>(`transactions:${wallet}:${id}`), balance(BOND, id), balance(BOND, spec.delivery)]);
-    const status = view?.loan.status[0] ?? vault.state[0];
-    const stage = status === 'Pending' ? held >= spec.face ? 'collateral_locked' : 'escrow_created' : status === 'Repaid' ? 'closed' : status === 'Liquidated' || status === 'WrittenOff' ? 'liquidated' : 'active';
+    const status = view?.loan.status[0] ?? (vault.state[0] === 'Closed' ? 'Cancelled' : vault.state[0]);
+    const stage = status === 'Pending' ? held >= spec.face ? 'collateral_locked' : 'escrow_created' : status === 'Repaid' || status === 'Cancelled' ? 'closed' : status === 'Liquidated' || status === 'WrittenOff' ? 'liquidated' : 'active';
     const bond = bonds.find(b => b.id === item.bondId)!;
-    const t = terms(Number(spec.face) / 1e7);
+    const t = terms(status === 'Cancelled' ? 0 : Number(spec.face) / 1e7);
     const activity = (await Promise.all([id, spec.delivery, item.ref, item.bondId, spec.series].map(target => get<{ hash: string; label: string }[]>(`activity:${target}`)))).flatMap(rows => rows ?? []);
     // Known operation keys also recover links if the response/optional activity
     // append was lost after the receipt committed. Only this loan's keys are read.
@@ -41,7 +41,7 @@ export async function state(wallet: string) {
     // It lets the UI show a human-readable chronology without changing chain data.
     const transactions = [...new Map([...activity, ...(txs?.hashes ?? []).map(hash => ({ hash, label: 'Firma empresa' }))].reverse().map(row => [row.hash, { ...row, url: explorer('tx', row.hash), at: '' }])).values()];
     const compat: LoanView = { bond: bond.bond, stage, price: Number(series.quote.price) / 1e7, collateralValue: view ? Number(view.value) / 1e7 : Number(spec.face * series.quote.price / 10000000n) / 1e7, health: view && view.health_bps === null ? { ratio: null, level: 'unknown' } : loanHealth(view ? Number(view.debt) / 1e7 : t.total, view ? Number(view.value) / 1e7 : t.collateral), locked: Number(held) / 1e7, terms: { ...t, ...(view ? { loan: Number(view.loan.principal) / 1e7, interest: Number(view.loan.interest) / 1e7, total: Number(view.debt) / 1e7, custodyFee: Number(view.loan.escrow_fee) / 1e7, dueDate: new Date(Number(view.loan.due) * 1000).toISOString() } : {}) }, escrow: { contractId: id, description: JSON.stringify(bond.bond), url: explorer('contract', id) }, repayment: null, transactions };
-    return { ...compat, id, bondId: item.bondId, status, readyToOpen: !!await get(`released:${id}`), spec, vault, book: BOOK, view, series, priceAge: Number(ledger.closeTime) - Number(series.quote.timestamp), priceFresh: BigInt(ledger.closeTime) <= series.quote.timestamp + config.max_price_age, healthBps: view?.health_bps ?? null, margin: status === 'Margin', cureDeadline: view?.loan.defaulted_at ? Number(view.loan.defaulted_at + config.cure_period) : null, deliveryBalance, escrowId: escrow?.id ?? null, links: { book: explorer('contract', BOOK), rules: explorer('contract', RULES), vault: explorer('contract', id), delivery: explorer('contract', spec.delivery), escrow: escrow ? explorer('contract', escrow.id) : null }, amounts: { principal: spec.principal, fee: spec.principal * 30n / 10000n, net: spec.principal - spec.principal * 30n / 10000n, debt: view?.debt ?? spec.principal + (spec.principal + 149n) / 150n } };
+    return { ...compat, id, bondId: item.bondId, status, readyToOpen: !!await get(`released:${id}`), spec, vault, book: BOOK, view, series, priceAge: Number(ledger.closeTime) - Number(series.quote.timestamp), priceFresh: BigInt(ledger.closeTime) <= series.quote.timestamp + config.max_price_age, healthBps: view?.health_bps ?? null, margin: status === 'Margin', cureDeadline: view?.loan.defaulted_at ? Number(view.loan.defaulted_at + config.cure_period) : null, deliveryBalance, escrowId: escrow?.id ?? null, links: { book: explorer('contract', BOOK), rules: explorer('contract', RULES), vault: explorer('contract', id), delivery: explorer('contract', spec.delivery), escrow: escrow ? explorer('contract', escrow.id) : null }, amounts: status === 'Cancelled' ? { principal: 0n, fee: 0n, net: 0n, debt: 0n } : { principal: spec.principal, fee: spec.principal * 30n / 10000n, net: spec.principal - spec.principal * 30n / 10000n, debt: view?.debt ?? spec.principal + (spec.principal + 149n) / 150n } };
   }));
   const bondRecords = await Promise.all(bonds.map(async bond => {
     const latest = loans.filter(l => l.bondId === bond.id).at(-1);

@@ -1,5 +1,5 @@
 {
-  "testedAt": "2026-11-21T06:36:51.324Z",
+  "testedAt": "2026-11-21T08:15:26.907Z",
   "mode": "real chain; Pollar HTTP fixture only",
   "completed": true,
   "owner": "GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II",
@@ -11,6 +11,14 @@
     },
     {
       "test": "register: missing token",
+      "status": 401
+    },
+    {
+      "test": "collect/build: missing token",
+      "status": 401
+    },
+    {
+      "test": "collect/submit: missing token",
       "status": 401
     },
     {
@@ -72,6 +80,14 @@
     {
       "test": "claim/submit: missing token",
       "status": 401
+    },
+    {
+      "test": "collect/build: foreign owner",
+      "status": 403
+    },
+    {
+      "test": "collect/submit: foreign owner",
+      "status": 403
     },
     {
       "test": "approve: foreign owner",
@@ -143,6 +159,14 @@
     },
     {
       "test": "register: unverified",
+      "status": 403
+    },
+    {
+      "test": "collect/build: unverified",
+      "status": 403
+    },
+    {
+      "test": "collect/submit: unverified",
       "status": 403
     },
     {
@@ -302,6 +326,14 @@
     {
       "label": "browser:repay:CCMZDQGDI3HLECRQ2Q4OSSJ2WW2RAVBUHDZODT66HD7HJ3IV2UVDXBNB:f64d26a082aa802a3ecb45b34d7af751bb86fec87465bd967dd8be0f1e222a55",
       "hash": "f64d26a082aa802a3ecb45b34d7af751bb86fec87465bd967dd8be0f1e222a55"
+    },
+    {
+      "label": "registry:sign:GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II:GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II:claim",
+      "hash": "0c3eeaf7faca16e18f6ad6320922b7b8083cc9a7dad0161812d1143f196af079"
+    },
+    {
+      "label": "registry:sign:GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II:GBRJGCWI35S3H6L64EWA45RYPERTYHGCAOMIZXXI3GOQ4K7ROFRBR5II:claim",
+      "hash": "15dffe3a8967a626bf9c4211b5de95c2a741a2893f3aa487480822d7be53083c"
     }
   ]
 }

@@ -1,7 +1,7 @@
 import 'server-only';
 import { ApiError, vaultKey } from '../env';
 import { USDC } from '../../stellar/assets';
-import { a, apiCall, balance, BOND, BOOK, bool, bytes, i, invoke, issuerKey, read, rpcServer, RULES, sym, USD, verifyCode, VAULT_HASH, BOOK_HASH } from './chain';
+import { a, apiCall, balance, BOND, BOOK, bool, bytes, i, invoke, issuerKey, read, readClosedLoan, rpcServer, RULES, sym, USD, verifyCode, VAULT_HASH, BOOK_HASH } from './chain';
 import { get, update, digest } from './store';
 import { indexKey, ownBond, ownLoan, verified } from './records';
 import { lenderKey, tw } from './network';
@@ -18,8 +18,8 @@ export async function accept(wallet: string, bondId: string) {
       const config = await read<VaultConfig>(item.id, 'get_config');
       if (config.state[0] === 'Pending') { open++; if (item.bondId === bondId) return idx; }
       if (config.state[0] === 'Closed' && item.bondId === bondId) {
-        const prior = await loanView(item.id);
-        if (['Liquidated', 'WrittenOff'].includes(prior.loan.status[0])) throw new ApiError(409, 'Los bonos de esta declaración ya fueron ejecutados. Declare otra garantía.');
+        const prior = await readClosedLoan<View>(item.id);
+        if (prior && ['Liquidated', 'WrittenOff'].includes(prior.loan.status[0])) throw new ApiError(409, 'Los bonos de esta declaración ya fueron ejecutados. Declare otra garantía.');
       }
       if (config.state[0] === 'Active') {
         open++;

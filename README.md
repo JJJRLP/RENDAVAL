@@ -100,6 +100,11 @@ Vercel utiliza las mismas variables; no hay configuración adicional ni base de 
 
 ## Comandos y evidencia
 
+La [fase T](docs/pruebas.md) reúne recorridos nuevos, fallos y recuperación en testnet.
+Ejecute `node scripts/verify-phase-t.mjs` para reanudar; use `--campaign=identificador`
+para una campaña nueva. No ejecute dos campañas simultáneamente con las mismas claves.
+El informe distingue transacciones, rechazos de simulación y casos pendientes.
+
 - `npm run lint`, `npx tsc --noEmit`, `npx next build`.
 - `scripts/verify-b1.ts`: recorrido real por servicios del servidor, dos préstamos,
   margen/recuperación, repay y default/cura/ejecución/claim; presupuesto bruto <400 USDC.

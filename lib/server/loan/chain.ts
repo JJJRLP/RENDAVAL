@@ -33,13 +33,24 @@ export async function raw(source: string, contract: string, method: string, args
 }
 export async function read<T>(contract: string, method: string, args: xdr.ScVal[] = []): Promise<T> {
   const sim = await rpcServer.simulateTransaction(await raw(vaultKey().publicKey(), contract, method, args));
-  if (!rpc.Api.isSimulationSuccess(sim)) throw new ApiError(409, `Lectura ${method} no disponible; revise estado o TTL del contrato. ${rpc.Api.isSimulationError(sim) ? sim.error : ''}`);
+  if (!rpc.Api.isSimulationSuccess(sim)) throw new ApiError(409, 'No pudimos consultar el contrato. Reintente; si sigue sin estar disponible, requiere revisar o restaurar sus datos archivados.');
   return scValToNative(sim.result!.retval) as T;
+}
+/** Only a missing Loan is absence; RPC failures and archived entries remain errors. */
+export async function readClosedLoan<T>(id: string): Promise<T | null> {
+  const sim = await rpcServer.simulateTransaction(await raw(vaultKey().publicKey(), BOOK, 'get_loan', [a(id)]));
+  if (rpc.Api.isSimulationSuccess(sim)) return scValToNative(sim.result!.retval) as T;
+  if (rpc.Api.isSimulationError(sim) && /Error\(Contract, #4\)/.test(sim.error)) return null;
+  throw new ApiError(409, 'No pudimos consultar el préstamo cerrado. Reintente; sus datos pueden requerir restauración.');
 }
 export const balance = (token: string, who: string) => read<bigint>(token, 'balance', [a(who)]);
 export async function prepare(source: string, contract: string, method: string, args: xdr.ScVal[] = []) {
   const tx = await raw(source, contract, method, args), sim = await rpcServer.simulateTransaction(tx);
-  if (!rpc.Api.isSimulationSuccess(sim)) throw new ApiError(409, `El contrato no permite ${method} en este estado. ${rpc.Api.isSimulationError(sim) ? sim.error : ''}`);
+  if (!rpc.Api.isSimulationSuccess(sim)) {
+    // The user gets a plain message; the host's reason stays in the server log.
+    console.warn('loan_simulation_rejected', { method, reason: rpc.Api.isSimulationError(sim) ? sim.error.slice(0, 600) : 'restore required' });
+    throw new ApiError(409, simulationMessage(method));
+  }
   for (let n = 0; n < (sim.result?.auth.length ?? 0); n++) {
     const auth = sim.result!.auth[n];
     if (auth.credentials.type === 'sorobanCredentialsSourceAccount') continue;
@@ -50,6 +61,21 @@ export async function prepare(source: string, contract: string, method: string, 
     sim.result!.auth[n] = await authorizeEntry(auth, key, sim.latestLedger + 60, Networks.TESTNET);
   }
   return rpc.assembleTransaction(tx, sim).build();
+}
+// Never expose host diagnostics, authorization trees or provider payloads to users.
+export function simulationMessage(method: string) {
+  const messages: Record<string, string> = {
+    open: 'No se puede abrir el préstamo. Compruebe que siga pendiente, tenga todos los bonos y dólares y un precio vigente.',
+    deposit: 'No se pueden depositar los bonos. Compruebe el saldo, la autorización del emisor y que el préstamo siga pendiente.',
+    repay: 'No se puede pagar el préstamo. Compruebe que tenga dólares suficientes y que no se haya ejecutado la garantía.',
+    mark_default: 'No se puede declarar incumplimiento. El préstamo debe superar el umbral con precio vigente o estar vencido después del período de gracia.',
+    flag_margin: 'No corresponde un aviso de margen. Compruebe el nivel de deuda y la vigencia del precio.',
+    liquidate: 'No se puede ejecutar la garantía. Compruebe el plazo de cura, la autorización y saldo del comprador y que el precio vigente no haya cambiado.',
+    publish_price: 'No se puede publicar este precio. Solo el publicador autorizado puede hacerlo, con pasos de hasta 25 % y al menos 30 segundos entre cambios.',
+    set_authorized: 'No se puede cambiar esta autorización. El emisor no puede bloquear una bóveda con un préstamo vivo.',
+    transfer: 'No se puede transferir el activo. Compruebe el saldo y la autorización del destinatario.',
+  };
+  return messages[method] ?? 'El contrato no permite esta operación en su estado actual. Consulte el estado antes de reintentar.';
 }
 type Receipt = { hash: string; value: unknown };
 type Journal = { xdr?: string; api: boolean; prediction?: unknown; receipt?: Receipt };
