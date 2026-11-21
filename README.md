@@ -29,6 +29,31 @@ El diseño tiene un único mecanismo, y es el mismo que describen la landing y l
 3. **Reparto.** Con ese pago se cubren capital e interés del prestamista; el remanente vuelve a la empresa. Si no alcanza, la diferencia es una pérdida del prestamista: no hay póliza de seguro.
 
 **Qué hace hoy el prototipo.** El préstamo en disputa se congela y la aplicación lo muestra «en revisión»; una garantía ya resuelta aparece como «ejecutada». Cada préstamo activo permite simular su precio en testnet (100 %, 80 %, 65 % o 50 % del valor inicial). Rendaval publica el precio por contrato en Stellar y la salud usa capital más interés sobre el valor actual: desde el 70 % abre un aviso de margen que pide devolver el préstamo; desde el 85 % avisa que la garantía puede ejecutarse. El oráculo de producción, el aporte de garantía adicional y la ejecución/venta al comprador autorizado quedan para una fase posterior. Los porcentajes son de ejemplo.
+## Verifíquelo en Stellar
+
+Todo lo que hace la aplicación queda en la red de pruebas de Stellar y se puede revisar sin instalar nada. Los enlaces abren el explorador [stellar.expert](https://stellar.expert/explorer/testnet).
+
+**Cuentas y activos**
+
+| Qué | Identificador |
+| --- | --- |
+| Rendaval: crea los escrows y guarda las constancias de verificación | [`GABI…TXW5`](https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5) |
+| Emisor del bono digital `VBOND` | [`GDR5…YOXT`](https://stellar.expert/explorer/testnet/account/GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT) |
+| Contrato del activo `VBOND` (Stellar Asset Contract) | [`CDMT…4TAL`](https://stellar.expert/explorer/testnet/contract/CDMT46AH26WLTMVTWR57HL5KJIICB2F2SEWUXYY4YJRIOVXE3NQU4TAL) |
+| Prestamista de demostración | [`GBCS…GXZ7`](https://stellar.expert/explorer/testnet/account/GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7) |
+
+**Un préstamo completo, paso a paso** (empresa de prueba [`GAPU…TMLL`](https://stellar.expert/explorer/testnet/account/GAPUFWCFTYQIHZPMV4MCZ54PNQRJRJLMQ2XQZRP4PTLOFIRHTEDMTMLL), 18 de noviembre de 2026)
+
+| Paso | Qué ocurre en la red | Transacción o contrato |
+| --- | --- | --- |
+| Verificación | Entrada de datos `kyb:<cuenta>` en la cuenta de Rendaval | [Datos de la cuenta](https://stellar.expert/explorer/testnet/account/GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5?filter=data) |
+| Registro del bono | El emisor entrega 200 `VBOND`, con el hash de los datos del bono en el memo | [`48db7273…`](https://stellar.expert/explorer/testnet/tx/48db72731705857ae6a893fedd6177ec19f3ecde4073d894acbf46bd45080e8a) |
+| Escrow | Contrato Soroban de Trustless Work creado para este préstamo | [`CAIZ…6UIU`](https://stellar.expert/explorer/testnet/contract/CAIZXBP4BIMGIYU76SWSAFHYQLCWF35XX7P3W47AVF2HJ7SHTNQM6UIU) |
+| Garantía | La empresa deposita los 200 `VBOND` en el escrow | [`58d18110…`](https://stellar.expert/explorer/testnet/tx/58d181102bfb719fc1b6dcd21b0bf33a5f5b0c2ef68f715e68c1a1f6f8e971b3) |
+| Desembolso | El prestamista envía 100 USDC y deja el marcador del préstamo en la misma transacción | [`bd85ffae…`](https://stellar.expert/explorer/testnet/tx/bd85ffaeab1018b97569ef8cef2e1fa8905f07131d97bea959237b382408ec91) |
+| Reembolso | La empresa paga 100,6666667 USDC con el memo propio del préstamo | [`652b6fed…`](https://stellar.expert/explorer/testnet/tx/652b6fed67f62205e4806c17fd52742ff14804b6cae89c38a2ace4402927a05f) |
+
+La devolución de los bonos de este préstamo sigue pendiente por la limitación descrita en [Limitaciones conocidas](#limitaciones-conocidas). Un préstamo congelado por disputa puede verse en el contrato [`CBCI…A5AE`](https://stellar.expert/explorer/testnet/contract/CBCIAOMI32WMA3CYS6NSMBIGWH3E3DDRFQC3A3GNJQA36QTIXDWRA5AE).
 
 ## Arquitectura
 

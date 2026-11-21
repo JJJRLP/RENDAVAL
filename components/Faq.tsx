@@ -33,7 +33,7 @@ const items = [
       "Hay incumplimiento si el préstamo y el interés no se reembolsan en la fecha acordada, o si la deuda supera el 85 % del valor de la garantía y la empresa no la repone. Antes de ese límite, desde el 70 %, se le pide añadir garantía o reducir el saldo.",
       "En ese caso la garantía se ejecuta de una sola forma: los RWA se transfieren a un comprador autorizado por el emisor, que paga en USDC. El prestamista puede ser ese comprador si el emisor lo autoriza. Con ese pago se cubren el capital y el interés del prestamista, y el remanente se devuelve a la empresa. Es posible perder una parte o la totalidad de los activos depositados.",
       "Si la venta no alcanza para cubrir la deuda, la diferencia es una pérdida del prestamista: hoy no existe una póliza de seguro que cubra estos préstamos.",
-      "En el prototipo este proceso todavía no es automático: el préstamo se congela y lo revisa el equipo de Rendaval. La actualización del precio por oráculo, los avisos de margen y la venta al comprador autorizado están diseñados, no implementados. Los porcentajes son de ejemplo.",
+      "En el prototipo ya funcionan el precio de cada garantía, publicado en Stellar, y el aviso de margen, con un precio que se simula desde la aplicación. La venta al comprador autorizado todavía no es automática: el préstamo se congela y lo revisa el equipo de Rendaval. Los porcentajes son de ejemplo.",
     ],
   },
   {
