@@ -76,6 +76,22 @@ servidor con claves de prueba.
 | RBOND SAC | [CDMV…EGC3](https://stellar.expert/explorer/testnet/contract/CDMVILWEW47LHWNCHDILEBOECA5VDTP6QTRITWPATAVPXWXXSLRQEGC3) |
 | USDC SAC | [CBIE…DAMA](https://stellar.expert/explorer/testnet/contract/CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA) |
 
+## Quién controla qué
+
+Nadie puede retirar los bonos de una bóveda por su cuenta: solo los mueven `repay`, `liquidate`, `cancel` (antes de abrir) o `write_off` (180 días después del incumplimiento), y cada salida va a un destinatario fijado por el contrato.
+
+| Pieza | Cuenta | Qué puede hacer | Qué no puede hacer |
+| --- | --- | --- | --- |
+| Bonos RBOND | Bóveda propia de cada préstamo (contrato) | Recibir el depósito de la empresa y entregar los bonos en las salidas previstas | Entregarlos a otra dirección; no hay retirada administrativa |
+| Reglas RBOND | Emisor | Autorizar tenedores: empresa verificada, bóveda, custodia auxiliar y comprador | Revocar la bóveda o su custodia mientras hay deuda |
+| Precio | Emisor (publicador) | Publicar el precio de la serie en el libro, con saltos de hasta 25 % | Saltarse el límite de frecuencia o de variación |
+| Escrow USDC de Trustless Work: `approver` | Prestamista | Aprobar el hito de desembolso | Tocar los bonos: el escrow solo guarda USDC |
+| Escrow USDC: `serviceProvider`, `platformAddress`, `releaseSigner`, `disputeResolver` | Operador Rendaval | Marcar el hito y liberar el USDC | Liberarlo a otro destino: el `receiver` es la bóveda del préstamo |
+| Escrow USDC: `receiver` | Bóveda del préstamo | Recibir el USDC antes de `open` | — |
+| Deuda y desembolso | Libro (contrato), con firma de la empresa | Abrir la deuda y entregar el neto en una transacción | Abrir sin bonos depositados ni precio vigente |
+
+En testnet, el operador, el emisor y el prestamista firman en el servidor con claves de prueba. Detalle en [contracts/README.md](contracts/README.md) y [contracts/INTERFAZ.md](contracts/INTERFAZ.md).
+
 ## Puesta en marcha
 
 Node.js 20.9 o superior. `npm install`, copie `.env.example` a `.env.local`, complete
