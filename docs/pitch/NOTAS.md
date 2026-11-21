@@ -1,5 +1,7 @@
 # Notas para actualizar `Rendaval-pitch-v2`
 
+> **Aplicadas en `Rendaval-pitch-v3`** (PPTX y PDF en esta carpeta). La v3 agrega además: por qué pedir prestado y no vender, mercados (Bolivia primero; México, Brasil, EE. UU. y zona euro), estructura legal por país, competencia con fuentes (Liqvid, Blend, Templar, Talwex, HiYield) y equipo. Las cifras de la diapositiva 2 citan a RedStone (2026). Quedan marcadores: enlaces del equipo y contacto.
+
 Los archivos PPTX y PDF se conservaron sin cambios como referencia. Este documento enumera los reemplazos exactos antes de reutilizarlos.
 
 | Diapositiva | Qué ya no coincide | Reemplazo exacto |
