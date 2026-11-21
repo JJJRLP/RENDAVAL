@@ -12,7 +12,7 @@ De: [Nombre], [cargo], Rendaval
 
 Estimado/a [nombre]:
 
-Rendaval explora crédito en USDC para empresas, con Bolivia como primer mercado y alcance previsto para empresas de cualquier país. Busca dar liquidez contra bonos tokenizados sin venderlos, dentro de las reglas de recepción del emisor.
+Rendaval explora crédito en USDC para empresas, con México como primer mercado y Brasil como segundo y alcance previsto para empresas de cualquier país. Busca dar liquidez contra bonos tokenizados sin venderlos, dentro de las reglas de recepción del emisor.
 
 El prototipo es exclusivo de Stellar testnet y usa activos de prueba. La bóveda de cada préstamo mantiene los bonos; Trustless Work protege el USDC durante el desembolso, pero no custodia la garantía. El libro publica el precio y expone lectura SEP-40; no consume un oráculo externo en el flujo actual.
 

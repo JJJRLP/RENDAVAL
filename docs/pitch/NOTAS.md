@@ -1,5 +1,7 @@
 # Notas para actualizar `Rendaval-pitch-v2`
 
+> **Aplicadas en `Rendaval-pitch-v3`** (PPTX y PDF en esta carpeta), con un cambio de mercado: **México (Ciudad de México) es el primer mercado y Brasil el segundo**; Bolivia queda para después. La v3 agrega: por qué pedir prestado y no vender, mercados, estructura legal por país y competencia con fuentes (Liqvid, Blend, Templar, Talwex, HiYield). Las cifras de la diapositiva 2 citan a RedStone (2026). Sin diapositiva de equipo ni datos de contacto.
+
 Los archivos PPTX y PDF se conservaron sin cambios como referencia. Este documento enumera los reemplazos exactos antes de reutilizarlos.
 
 | Diapositiva | Qué ya no coincide | Reemplazo exacto |

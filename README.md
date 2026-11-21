@@ -1,13 +1,13 @@
 # Rendaval
 
-Préstamos en dólares digitales (USDC) para empresas, con Bolivia como primer
-mercado, respaldados por bonos tokenizados. MVP de hackathon sobre **Stellar
+Préstamos en dólares digitales (USDC) para empresas, con México (Ciudad de México)
+como primer mercado y Brasil como segundo, respaldados por bonos tokenizados. MVP de hackathon sobre **Stellar
 testnet**: activos sin valor real, custodia/tokenización simuladas y proveedores
 sandbox. Next.js 16, React 19, Pollar, Didit y Trustless Work.
 
 ## Recorrido de la empresa
 
-1. Ingrese con Pollar y verifique su empresa con Didit; Bolivia es el país inicial,
+1. Ingrese con Pollar y verifique su empresa con Didit; México es el país inicial,
    pero puede elegir otro país y declarar en moneda local o USD.
 2. Declare el bono y seleccione el certificado de bloqueo. El navegador calcula
    SHA-256; solo la huella y los datos declarados se registran públicamente.

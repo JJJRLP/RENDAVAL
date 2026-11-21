@@ -23,7 +23,7 @@ Las tres revisiones no autorizan dinero real. Además de una auditoría posterio
 
 ## Orden propuesto para un piloto
 
-1. Elegir empresa, emisor y bono reales; Bolivia es el primer mercado y el producto está diseñado para empresas de cualquier país.
+1. Elegir empresa, emisor y bono reales; México es el primer mercado, seguido de Brasil, y el producto está diseñado para empresas de cualquier país.
 2. Acordar custodia, autorizaciones, comprador independiente, precio y salida ante incumplimiento.
 3. Repetir punta a punta en testnet con el activo del emisor: venta, entrega bloqueada, recuperación y fallo de proveedor.
 4. Cerrar amenazas, TTL, claves, observabilidad, auditoría y revisión legal.

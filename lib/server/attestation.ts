@@ -1,5 +1,5 @@
 import 'server-only';
-import { countryFor, DEFAULT_COUNTRY, type CountryCode } from '../countries';
+import { countryFor, DEFAULT_COUNTRY, LEGACY_COUNTRY, type CountryCode } from '../countries';
 import { Horizon, Networks, Operation, StrKey, TransactionBuilder } from '@stellar/stellar-sdk';
 import { ApiError, vaultKey } from './env';
 const horizon = 'https://horizon-testnet.stellar.org';
@@ -15,7 +15,7 @@ export async function readAttestation(wallet: string) {
   const data = await response.json();
   const value = Buffer.from(data.value, 'base64').toString('utf8');
   const parts = value.split(':');
-  const country = parts.length === 1 ? DEFAULT_COUNTRY : countryFor(parts[1])?.code;
+  const country = parts.length === 1 ? LEGACY_COUNTRY : countryFor(parts[1])?.code;
   if (!country || (parts.length !== 1 && (parts.length !== 3 || parts[0] !== '1'))) throw new ApiError(502, 'La constancia no es válida.');
   // Legacy values (no country) are any non-empty reference, including the ones written by test scripts.
   const sessionId = parts.length === 1 ? value : parts[2];
