@@ -1,6 +1,6 @@
 # Notas técnicas de implementación
 
-Detalle de cada fase del MVP. La visión general está en el [README](../README.md).
+Producto para empresas de cualquier país; Bolivia es el primer mercado y el país predeterminado. Detalle de cada fase del MVP. La visión general está en el [README](../README.md).
 
 ## Acceso y verificación de empresa
 
@@ -10,7 +10,7 @@ Instale las dependencias con `npm install`. Copie `.env.example` a `.env.local` 
 - `NEXT_PUBLIC_VBOND_ISSUER`: dirección pública del emisor de VBOND en testnet.
 - `POLLAR_SECRET_KEY`: clave secreta `sec_testnet_` para validar el token de acceso en cada ruta del servidor. Nunca se expone al navegador.
 - `DIDIT_API_KEY`: clave sandbox `sk_test_` de Didit; las claves de producción se rechazan.
-- `DIDIT_KYB_WORKFLOW_ID`: identificador del workflow de verificación de empresas. Configure la cobertura de Bolivia en la consola; enviamos `expected_details.registry_country: "BO"`.
+- `DIDIT_KYB_WORKFLOW_ID`: identificador del workflow de verificación de empresas. Revise la cobertura documental en la consola. Enviamos el país seleccionado en `expected_details.registry_country`; «Otro país» omite `expected_details`. Crear una sesión no confirma cobertura.
 - `VAULT_SECRET_KEY`: clave secreta Stellar de la cuenta de plataforma Rendaval, financiada en testnet para comisiones y reservas de entradas de datos.
 
 Los préstamos requieren `LENDER_SECRET_KEY`, `BOND_ISSUER_SECRET_KEY` y `TRUSTLESS_WORK_API_KEY` solo en el servidor. Configure las mismas variables en Vercel; no se usa base de datos ni almacenamiento en disco.
@@ -21,9 +21,9 @@ En Pollar, habilite correo y Google, billeteras clásicas con creación inmediat
 
 La landing permanece en `/`. La ruta `/app` contiene el acceso, los saldos y la verificación de empresa. El flujo de préstamo incluye registro, garantía, desembolso, reembolso y devolución de bonos.
 
-El servidor verifica el token de Pollar y usa exclusivamente la dirección devuelta por ese servicio. Una sesión de Didit debe corresponder a esa dirección y al workflow configurado. Al aprobarse, Rendaval firma en Stellar testnet una entrada `manageData` con nombre `kyb:<dirección de empresa>` y valor igual al identificador de sesión. Las consultas posteriores leen esa constancia pública; no incluye documentos ni datos de la empresa. Cada nueva entrada requiere reserva de XLM. La constancia no almacena fecha.
+El servidor verifica el token de Pollar y usa exclusivamente la dirección devuelta por ese servicio. Una sesión de Didit debe corresponder a esa dirección y al workflow configurado. Al aprobarse, Rendaval firma en Stellar testnet una entrada `manageData` con nombre `kyb:<dirección de empresa>` y valor `1:<país>:<identificador de sesión>` (41 bytes para ISO de dos letras, 44 para `OTHER`, menos del límite de 64). Las constancias antiguas con solo el identificador se leen como Bolivia. El país se recupera de `metadata.country` en la decisión de Didit, validado contra `lib/countries.ts`; para sesiones históricas se usa `expected_details.registry_country` o Bolivia. Las consultas posteriores leen esa constancia pública; no incluye documentos ni datos de la empresa. Cada nueva entrada requiere reserva de XLM. La constancia no almacena fecha. Las lecturas posteriores obtienen el país desde Stellar sin depender de Didit. La dirección siempre procede de Pollar; el navegador solo elige el país, que define moneda y textos.
 
-El navegador conserva únicamente el identificador y enlace de la sesión pendiente por cuenta. Al volver de la verificación, consulta automáticamente hasta cinco veces con esperas de 2, 4, 8 y 16 segundos. Después ofrece una comprobación manual. Si se borra el almacenamiento antes de aprobar, será necesario iniciar otra sesión. La aprobación de prueba solo funciona con configuración sandbox y requiere autenticación y pertenencia de la sesión.
+El navegador conserva el identificador, país y enlace de la sesión pendiente por cuenta. Al volver de la verificación, consulta automáticamente hasta cinco veces con esperas de 2, 4, 8 y 16 segundos. Después ofrece una comprobación manual. Si se borra el almacenamiento antes de aprobar, será necesario iniciar otra sesión. La aprobación de prueba solo funciona con configuración sandbox y requiere autenticación y pertenencia de la sesión.
 
 Prueba real (crea una sesión sandbox y una entrada permanente en testnet para una dirección aleatoria):
 
@@ -41,7 +41,7 @@ Validación: `npm run lint` y `npm run build`. Para probar producción en otro p
 ## Préstamos de prueba — fase 4
 
 Garantía admitida: USD 100–400; préstamo: 50 %, hasta 200 USDC. El ejemplo
-es Bs 2.784 (USD 400). Capital, interés a 30 días y total se redondean a siete
+boliviano es Bs 2.784 (USD 400, referencia de demostración). Capital, interés a 30 días y total se redondean a siete
 decimales con `usdcAmount`; el pago y la oferta usan los mismos importes.
 
 Cada ruta `/api/loan/*` autentica el token de Pollar y exige una empresa
@@ -122,3 +122,42 @@ La interfaz conserva el bloque de preparación y agrega «Sus préstamos» antes
 «Su cuenta». Cada fila tiene su propia acción, progreso, error y enlaces. Un bloqueo
 compartido impide iniciar dos operaciones de préstamo a la vez; una recarga reconstruye
 el progreso desde la red. La devolución pendiente se comprueba con el botón de su fila.
+
+## Países, monedas y compatibilidad (issue #9)
+
+`lib/countries.ts` comparte entre cliente y servidor los países BO, AR, BR, CL, CO,
+MX y PE, más `OTHER` («Otro país», USD). Los códigos de los países son ISO;
+`OTHER` es una opción interna y nunca se envía como país de registro a Didit.
+Los tipos de cambio son referencias fijas de demostración, nunca cotizaciones.
+La empresa elige moneda local o USD; el servidor obtiene la referencia del módulo,
+no acepta un tipo de cambio enviado por el navegador. Un VBOND sigue representando
+USD 1 de garantía, con 50 % de financiamiento, 8 % anual y 30 días.
+
+Los nuevos bonos guardan `nominal` y `currency` en el JSON de descripción del
+escrow. `normalizeBond` admite JSON históricos con `nominalBs` como BOB sin aplicar
+los límites o fechas de registro actuales. Las descripciones de texto históricas
+se muestran en la moneda del país de la empresa y en USD a partir del importe del
+contrato. Si faltan los datos locales antes de crear un contrato, la descripción es
+un texto con el valor en USD; no se recuperan datos originales del emisor.
+Las constancias antiguas (sin país) admiten cualquier referencia no vacía, porque
+los scripts de prueba escribieron valores que no son identificadores de Didit.
+Los identificadores, memos de reembolso y activos existentes no cambian.
+
+Comprobación real de sandbox: creación con país PE devolvió 201 y decisión 200;
+la decisión incluyó `expected_details.registry_country: PE`, `metadata.country: PE`
+y mantuvo `vendor_data` y `session_kind: business`. Con los helpers finales, PE y
+`OTHER` conservaron su país después de la aprobación simulada. Horizon devolvió
+200 y las diez constancias históricas se leyeron como Bolivia, con sus préstamos.
+Se escribieron dos constancias de prueba (PE y `OTHER`) con cuentas nuevas; no se
+crearon préstamos. Esto comprueba la persistencia
+de la selección, no la cobertura documental del flujo alojado.
+
+Pruebas locales de compatibilidad (sin red ni transacciones):
+
+```sh
+node --conditions=react-server --import tsx scripts/check-country-compatibility.ts
+```
+
+Cubren las ocho opciones, monedas locales y USD, extremos y rechazos de límites,
+bonos históricos de USD 1.000 ya vencidos, constancias antiguas y nuevas, la omisión
+de `expected_details` para `OTHER` y el rechazo de sesiones de otra cuenta.

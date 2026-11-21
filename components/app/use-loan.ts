@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePollar } from '@pollar/react';
-import type { Bond, LoanState } from '@/lib/loan/model';
+import { bondUsd, normalizeBond, type Bond, type LoanState } from '@/lib/loan/model';
 export function useLoan(address: string, onState: (state: LoanState) => void) {
   const { getClient, signTx } = usePollar();
   const [bond, setBond] = useState<Bond | null>(null);
@@ -22,7 +22,7 @@ export function useLoan(address: string, onState: (state: LoanState) => void) {
     const current = await api<LoanState>('state');
     if (alive.current) {
       setState(current); onState(current);
-      try { setBond(JSON.parse(current.setup?.escrow?.description ?? localStorage.getItem(`vault:bond:${address}`) ?? 'null')); } catch { setBond(null); }
+      try { setBond(normalizeBond(JSON.parse(current.setup?.escrow?.description ?? localStorage.getItem(`vault:bond:${address}`) ?? 'null'))); } catch { setBond(null); }
     }
     return current;
   }, [address, api, onState]);
@@ -62,9 +62,9 @@ export function useLoan(address: string, onState: (state: LoanState) => void) {
     if (current.setup.stage === 'bond_registered') {
       setStep(0);
       let bond: Bond | undefined;
-      try { bond = JSON.parse(localStorage.getItem(`vault:bond:${address}`) || 'null') ?? undefined; } catch { /* Optional metadata. */ }
+      try { bond = normalizeBond(JSON.parse(localStorage.getItem(`vault:bond:${address}`) || 'null')) ?? undefined; } catch { /* Optional metadata. */ }
       // Returned collateral can differ from the original nominal after provider fees.
-      if (bond && Math.abs(bond.nominalBs / 6.96 - current.bonds) > 0.000001) bond = undefined;
+      if (bond && Math.abs(bondUsd(bond) - current.bonds) > 0.000001) bond = undefined;
       await api('accept', { bond }); current = await refresh();
     }
     const contractId = current.setup?.escrow?.contractId;
