@@ -7,6 +7,7 @@ struct Fixture {
     e: Env,
     book: Address,
     issuer: Address,
+    operator: Address,
     token: Address,
     lender: Address,
     borrower: Address,
@@ -25,7 +26,20 @@ impl Fixture {
         let token = e
             .register_stellar_asset_contract_v2(issuer.clone())
             .address();
-        let book = e.register(LoanBook, (issuer.clone(), token.clone(), 7000u32, 8500u32));
+        let operator = Address::generate(&e);
+        let book = e.register(
+            LoanBook,
+            (
+                operator.clone(),
+                issuer.clone(),
+                token.clone(),
+                7000u32,
+                8500u32,
+                2500u32,
+                86400u64,
+                500u32,
+            ),
+        );
         let f = Self {
             lender: Address::generate(&e),
             borrower: Address::generate(&e),
@@ -34,6 +48,7 @@ impl Fixture {
             e,
             book,
             issuer,
+            operator,
             token,
         };
         token::StellarAssetClient::new(&f.e, &f.token).mint(&f.lender, &(1000 * SCALE));
@@ -57,9 +72,22 @@ impl Fixture {
     fn mint(&self, a: &Address, n: i128) {
         token::StellarAssetClient::new(&self.e, &self.token).mint(a, &n);
     }
+    fn publish(&self, id: &Address, price: i128) {
+        let c = self.c();
+        let mut old = c.get_price(id);
+        while (price - old).abs() * 10000 > old * 2500 {
+            old = if price < old {
+                old - old / 4
+            } else {
+                old + old / 4
+            };
+            c.publish_price(id, &old);
+        }
+        c.publish_price(id, &price);
+    }
     fn default(&self, price: i128) {
         self.open();
-        self.c().publish_price(&self.id, &price);
+        self.publish(&self.id, price);
         self.c().mark_default(&self.id);
     }
 }
@@ -122,20 +150,20 @@ fn thresholds_exact_and_recovery() {
         let principal = if threshold == 7000 { 10430 } else { 12665 };
         // debt 10500 or 12750; collateral at price .5 is 15000.
         c.open(&f.id, &f.borrower, &f.lender, &30000, &principal);
-        c.publish_price(&f.id, &(price + 1000));
+        f.publish(&f.id, price + 1000);
         if threshold == 7000 {
             assert_eq!(c.try_flag_margin(&f.id), Err(Ok(Error::Healthy)));
         } else {
             assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::Healthy)));
         }
-        c.publish_price(&f.id, &price);
+        f.publish(&f.id, price);
         assert_eq!(c.get_loan(&f.id).health_bps, threshold as i128);
         if threshold == 7000 {
             c.flag_margin(&f.id);
             c.flag_margin(&f.id);
-            c.publish_price(&f.id, &SCALE);
+            f.publish(&f.id, SCALE);
             assert_eq!(c.get_loan(&f.id).loan.status, Status::Active);
-            c.publish_price(&f.id, &(price - 1000));
+            f.publish(&f.id, price - 1000);
             c.flag_margin(&f.id);
         } else {
             c.mark_default(&f.id);
@@ -151,7 +179,7 @@ fn healthy_and_overdue() {
     assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::Healthy)));
     let due = c.get_loan(&f.id).loan.due;
     f.e.ledger().with_mut(|l| l.timestamp = due);
-    assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::Healthy)));
+    assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::StalePrice)));
     f.e.ledger().with_mut(|l| l.timestamp = due + 1);
     c.mark_default(&f.id);
     assert_eq!(c.get_loan(&f.id).loan.status, Status::Defaulted);
@@ -187,7 +215,8 @@ fn liquidation_surplus_shortfall_and_atomicity() {
             Err(Ok(Error::Buyer))
         );
         c.set_buyer(&f.buyer, &true);
-        let v = c.get_loan(&f.id);
+        let mut v = c.get_loan(&f.id);
+        v.value = v.value * 9500 / 10000;
         f.mint(&f.buyer, v.debt.min(v.value));
         if v.value > v.debt {
             assert!(c
@@ -235,18 +264,18 @@ fn authorization_and_isolated_prices() {
         invoke: &MockAuthInvoke {
             contract: &f.book,
             fn_name: "publish_price",
-            args: (f.id.clone(), 6_500_000i128).into_val(&f.e),
+            args: (f.id.clone(), 8_000_000i128).into_val(&f.e),
             sub_invokes: &[],
         },
     }])
-    .publish_price(&f.id, &6_500_000);
+    .publish_price(&f.id, &8_000_000);
     assert_eq!(c.get_price(&second), SCALE);
     f.e.mock_all_auths();
     assert_eq!(
         c.try_liquidate(&f.id, &f.buyer, &c.get_price(&f.id)),
         Err(Ok(Error::State))
     );
-    c.publish_price(&f.id, &5_500_000);
+    f.publish(&f.id, 5_500_000);
     c.mark_default(&f.id);
     c.set_buyer(&f.buyer, &true);
     f.e.mock_auths(&[]);
@@ -276,13 +305,13 @@ fn terminal_default_and_quote_protection() {
     f.default(5_500_000);
     let c = f.c();
     c.set_buyer(&f.buyer, &true);
-    assert_eq!(c.try_repay(&f.id), Err(Ok(Error::State)));
+    assert!(c.try_repay(&f.id).is_err()); // insufficient interest, still curable
     assert_eq!(c.try_flag_margin(&f.id), Err(Ok(Error::State)));
     assert_eq!(
         c.try_liquidate(&f.id, &f.buyer, &5_400_000),
         Err(Ok(Error::PriceChanged))
     );
-    c.publish_price(&f.id, &SCALE);
+    f.publish(&f.id, SCALE);
     assert_eq!(c.get_loan(&f.id).loan.status, Status::Defaulted);
     c.set_buyer(&f.buyer, &false);
     assert_eq!(
@@ -304,7 +333,7 @@ fn lender_can_be_buyer_and_margin_can_be_repaid() {
     let g = Fixture::new();
     g.open();
     let c = g.c();
-    c.publish_price(&g.id, &6_500_000);
+    g.publish(&g.id, 6_500_000);
     c.flag_margin(&g.id);
     g.mint(&g.borrower, c.get_loan(&g.id).loan.interest);
     c.repay(&g.id);
@@ -317,14 +346,181 @@ fn events_and_retries() {
     let f = Fixture::new();
     f.open();
     let c = f.c();
-    c.publish_price(&f.id, &6_500_000);
+    f.publish(&f.id, 6_500_000);
     assert_eq!(f.e.events().all().events().len(), 1);
     c.flag_margin(&f.id);
     assert_eq!(f.e.events().all().events().len(), 1);
     c.flag_margin(&f.id);
     assert_eq!(f.e.events().all().events().len(), 0);
-    c.publish_price(&f.id, &SCALE);
-    assert_eq!(f.e.events().all().events().len(), 2);
-    c.publish_price(&f.id, &SCALE);
+    f.publish(&f.id, SCALE);
+    assert_eq!(f.e.events().all().events().len(), 1);
+    f.publish(&f.id, SCALE);
     assert_eq!(f.e.events().all().events().len(), 0);
+}
+
+#[test]
+fn operator_required_even_with_lender_signature() {
+    let f = Fixture::new();
+    let c = f.c();
+    f.e.mock_auths(&[]);
+    assert!(c
+        .mock_auths(&[MockAuth {
+            address: &f.lender,
+            invoke: &MockAuthInvoke {
+                contract: &f.book,
+                fn_name: "open",
+                args: (
+                    f.id.clone(),
+                    f.borrower.clone(),
+                    f.lender.clone(),
+                    200i128,
+                    100i128
+                )
+                    .into_val(&f.e),
+                sub_invokes: &[],
+            },
+        }])
+        .try_open(&f.id, &f.borrower, &f.lender, &200, &100)
+        .is_err());
+    assert_eq!(c.try_get_loan(&f.id), Err(Ok(Error::Missing)));
+    assert_eq!(f.balance(&f.borrower), 0);
+    f.e.mock_all_auths();
+    f.open();
+    assert_eq!(c.get_config().operator, f.operator);
+}
+#[test]
+fn step_boundaries_and_demo_path() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    assert_eq!(
+        c.try_publish_price(&f.id, &7_499_999),
+        Err(Ok(Error::PriceStep))
+    );
+    c.publish_price(&f.id, &7_500_000);
+    assert_eq!(
+        c.try_publish_price(&f.id, &9_375_001),
+        Err(Ok(Error::PriceStep))
+    );
+    c.publish_price(&f.id, &9_375_000);
+    c.publish_price(&f.id, &SCALE);
+    for p in [8_000_000, 6_500_000, 5_000_000] {
+        c.publish_price(&f.id, &p);
+    }
+    assert_eq!(
+        c.try_publish_price(&f.id, &SCALE),
+        Err(Ok(Error::PriceStep))
+    );
+    f.publish(&f.id, SCALE);
+}
+#[test]
+fn freshness_refresh_and_overdue_liquidation() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    f.publish(&f.id, 5_500_000);
+    f.e.ledger().with_mut(|l| l.timestamp = 1000 + 86401);
+    assert_eq!(c.try_mark_default(&f.id), Err(Ok(Error::StalePrice)));
+    assert_eq!(c.try_flag_margin(&f.id), Err(Ok(Error::StalePrice)));
+    c.publish_price(&f.id, &5_500_000);
+    assert_eq!(c.get_loan(&f.id).loan.price_time, 87401);
+    f.e.ledger().with_mut(|l| l.timestamp += 86400);
+    c.mark_default(&f.id); // age equal to max is accepted
+    c.set_buyer(&f.buyer, &true);
+    f.mint(&f.buyer, 200 * SCALE);
+    f.e.ledger().with_mut(|l| l.timestamp += 1);
+    assert_eq!(
+        c.try_liquidate(&f.id, &f.buyer, &5_500_000),
+        Err(Ok(Error::StalePrice))
+    );
+    c.publish_price(&f.id, &5_500_000);
+    f.e.ledger().with_mut(|l| l.timestamp += 86400);
+    c.liquidate(&f.id, &f.buyer, &5_500_000);
+    let g = Fixture::new();
+    g.open();
+    let c = g.c();
+    g.e.ledger().with_mut(|l| l.timestamp += TERM + 1);
+    c.mark_default(&g.id);
+    c.set_buyer(&g.buyer, &true);
+    assert_eq!(
+        c.try_liquidate(&g.id, &g.buyer, &SCALE),
+        Err(Ok(Error::StalePrice))
+    );
+}
+#[test]
+fn cure_is_full_atomic_and_retry_safe() {
+    let f = Fixture::new();
+    f.default(5_500_000);
+    let c = f.c();
+    assert!(c.try_repay(&f.id).is_err());
+    assert_eq!(c.get_loan(&f.id).loan.status, Status::Defaulted);
+    f.mint(&f.borrower, c.get_loan(&f.id).loan.interest);
+    c.repay(&f.id);
+    let balance = f.balance(&f.lender);
+    c.repay(&f.id);
+    assert_eq!(f.balance(&f.lender), balance);
+    assert_eq!(c.get_loan(&f.id).loan.status, Status::Repaid);
+    assert_eq!(
+        c.try_liquidate(&f.id, &f.buyer, &5_500_000),
+        Err(Ok(Error::State))
+    );
+}
+#[test]
+fn sep40_reads_and_retention() {
+    let f = Fixture::new();
+    f.open();
+    let c = f.c();
+    let asset = Asset::Other(c.get_loan(&f.id).loan.asset);
+    assert_eq!(c.base(), Asset::Other(Symbol::new(&f.e, "USD")));
+    assert_eq!(c.decimals(), 7);
+    assert_eq!(c.resolution(), 1);
+    assert_eq!(c.assets(), soroban_sdk::vec![&f.e, asset.clone()]);
+    let p = PriceData {
+        price: SCALE,
+        timestamp: 1000,
+    };
+    assert_eq!(c.lastprice(&asset), Some(p.clone()));
+    assert_eq!(c.price(&asset, &1000), Some(p.clone()));
+    assert_eq!(c.prices(&asset, &1), Some(soroban_sdk::vec![&f.e, p]));
+    assert_eq!(c.prices(&asset, &0), None);
+    assert_eq!(c.prices(&asset, &2), None);
+    assert_eq!(c.price(&asset, &999), None);
+    assert_eq!(c.lastprice(&Asset::Stellar(f.id.clone())), None);
+    assert_eq!(
+        c.lastprice(&Asset::Other(Symbol::new(&f.e, "unknown"))),
+        None
+    );
+    f.e.ledger().with_mut(|l| l.timestamp += 1);
+    c.publish_price(&f.id, &SCALE);
+    assert_eq!(c.price(&asset, &1000), None);
+    assert_eq!(c.lastprice(&asset).unwrap().timestamp, 1001);
+}
+
+#[test]
+fn constructor_guard_boundaries() {
+    for (step, age, discount, valid) in [
+        (0u32, 1u64, 0u32, false),
+        (10001, 1, 0, false),
+        (1, 0, 0, false),
+        (1, 1, 10000, false),
+        (1, 1, 0, true),
+        (10000, 1, 9999, true),
+    ] {
+        let f = Fixture::new();
+        let e = f.e.clone();
+        e.as_contract(&f.book, || {
+            let result = LoanBook::__constructor(
+                e.clone(),
+                Address::generate(&e),
+                Address::generate(&e),
+                Address::generate(&e),
+                7000,
+                8500,
+                step,
+                age,
+                discount,
+            );
+            assert_eq!(result.is_ok(), valid);
+        });
+    }
 }

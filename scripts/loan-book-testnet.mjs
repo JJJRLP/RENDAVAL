@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { Address, Asset, Contract, Keypair, Networks, Operation,
-  StrKey, TransactionBuilder, nativeToScVal, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+  StrKey, TransactionBuilder, authorizeEntry, nativeToScVal, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 
 const RPC = 'https://soroban-testnet.stellar.org';
 const server = new rpc.Server(RPC);
@@ -20,7 +20,7 @@ const a = s => new Address(s).toScVal();
 const i = n => nativeToScVal(BigInt(n), { type: 'i128' });
 const u = n => nativeToScVal(n, { type: 'u32' });
 const evidence = { network: 'testnet', sdk: '29.0.1', started: new Date().toISOString(), transactions: [],
-  borrower: borrower.publicKey(), buyer: buyer.publicKey(), lender: lender.publicKey(), issuer: issuer.publicKey() };
+  borrower: borrower.publicKey(), buyer: buyer.publicKey(), lender: lender.publicKey(), issuer: issuer.publicKey(), operator: vault.publicKey(), parameters: { maxStepBps: 2500, maxPriceAge: 86400, discountBps: 500 } };
 const evidencePath = process.env.LOAN_BOOK_EVIDENCE;
 const json = v => JSON.stringify(v, (_, x) => typeof x === 'bigint' ? x.toString() : x, 2);
 function record(label, hash) {
@@ -32,9 +32,21 @@ async function submit(signer, operation, label, soroban = true) {
   const source = await server.getAccount(signer.publicKey());
   let tx = new TransactionBuilder(source, { fee: '10000', networkPassphrase: Networks.TESTNET })
     .addOperation(operation).setTimeout(180).build();
-  if (soroban) tx = await server.prepareTransaction(tx);
+  if (soroban) {
+    const simulation = await server.simulateTransaction(tx);
+    if (!rpc.Api.isSimulationSuccess(simulation)) throw new Error(`Simulation failed: ${label}: ${simulation.error}`);
+    for (let j = 0; j < simulation.result.auth.length; j++) {
+      const entry = simulation.result.auth[j];
+      if (entry.credentials.type === 'sorobanCredentialsSourceAccount') continue;
+      const address = Address.fromScAddress(entry.credentials.value.address).toString();
+      assert.equal(address, vault.publicKey(), 'Unexpected non-source authorization');
+      simulation.result.auth[j] = await authorizeEntry(entry, vault, simulation.latestLedger + 100, Networks.TESTNET);
+    }
+    tx = rpc.assembleTransaction(tx, simulation).build();
+  }
   tx.sign(signer);
   const hash = Buffer.from(tx.hash()).toString('hex');
+  record(label, hash);
   // Submit once, poll that hash. Never rebuild a funds movement after an ambiguous response.
   try {
     const sent = await server.sendTransaction(tx);
@@ -44,7 +56,7 @@ async function submit(signer, operation, label, soroban = true) {
   }
   for (let n = 0; n < 60; n++) {
     const result = await server.getTransaction(hash);
-    if (result.status === 'SUCCESS') { record(label, hash); return result.returnValue; }
+    if (result.status === 'SUCCESS') { return result.returnValue; }
     if (result.status === 'FAILED') throw new Error(`Transaction failed: ${label} ${hash}`);
     await sleep(2000);
   }
@@ -95,34 +107,36 @@ try {
   assert(evidence.protocol >= 29, 'Protocol does not support SDK 29');
   // Calling balance confirms the supplied SAC exists and implements the token interface.
   const initial = await balance(lender); evidence.initialLenderUsdc = initial;
-  assert(initial >= 156n * 10_000_000n, 'Insufficient demo funds');
+  assert(initial >= 204n * 10_000_000n, 'Insufficient demo funds');
   const wasm = readFileSync(new URL('../contracts/target/wasm32v1-none/release/rendaval_loan_book.wasm', import.meta.url));
   evidence.wasmSha256 = createHash('sha256').update(wasm).digest('hex');
   const hash = scValToNative(await submit(vault, Operation.uploadContractWasm({ wasm }), 'upload_wasm'));
   const deployed = await submit(vault, Operation.createCustomContract({
     address: new Address(vault.publicKey()), wasmHash: hash, salt: randomBytes(32),
-    constructorArgs: [a(issuer.publicKey()), a(USDC), u(7000), u(8500)]
+    constructorArgs: [a(vault.publicKey()), a(issuer.publicKey()), a(USDC), u(7000), u(8500), u(2500), nativeToScVal(86400n, { type: 'u64' }), u(500)]
   }), 'deploy_initialize');
   book = scValToNative(deployed); evidence.contractId = book; console.log(`contract: ${book}`);
   await fresh(borrower, 'borrower'); await fresh(buyer, 'buyer'); prepared = true;
   const id1 = StrKey.encodeContract(randomBytes(32)), id2 = StrKey.encodeContract(randomBytes(32));
-  evidence.loanIds = [id1, id2];
+  const id3 = StrKey.encodeContract(randomBytes(32));
+  evidence.loanIds = [id1, id2, id3];
   const open = async (id, label) => {
     reserve(500_000_000n);
     await invoke(lender, 'open', [a(id), a(borrower.publicKey()), a(lender.publicKey()), i(1_000_000_000), i(500_000_000)], label);
   };
   await open(id1, 'open_liquidation_loan');
+  await invoke(issuer, 'publish_price', [a(id1), i(8_000_000)], 'price_80');
   await invoke(issuer, 'publish_price', [a(id1), i(6_500_000)], 'price_margin');
   await invoke(vault, 'flag_margin', [a(id1)]);
   await invoke(issuer, 'publish_price', [a(id1), i(5_500_000)], 'price_default');
   await invoke(vault, 'mark_default', [a(id1)]);
   await invoke(issuer, 'set_buyer', [a(buyer.publicKey()), nativeToScVal(true)], 'authorize_buyer');
-  await payment(lender, buyer, 550_000_000n, 'fund_buyer');
+  await payment(lender, buyer, 522_500_000n, 'fund_buyer');
   const before = { lender: await balance(lender), borrower: await balance(borrower) };
   await invoke(buyer, 'liquidate', [a(id1), a(buyer.publicKey()), i(5_500_000)]);
   const first = await read(book, 'get_loan', [a(id1)]);
   assert.equal(first.loan.status[0], 'Liquidated'); assert.equal(first.loan.loss, 0n);
-  assert.equal(first.loan.surplus, 46_666_666n);
+  assert.equal(first.loan.surplus, 19_166_666n);
   assert.equal(await balance(lender), before.lender + first.debt);
   assert.equal(await balance(borrower), before.borrower + first.loan.surplus);
   await payment(borrower, lender, await balance(borrower), 'return_first_loan_funds');
@@ -134,7 +148,23 @@ try {
   await invoke(borrower, 'repay', [a(id2)]);
   const repaid = await read(book, 'get_loan', [a(id2)]);
   assert.equal(repaid.loan.status[0], 'Repaid');
-  evidence.loans = [first, repaid]; evidence.grossLenderSpend = spent;
+  await open(id3, 'open_cure_loan');
+  for (const price of [8_000_000, 6_500_000, 5_000_000]) {
+    await invoke(issuer, 'publish_price', [a(id3), i(price)], `cure_price_${price}`);
+  }
+  await invoke(vault, 'mark_default', [a(id3)], 'default_before_cure');
+  const defaulted = await read(book, 'get_loan', [a(id3)]);
+  assert.equal(defaulted.loan.status[0], 'Defaulted');
+  await payment(lender, borrower, defaulted.loan.interest, 'fund_cure_interest');
+  await invoke(borrower, 'repay', [a(id3)], 'cure');
+  const cured = await read(book, 'get_loan', [a(id3)]);
+  assert.equal(cured.loan.status[0], 'Repaid');
+  const oracleAsset = nativeToScVal(['Other', first.loan.asset], { type: ['symbol', 'symbol'] });
+  const quote = await read(book, 'lastprice', [oracleAsset]);
+  assert.equal(quote.price, first.loan.price);
+  assert.equal(quote.timestamp, first.loan.price_time);
+  evidence.oracleQuote = quote;
+  evidence.loans = [first, repaid, cured]; evidence.grossLenderSpend = spent;
   evidence.storage = await verifyStorage(book, evidence.loanIds, evidence.wasmSha256);
   evidence.completed = true;
 } finally {

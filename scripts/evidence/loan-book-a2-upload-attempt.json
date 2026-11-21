@@ -1,0 +1,24 @@
+{
+  "network": "testnet",
+  "sdk": "29.0.1",
+  "started": "2026-11-21T01:59:33.165Z",
+  "transactions": [
+    {
+      "label": "upload_wasm",
+      "hash": "036ae1d832e1b3fa7b8dc688672a21b4ea18057f3f8b218b712f25c26c54198a"
+    }
+  ],
+  "borrower": "GBLQFO677NLAUFJBVIDCGUPY5JYSWQGHQKGBS63SQEVFM3A7FXISXSH4",
+  "buyer": "GCQ6HA3NNIE3YZDQGW4R22G2SBKZF3NYI4C6T56RFZ42LXWWXQ5RTJ6E",
+  "lender": "GBCS4OTV3GGP33J6J4HC77WQUCS2DGP2BP32IXGDPAWZ6W4FIKVOGXZ7",
+  "issuer": "GDR5F6YS4U3H2GD7HVEE32DM6ELHBVSMAMVZBP2GMGMRXYARYWSCYOXT",
+  "operator": "GABIK4IHUCZJIO7GJ35ZTBMAPIJI2M2FPG5Q5K44VTBRLSLJZXDYTXW5",
+  "parameters": {
+    "maxStepBps": 2500,
+    "maxPriceAge": 86400,
+    "discountBps": 500
+  },
+  "protocol": 30,
+  "initialLenderUsdc": "127490000000",
+  "wasmSha256": "1b191af7749d1aa6f511e958588c863cb8daaf31a3b08f39ea8ea61547f7712e"
+}
