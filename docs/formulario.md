@@ -46,5 +46,8 @@ Public prototype on Stellar testnet: full loan cycle verified on chain (deposit,
 - Closed sale on default, surplus to the company: https://stellar.expert/explorer/testnet/tx/577997a1756a68d4a58827328f0b42bf0c68f11fddceffe1fa0f4ef4163b098d
 - Demo video: [link]
 
+## Competitors
+Blend RWA pools and Templar address adjacent on-chain lending. Rendaval's difference is its permissioned-bond flow: the issuer approves every holder but cannot touch pledged collateral; bonds are held in a separate vault per loan; repayment returns the bonds atomically; and a default sale atomically exchanges the buyer's payment for the bonds.
+
 ## Team
 [Names, roles, GitHub and LinkedIn]

@@ -12,7 +12,7 @@ export function Footer() {
         </div>
         <div className="max-w-md text-sm leading-6 text-white/70">
           <p className="font-semibold text-white">
-            Prototipo en testnet. Auditoría pendiente.
+            Prototipo en testnet. Auditoría externa pendiente.
           </p>
           <p className="mt-2">
             Las cifras de esta página son ilustrativas. No constituyen una oferta

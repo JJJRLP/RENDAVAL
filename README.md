@@ -98,6 +98,46 @@ La empresa conserva el rendimiento cuando el bono es **de acumulación**: el int
 
 Los bonos **con cupón** necesitarían que la bóveda reenvíe cada pago a la empresa durante el préstamo. Esta versión no lo implementa y el bono de prueba RBOND no paga cupón. El primer mercado (México, CETES) usa bonos de acumulación.
 
+Es un plan de piloto: no hay integración ni acuerdo con Etherfuse.
+
+## Revisiones de seguridad
+
+Los contratos pasaron tres rondas internas realizadas por un revisor distinto del
+autor, con pruebas que reproducen los hallazgos. Los hallazgos y arreglos están en
+[C3-REPORT](contracts/C3-REPORT.md), [C4-REPORT](contracts/C4-REPORT.md) y el
+historial de commits. El veredicto de cada ronda fue el mismo: no se encontró una
+ruta para robar fondos; el resultado es adecuado para una demostración pública en
+testnet, no para valor real. No es una auditoría externa por una firma. Antes de
+mainnet hace falta una.
+
+## Precio y confianza
+
+El emisor del bono publica el precio en el libro Rendaval y el contrato lo expone
+mediante una interfaz compatible con SEP-40. Esto confía en el emisor, no en un
+oráculo independiente. El contrato limita cada cambio a 25 %, exige un intervalo
+mínimo, rechaza precios vencidos y nunca permite liquidar por debajo del precio al
+que el préstamo pasó a poder declararse en incumplimiento. Además, el rol que
+publica precios está separado del rol que aprueba compradores.
+
+## Cómo gana Rendaval — diseño, no implementado
+
+Hoy el contrato no cobra nada para Rendaval: el 8 % anual completo va al
+prestamista. El diseño comercial es que la empresa pague 8 %, el prestamista
+reciba cerca de 6 % y Rendaval conserve un margen de 2 puntos. Con USD 50 millones
+de préstamos promedio vigentes, ese margen produciría cerca de USD 1 millón al año.
+Supuestos y cálculo en [modelo y prestamistas](docs/modelo-y-prestamistas.md).
+
+## El lado del prestamista
+
+Hoy hay un único prestamista de prueba y su clave firma en el servidor. En
+producción habría prestamistas verificados (KYB/KYC), una interfaz propia y USDC
+aportado desde sus propias cuentas. La regulación aplicable en cada país sigue sin
+resolverse y figura en [camino a mainnet](docs/camino-a-mainnet.md).
+
+**Video de demostración:** (video: pendiente)
+
+**Licencia:** [MIT](LICENSE), copyright 2026 Rendaval contributors.
+
 ## Puesta en marcha
 
 Node.js 20.9 o superior. `npm install`, copie `.env.example` a `.env.local`, complete
@@ -166,7 +206,7 @@ Liquidadores externos y operación comercial quedan fuera de esta demostración.
 
 Aviso de margen al 70 % de deuda sobre garantía; incumplimiento al 85 % o al vencer los 30 días más 30 segundos de gracia. Tras declararlo, dispone de 60 segundos para pagar antes de habilitar la venta. Un comprador aprobado por el emisor compra con 5 % de descuento sobre el mayor entre el precio vigente y el piso protegido. Pago y entrega ocurren juntos: cobra primero el prestamista, el excedente va a la empresa y el prestamista asume cualquier faltante.
 
-El precio depende del emisor y no garantiza una venta. El piso protegido puede superar el precio de mercado y demorar la compra. Tras 180 días de incumplimiento, los bonos pueden entregarse al prestamista sin excedente para la empresa. El emisor puede autorizar a la empresa deudora como compradora. El interés es fijo: pagar antes no lo reduce y pagar tarde no lo aumenta. Añadir bonos no mejora la salud del préstamo. La autorización para recibir bonos puede revocarse después del cierre; una entrega bloqueada queda en custodia auxiliar. No hay seguro ni auditoría independiente de las correcciones C4.
+El precio depende del emisor y no garantiza una venta. El piso protegido puede superar el precio de mercado y demorar la compra. Tras 180 días de incumplimiento, los bonos pueden entregarse al prestamista sin excedente para la empresa. El emisor puede autorizar a la empresa deudora como compradora. El interés es fijo: pagar antes no lo reduce y pagar tarde no lo aumenta. Añadir bonos no mejora la salud del préstamo. La autorización para recibir bonos puede revocarse después del cierre; una entrega bloqueada queda en custodia auxiliar. No hay seguro ni auditoría externa de las correcciones C4.
 
 Además, las entradas Stellar necesitan mantenimiento y restauración de TTL. La
 verificación KYB aún usa entradas clásicas de capacidad finita. Los metadatos
