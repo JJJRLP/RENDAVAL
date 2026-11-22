@@ -14,7 +14,9 @@ Bono de 100.000 USD. Necesidad de caja: 50.000 USD durante 30 días.
 | Comisión de desembolso (Trustless Work) | 50.000 × 0,3 % | 150,00 USD |
 | **Total** | | **483,33 USD**, o 0,48 % del valor del bono |
 
-La empresa conserva el bono y su cupón durante el préstamo.
+La empresa conserva los tokens. En un activo cuyo rendimiento se incorpora al
+precio (NAV), también conserva ese rendimiento durante el préstamo. El prototipo
+no reenvía cupones de un bono que los pague.
 
 **Opción B: vender y recomprar**
 
@@ -30,7 +32,7 @@ Fondos tokenizados de letras del Tesoro que se rescatan a valor liquidativo en u
 
 ## Cuándo SÍ conviene (hipótesis a validar)
 
-1. **Dólares sin deshacer una posición en moneda local (México y Brasil).** Una empresa con CETES o TESOURO tokenizados que necesita dólares, si vende, paga el diferencial de cambio a dólares y deja de cobrar el rendimiento en pesos o reales. Con el préstamo conserva el bono y su rendimiento. *Hipótesis principal del piloto en Ciudad de México:* comparar ese costo con el 0,48 % en entrevistas.
+1. **Dólares sin deshacer una posición en moneda local (México y Brasil).** Una empresa con CETES o TESOURO tokenizados que necesita dólares, si vende, paga el diferencial de cambio a dólares y deja de cobrar el rendimiento en pesos o reales. Con el préstamo conserva los tokens y, cuando el activo acumula rendimiento en su NAV, ese rendimiento. *Hipótesis principal del piloto en Ciudad de México:* comparar ese costo con el 0,48 % en entrevistas.
 1. **Bonos sin mercado secundario profundo.** Si vender exige aceptar un descuento, un descuento mayor a 0,48 % ya hace más barato el préstamo (por ejemplo, bonos corporativos poco negociados).
 2. **Ventanas de rescate.** Activos que solo se rescatan en fechas fijas o con preaviso, cuando la caja se necesita antes.
 3. **Venta con efectos contables o fiscales.** Una venta realiza una ganancia o pérdida, o rompe una estrategia de mantener hasta el vencimiento.

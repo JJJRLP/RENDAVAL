@@ -29,7 +29,7 @@ export function VerificationPanel({ address, onLoanState }: { address: string; o
           {countries.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
         </select>
       </label>
-      <p className="mt-2 max-w-xl text-xs leading-6 text-white/60">Para empresas de cualquier país. Comenzamos en México y Brasil. El país elegido se aplica al iniciar una nueva verificación; «Otro país» utiliza USD.</p>
+      <p className="mt-2 max-w-xl text-xs leading-6 text-white/60">Para empresas de cualquier país. México es el primer mercado y Brasil el segundo. El país elegido se aplica al iniciar una nueva verificación; «Otro país» utiliza USD.</p>
       {pending && <p className="mt-2 text-sm text-white/75">Verificación en curso: {countries.find(c => c.code === (pending.country ?? DEFAULT_COUNTRY))?.name}.</p>}
       <div className="mt-6 flex flex-col items-start gap-2">
         {error && <p role="alert" className="mb-2 max-w-xl border-l-2 border-blue-bright pl-4 leading-7">{error}</p>}

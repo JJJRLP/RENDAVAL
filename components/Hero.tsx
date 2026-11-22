@@ -100,8 +100,8 @@ export function Hero() {
           >
             <p className="mt-8 text-lg leading-8 text-white/80">
               Constituya sus RWA en garantía y disponga de USDC. Su empresa
-              conserva la titularidad y el rendimiento de los activos durante
-              la vigencia del préstamo.
+              conserva la titularidad de sus activos; si su rendimiento se
+              acumula en el precio, lo sigue ganando durante el préstamo.
             </p>
             <a href="/app" className="btn-primary mt-10">
               Ingresar a Rendaval
