@@ -1,6 +1,6 @@
 # Notas para actualizar `Rendaval-pitch-v2`
 
-> **Versión para presentar: `Rendaval-pitch-final` (10 diapositivas).** Resume la v4: portada, problema, solución (Pollar, Didit, Trustless Work), diferenciador, por qué pedir prestado, mercados, modelo de ingresos con lado prestamista, competencia, verificación en Stellar y cierre.
+> **Versión para presentar: `Rendaval-pitch-final` (10 diapositivas).** Resume la v4: portada, problema, solución (Pollar, Didit, Trustless Work), diferenciador, por qué pedir prestado, mercados, modelo de ingresos con lado prestamista, competencia, verificación en Stellar y flujo de la app con las integraciones de Stellar (Pollar, Didit, Trustless Work, contratos Soroban, RBOND, SEP-40) y contacto.
 >
 > **Versión completa: `Rendaval-pitch-v4`.** Sobre la v3 agrega cómo se conserva el rendimiento (bonos de acumulación), el modelo de ingresos con cifras de trabajo, el lado prestamista y una diapositiva «Verifíquelo en Stellar» con enlaces a contratos y transacciones de testnet.
 
