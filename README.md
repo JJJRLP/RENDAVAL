@@ -92,6 +92,12 @@ Nadie puede retirar los bonos de una bóveda por su cuenta: solo los mueven `rep
 
 En testnet, el operador, el emisor y el prestamista firman en el servidor con claves de prueba. Detalle en [contracts/README.md](contracts/README.md) y [contracts/INTERFAZ.md](contracts/INTERFAZ.md).
 
+## Rendimiento de la garantía
+
+La empresa conserva el rendimiento cuando el bono es **de acumulación**: el interés se suma al valor del token, como en los Stablebonds de Etherfuse (CETES en México, TESOURO en Brasil). El token sigue en la bóveda, su valor crece y vuelve completo a la empresa con `repay`; el precio publicado más alto también mejora la salud del préstamo.
+
+Los bonos **con cupón** necesitarían que la bóveda reenvíe cada pago a la empresa durante el préstamo. Esta versión no lo implementa y el bono de prueba RBOND no paga cupón. El primer mercado (México, CETES) usa bonos de acumulación.
+
 ## Puesta en marcha
 
 Node.js 20.9 o superior. `npm install`, copie `.env.example` a `.env.local`, complete
