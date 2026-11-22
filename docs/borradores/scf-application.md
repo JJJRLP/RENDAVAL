@@ -1,6 +1,6 @@
 # Borrador — solicitud al Stellar Community Fund
 
-> Borrador con marcadores entre corchetes. No presentar sin completar equipo, presupuesto, enlaces, revisión legal y auditoría independiente posterior a C4.
+> Borrador con marcadores entre corchetes. No presentar sin completar equipo, presupuesto, enlaces, revisión legal y auditoría externa posterior a C4.
 
 ## Nombre y resumen
 
@@ -20,7 +20,7 @@ Los activos tokenizados que exigen autorización de tenedores no encajan directa
 
 ## Riesgo y límites honestos
 
-Activos, prestamista, aprobación, tipos de cambio y tiempos son de demostración. La venta depende de comprador autorizado y precio del emisor; no garantiza liquidez. Tres revisiones llevaron a C4, pero faltan auditoría independiente del código corregido, custodia legal, operación TTL, claves de producción, política de precios, prestamistas reales y legal. El *write-off*, la posible autocompra y el interés fijo requieren revisión antes del piloto.
+Activos, prestamista, aprobación, tipos de cambio y tiempos son de demostración. La venta depende de comprador autorizado y precio del emisor; no garantiza liquidez. Tres revisiones internas independientes del autor llevaron a C4, pero faltan auditoría externa del código corregido, custodia legal, operación TTL, claves de producción, política de precios, prestamistas reales y legal. El *write-off*, la posible autocompra y el interés fijo requieren revisión antes del piloto.
 
 ## Integración y diferenciación
 
