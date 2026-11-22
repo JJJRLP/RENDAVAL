@@ -94,16 +94,11 @@ En testnet, el operador, el emisor y el prestamista firman en el servidor con cl
 
 ## Rendimiento de la garantía
 
-El primer activo candidato para un piloto son los CETES tokenizados de Etherfuse
-en Stellar. Según la [descripción pública de Etherfuse](https://etherfuse.com/markets/mexico),
-el rendimiento se acumula en el precio del token (NAV), en vez de pagarse como
-cupón. Un token bloqueado en la bóveda seguiría acumulándolo; al pagar, la empresa
-recibiría los mismos tokens, y el precio publicado por el emisor en el libro
-Rendaval reflejaría la evolución del NAV.
+La empresa conserva el rendimiento cuando el bono es **de acumulación**: el interés se suma al valor del token, como en los Stablebonds de Etherfuse (CETES en México, TESOURO en Brasil). El token sigue en la bóveda, su valor crece y vuelve completo a la empresa con `repay`; el precio publicado más alto también mejora la salud del préstamo.
 
-Es un plan de piloto, no una integración ni un acuerdo con Etherfuse. RBOND, el
-bono de prueba, no acumula rendimiento. Para un bono que pague cupones, Rendaval
-todavía no reenvía esos pagos a la empresa.
+Los bonos **con cupón** necesitarían que la bóveda reenvíe cada pago a la empresa durante el préstamo. Esta versión no lo implementa y el bono de prueba RBOND no paga cupón. El primer mercado (México, CETES) usa bonos de acumulación.
+
+Es un plan de piloto: no hay integración ni acuerdo con Etherfuse.
 
 ## Revisiones de seguridad
 
@@ -130,6 +125,7 @@ Hoy el contrato no cobra nada para Rendaval: el 8 % anual completo va al
 prestamista. El diseño comercial es que la empresa pague 8 %, el prestamista
 reciba cerca de 6 % y Rendaval conserve un margen de 2 puntos. Con USD 50 millones
 de préstamos promedio vigentes, ese margen produciría cerca de USD 1 millón al año.
+Supuestos y cálculo en [modelo y prestamistas](docs/modelo-y-prestamistas.md).
 
 ## El lado del prestamista
 

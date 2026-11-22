@@ -100,8 +100,9 @@ export function Hero() {
           >
             <p className="mt-8 text-lg leading-8 text-white/80">
               Constituya sus RWA en garantía y disponga de USDC. Su empresa
-              conserva la titularidad de sus activos; si su rendimiento se
-              acumula en el precio, lo sigue ganando durante el préstamo.
+              conserva la titularidad de los bonos; en bonos de acumulación,
+              como los CETES tokenizados, el rendimiento sigue sumándose a su
+              valor dentro de la bóveda.
             </p>
             <a href="/app" className="btn-primary mt-10">
               Ingresar a Rendaval
